@@ -1,7 +1,6 @@
 package com.dahuaboke.redisx;
 
 
-import com.dahuaboke.redisx.netty.RedisClient;
 import com.dahuaboke.redisx.netty.handler.RedisMessageHandler;
 import com.dahuaboke.redisx.netty.handler.WebReceiveHandler;
 
@@ -18,7 +17,6 @@ public class Context {
     private Publisher publisher;
     private Subscriber subscriber;
     private volatile boolean isClose = false;
-    private RedisClient redisClient;
 
     public void register(RedisMessageHandler redisMessageHandler) {
         publisher = new Publisher(redisMessageHandler);
@@ -41,7 +39,6 @@ public class Context {
     }
 
     public void destroy() {
-        redisClient.destroy();
         this.isClose = true;
     }
 
@@ -101,9 +98,5 @@ public class Context {
                 }
             }
         }
-    }
-
-    public void setRedisClient(RedisClient redisClient) {
-        this.redisClient = redisClient;
     }
 }

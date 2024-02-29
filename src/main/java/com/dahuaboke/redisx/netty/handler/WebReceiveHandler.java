@@ -23,6 +23,7 @@ public class WebReceiveHandler extends SimpleChannelInboundHandler<Map<String, S
     private int remotePort;
     private Channel channel;
     private Context context;
+    private RedisClient redisClient;
 
     public WebReceiveHandler(String remoteHost, int remotePort) {
         this.remoteHost = remoteHost;
@@ -32,9 +33,8 @@ public class WebReceiveHandler extends SimpleChannelInboundHandler<Map<String, S
     @Override
     public void channelActive(ChannelHandlerContext ctx) throws Exception {
         Context context = new Context();
-        RedisClient redisClient = new RedisClient(remoteHost, remotePort);
+        redisClient = new RedisClient(remoteHost, remotePort);
         redisClient.start(context);
-        context.setRedisClient(redisClient);
         this.context = context;
         this.channel = ctx.channel();
     }
@@ -56,6 +56,11 @@ public class WebReceiveHandler extends SimpleChannelInboundHandler<Map<String, S
         response.headers().set(HttpHeaderNames.CONTENT_TYPE, "text/plain; charset=UTF-8");
         channel.writeAndFlush(response);
         channel.close();
+    }
+
+    @Override
+    public void channelInactive(ChannelHandlerContext ctx) throws Exception {
+        redisClient.destroy();
         this.context.destroy();
     }
 }
