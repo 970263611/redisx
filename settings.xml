@@ -1,0 +1,12 @@
+<?xml version="1.0" encoding="UTF-8"?>
+
+<settings>
+    <mirrors>
+        <mirror>
+            <id>alimaven</id>
+            <name>aliyun maven</name>
+            <mirrorOf>central</mirrorOf>
+            <url>https://maven.aliyun.com/repository/central</url>
+        </mirror>
+    </mirrors>
+</settings>
