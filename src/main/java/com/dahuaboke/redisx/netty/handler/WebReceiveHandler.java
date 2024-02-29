@@ -17,7 +17,6 @@ import java.util.Map;
  */
 public class WebReceiveHandler extends SimpleChannelInboundHandler<Map<String, String>> {
 
-    private static final String TOKEN = "token";
     private static final String COMMAND = "command";
     private String remoteHost;
     private int remotePort;
