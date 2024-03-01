@@ -1,6 +1,7 @@
 package com.dahuaboke.redisx.netty.handler;
 
-import com.dahuaboke.redisx.Context;
+import com.dahuaboke.redisx.core.Context;
+import com.dahuaboke.redisx.core.Receiver;
 import com.dahuaboke.redisx.netty.RedisClient;
 import io.netty.buffer.Unpooled;
 import io.netty.channel.Channel;
@@ -15,7 +16,7 @@ import java.util.Map;
  * author: dahua
  * date: 2024/2/27 15:48
  */
-public class WebReceiveHandler extends SimpleChannelInboundHandler<Map<String, String>> {
+public class WebReceiveHandler extends SimpleChannelInboundHandler<Map<String, String>> implements Receiver {
 
     private static final String COMMAND = "command";
     private String remoteHost;
@@ -43,10 +44,11 @@ public class WebReceiveHandler extends SimpleChannelInboundHandler<Map<String, S
         context.register(this);
         String command = params.get(COMMAND);
         if (command != null) {
-            context.subscribe(command);
+            context.send(command);
         }
     }
 
+    @Override
     public void receive(String callBack) {
         FullHttpResponse response = new DefaultFullHttpResponse(
                 HttpVersion.HTTP_1_1,

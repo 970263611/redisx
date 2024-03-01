@@ -19,7 +19,7 @@ import java.util.Map;
  * author: dahua
  * date: 2024/2/28 11:03
  */
-public class HttpRequestParser extends ChannelInboundHandlerAdapter {
+public class HttpRequestParamParser extends ChannelInboundHandlerAdapter {
 
     @Override
     public void channelRead(ChannelHandlerContext ctx, Object msg) throws Exception {

@@ -1,6 +1,6 @@
 package com.dahuaboke.redisx.netty;
 
-import com.dahuaboke.redisx.Context;
+import com.dahuaboke.redisx.core.Context;
 import com.dahuaboke.redisx.netty.handler.RedisMessageHandler;
 import io.netty.bootstrap.Bootstrap;
 import io.netty.channel.Channel;

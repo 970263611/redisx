@@ -1,6 +1,7 @@
 package com.dahuaboke.redisx.netty.handler;
 
-import com.dahuaboke.redisx.Context;
+import com.dahuaboke.redisx.core.Context;
+import com.dahuaboke.redisx.core.Sender;
 import io.netty.buffer.ByteBufUtil;
 import io.netty.channel.Channel;
 import io.netty.channel.ChannelDuplexHandler;
@@ -17,7 +18,7 @@ import java.util.List;
  * author: dahua
  * date: 2024/2/27 15:44
  */
-public class RedisMessageHandler extends ChannelDuplexHandler {
+public class RedisMessageHandler extends ChannelDuplexHandler implements Sender {
 
     private Context context;
     private Channel channel;
@@ -88,7 +89,8 @@ public class RedisMessageHandler extends ChannelDuplexHandler {
         return new String(stringBuilder);
     }
 
-    public void sendCommand(String command) {
+    @Override
+    public void send(String command) {
         if (channel.isActive()) {
             channel.writeAndFlush(command);
         } else {

@@ -1,6 +1,6 @@
 package com.dahuaboke.redisx.netty;
 
-import com.dahuaboke.redisx.netty.handler.HttpRequestParser;
+import com.dahuaboke.redisx.netty.handler.HttpRequestParamParser;
 import com.dahuaboke.redisx.netty.handler.WebReceiveHandler;
 import io.netty.bootstrap.ServerBootstrap;
 import io.netty.channel.*;
@@ -15,7 +15,7 @@ import java.net.InetSocketAddress;
  * author: dahua
  * date: 2024/2/27 15:42
  */
-public class ConsoleServer {
+public class ConsoleServer extends Thread {
 
     private String host;
     private int port;
@@ -29,7 +29,8 @@ public class ConsoleServer {
         this.remotePort = remotePort;
     }
 
-    public void start() {
+    @Override
+    public void run() {
         InetSocketAddress socketAddress = new InetSocketAddress(host, port);
         EventLoopGroup bossGroup = new NioEventLoopGroup(1);
         EventLoopGroup workGroup = new NioEventLoopGroup(1);
@@ -42,7 +43,7 @@ public class ConsoleServer {
                         ChannelPipeline pipeline = channel.pipeline();
                         pipeline.addLast(new HttpServerCodec());
                         pipeline.addLast(new HttpObjectAggregator(512 * 1024));
-                        pipeline.addLast(new HttpRequestParser());
+                        pipeline.addLast(new HttpRequestParamParser());
                         pipeline.addLast(new WebReceiveHandler(remoteHost,remotePort));
                     }
                 })

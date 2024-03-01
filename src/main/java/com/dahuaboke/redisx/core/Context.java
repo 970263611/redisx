@@ -1,8 +1,5 @@
-package com.dahuaboke.redisx;
+package com.dahuaboke.redisx.core;
 
-
-import com.dahuaboke.redisx.netty.handler.RedisMessageHandler;
-import com.dahuaboke.redisx.netty.handler.WebReceiveHandler;
 
 import java.util.concurrent.LinkedBlockingDeque;
 
@@ -18,20 +15,20 @@ public class Context {
     private Subscriber subscriber;
     private volatile boolean isClose = false;
 
-    public void register(RedisMessageHandler redisMessageHandler) {
-        publisher = new Publisher(redisMessageHandler);
+    public void register(Sender sender) {
+        publisher = new Publisher(sender);
         publisher.setName("publisher-" + System.currentTimeMillis());
         publisher.start();
     }
 
-    public void register(WebReceiveHandler webReceiveHandler) {
-        subscriber = new Subscriber(webReceiveHandler);
+    public void register(Receiver receiver) {
+        subscriber = new Subscriber(receiver);
         subscriber.setName("subscriber-" + System.currentTimeMillis());
         subscriber.start();
     }
 
-    public void subscribe(String command) {
-        subscriber.subscribe(command);
+    public void send(String command) {
+        subscriber.send(command);
     }
 
     public void callBack(String callBack) {
@@ -44,10 +41,10 @@ public class Context {
 
     private class Publisher extends Thread {
 
-        private RedisMessageHandler redisMessageHandler;
+        private Sender sender;
 
-        public Publisher(RedisMessageHandler redisMessageHandler) {
-            this.redisMessageHandler = redisMessageHandler;
+        public Publisher(Sender sender) {
+            this.sender = sender;
         }
 
         @Override
@@ -67,21 +64,21 @@ public class Context {
         }
 
         private void publish(String command) {
-            redisMessageHandler.sendCommand(command);
+            sender.send(command);
         }
     }
 
     private class Subscriber extends Thread {
 
-        private WebReceiveHandler webReceiveHandler;
+        private Receiver receiver;
 
-        public Subscriber(WebReceiveHandler webReceiveHandler) {
-            this.webReceiveHandler = webReceiveHandler;
+        public Subscriber(Receiver receiver) {
+            this.receiver = receiver;
         }
 
-        private void subscribe(String command) {
+        private void send(String command) {
             if (!SEND_TOPIC.offer(command)) {
-                subscribe(command);
+                send(command);
             }
         }
 
@@ -91,7 +88,7 @@ public class Context {
                 try {
                     String callBack = RECEIVE_TOPIC.take();
                     if (callBack != null) {
-                        webReceiveHandler.receive(callBack);
+                        receiver.receive(callBack);
                     }
                 } catch (InterruptedException e) {
                     throw new RuntimeException(e);
