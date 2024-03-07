@@ -22,11 +22,11 @@ public class SyncClient {
 
     public void start() {
         context = new Context();
-        syncReceiver = new SyncReceiver(context);
         RedisClient redisClient = new RedisClient(masterHost, masterPort);
         redisClient.start(context);
+        syncReceiver = new SyncReceiver(context, redisClient);
         context.register(syncReceiver);
-        context.send("replicaof " + masterHost + " " + masterPort);
+        syncReceiver.connectMaster();
     }
 
     public void destroy() {

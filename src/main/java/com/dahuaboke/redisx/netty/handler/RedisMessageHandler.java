@@ -1,6 +1,7 @@
 package com.dahuaboke.redisx.netty.handler;
 
 import com.dahuaboke.redisx.core.Context;
+import com.dahuaboke.redisx.core.Message;
 import com.dahuaboke.redisx.core.Sender;
 import io.netty.buffer.ByteBufUtil;
 import io.netty.channel.Channel;
@@ -35,7 +36,7 @@ public class RedisMessageHandler extends ChannelDuplexHandler implements Sender 
 
     @Override
     public void channelRead(ChannelHandlerContext ctx, Object msg) throws Exception {
-        List<String> result = new LinkedList();
+        List<Message> result = new LinkedList();
         parseAggregatedRedisResponse(msg, result);
         context.callBack(parseResult(result));
     }
@@ -51,21 +52,25 @@ public class RedisMessageHandler extends ChannelDuplexHandler implements Sender 
         ctx.write(request, promise);
     }
 
-    private void parseAggregatedRedisResponse(Object msg, List<String> result) {
+    private void parseAggregatedRedisResponse(Object msg, List<Message> result) {
         if (msg instanceof SimpleStringRedisMessage) {
-            result.add("(string)  " + ((SimpleStringRedisMessage) msg).content());
+            result.add(new Message(((SimpleStringRedisMessage) msg).content(),
+                    RedisMessageType.SIMPLE_STRING));
         } else if (msg instanceof IntegerRedisMessage) {
-            result.add("(integer) " + ((IntegerRedisMessage) msg).value());
+            result.add(new Message(String.valueOf(((IntegerRedisMessage) msg).value()),
+                    RedisMessageType.INTEGER));
         } else if (msg instanceof FullBulkStringRedisMessage) {
-            result.add("(string)  " + getString((FullBulkStringRedisMessage) msg));
+            result.add(new Message(getString((FullBulkStringRedisMessage) msg),
+                    RedisMessageType.SIMPLE_STRING));
         } else if (msg instanceof ArrayRedisMessage) {
             for (RedisMessage child : ((ArrayRedisMessage) msg).children()) {
                 parseAggregatedRedisResponse(child, result);
             }
         } else if (msg instanceof ErrorRedisMessage) {
-            result.add("(error)   " + ((ErrorRedisMessage) msg).content());
+            result.add(new Message(((ErrorRedisMessage) msg).content(),
+                    RedisMessageType.ERROR));
         } else {
-            result.add("(unknown) " + msg == null ? "null" : "");
+            result.add(new Message(msg == null ? "(null)" : "(error)", RedisMessageType.ERROR));
         }
     }
 
@@ -76,14 +81,12 @@ public class RedisMessageHandler extends ChannelDuplexHandler implements Sender 
         return msg.content().toString(CharsetUtil.UTF_8);
     }
 
-    private String parseResult(List<String> result) {
+    private String parseResult(List<Message> result) {
         StringBuilder stringBuilder = new StringBuilder();
         for (int a = 0; a < result.size(); a++) {
             if (a != 0) {
                 stringBuilder.append("\r\n");
             }
-            stringBuilder.append((a + 1) + ")");
-            stringBuilder.append(" ");
             stringBuilder.append(result.get(a));
         }
         return new String(stringBuilder);

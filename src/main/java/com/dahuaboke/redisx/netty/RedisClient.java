@@ -23,6 +23,7 @@ public class RedisClient {
     private String host;
     private int port;
     private EventLoopGroup group = new NioEventLoopGroup(1);
+    private Channel channel;
 
     public RedisClient(String host, int port) {
         this.host = host;
@@ -45,13 +46,19 @@ public class RedisClient {
                             pipeline.addLast(new RedisMessageHandler(context));
                         }
                     });
-            bootstrap.connect(host, port).sync();
+            Channel channel = bootstrap.connect(host, port).sync().channel();
+            this.channel = channel;
         } catch (InterruptedException e) {
             throw new RuntimeException(e);
         }
     }
 
+    public Channel getChannel() {
+        return channel;
+    }
+
     public void destroy() {
+        channel.close();
         group.shutdownGracefully();
     }
 }
