@@ -17,6 +17,6 @@ public class PingCommandDecoder extends SimpleChannelInboundHandler<PingCommand>
 
     @Override
     public void channelRead0(ChannelHandlerContext ctx, PingCommand msg) throws Exception {
-        System.out.println("receive ping");
+        logger.debug("Receive command ping");
     }
 }

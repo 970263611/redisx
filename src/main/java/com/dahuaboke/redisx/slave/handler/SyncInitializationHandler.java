@@ -1,6 +1,6 @@
 package com.dahuaboke.redisx.slave.handler;
 
-import com.dahuaboke.redisx.slave.SyncCommandConst;
+import com.dahuaboke.redisx.slave.SlaveConst;
 import io.netty.buffer.ByteBufUtil;
 import io.netty.channel.Channel;
 import io.netty.channel.ChannelHandlerContext;
@@ -35,11 +35,10 @@ public class SyncInitializationHandler extends ChannelInboundHandlerAdapter {
         Channel channel = ctx.channel();
         if (channel.isActive()) {
             Thread thread = new Thread(() -> {
-                State state = INIT;
-                channel.writeAndFlush(ByteBufUtil.writeUtf8(ctx.alloc(), "*1\r\n$4\r\nPING\r\n"));
+                State state = null;
                 String reply;
                 for (; ; ) {
-                    if ((reply = channel.attr(SyncCommandConst.SYNC_REPLY).get()) != null) {
+                    if ((reply = channel.attr(SlaveConst.SYNC_REPLY).get()) != null) {
                         if (state == INIT) {
                             state = SENT_PING;
                         }
@@ -47,37 +46,48 @@ public class SyncInitializationHandler extends ChannelInboundHandlerAdapter {
                             clearReply(ctx);
                             state = SENT_PORT;
                             channel.writeAndFlush(ByteBufUtil.writeUtf8(ctx.alloc(), "*3\r\n$8\r\nREPLCONF\r\n$14\r\nlistening-port\r\n$4\r\n8080\r\n"));
+                            logger.debug("Sent replconf listening-port command");
                         }
                         if ("OK".equalsIgnoreCase(reply) && state == SENT_PORT) {
                             clearReply(ctx);
                             state = SENT_ADDRESS;
                             channel.writeAndFlush(ByteBufUtil.writeUtf8(ctx.alloc(), "*3\r\n$8\r\nREPLCONF\r\n$10\r\nip-address\r\n$9\r\n127.0.0.1\r\n"));
+                            logger.debug("Sent replconf address command");
                         }
                         if ("OK".equalsIgnoreCase(reply) && state == SENT_ADDRESS) {
                             clearReply(ctx);
                             state = SENT_CAPA;
                             channel.writeAndFlush(ByteBufUtil.writeUtf8(ctx.alloc(), "*3\r\n$8\r\nREPLCONF\r\n$4\r\ncapa\r\n$3\r\neof\r\n"));
+                            logger.debug("Sent replconf capa eof command");
                         }
                         if ("OK".equalsIgnoreCase(reply) && state == SENT_CAPA) {
                             clearReply(ctx);
                             state = SENT_PSYNC;
                             channel.writeAndFlush(ByteBufUtil.writeUtf8(ctx.alloc(), "*3\r\n$5\r\nPSYNC\r\n$1\r\n?\r\n$2\r\n-1\r\n"));
+                            logger.debug("Sent psync ? -1 command");
                         }
                         if (state == SENT_PSYNC) {
                             ChannelPipeline pipeline = channel.pipeline();
                             pipeline.remove(this);
+                            logger.debug("Sent all sync command");
                             break;
+                        }
+                    } else {
+                        if (state == null) {
+                            state = INIT;
+                            channel.writeAndFlush(ByteBufUtil.writeUtf8(ctx.alloc(), "*1\r\n$4\r\nPING\r\n"));
+                            logger.debug("Sent ping command");
                         }
                     }
                 }
             });
-            thread.setName(SyncCommandConst.PROJECT_NAME + "-SYNC-INIT");
+            thread.setName(SlaveConst.PROJECT_NAME + "-SYNC-INIT");
             thread.setDaemon(true);
             thread.start();
         }
     }
 
     private void clearReply(ChannelHandlerContext ctx) {
-        ctx.channel().attr(SyncCommandConst.SYNC_REPLY).set(null);
+        ctx.channel().attr(SlaveConst.SYNC_REPLY).set(null);
     }
 }

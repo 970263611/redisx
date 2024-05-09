@@ -7,9 +7,9 @@ import io.netty.util.AttributeKey;
  * auth: dahua
  * desc:
  */
-public class SyncCommandConst {
+public class SlaveConst {
 
-    public static final String PROJECT_NAME = "REDISX";
+    public static final String PROJECT_NAME = "RedisX";
 
     public static final String PING = "+PING";
 
@@ -19,7 +19,11 @@ public class SyncCommandConst {
 
     public static final String PONG_COMMAND = "PONG";
 
+    public static final String CONTINUE = "+CONTINUE";
+
     public static final String FULLRESYNC = "+FULLRESYNC";
+
+    public static final AttributeKey<String> MASTER_ID = AttributeKey.valueOf("masterId");
 
     public static final AttributeKey<Long> OFFSET = AttributeKey.valueOf("offset");
 

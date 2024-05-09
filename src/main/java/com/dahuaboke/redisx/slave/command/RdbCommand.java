@@ -7,11 +7,11 @@ import io.netty.buffer.ByteBuf;
  * auth: dahua
  * desc:
  */
-public class RdbSyncCommand {
+public class RdbCommand {
 
     private ByteBuf in;
 
-    public RdbSyncCommand(ByteBuf in) {
+    public RdbCommand(ByteBuf in) {
         this.in = in;
     }
 

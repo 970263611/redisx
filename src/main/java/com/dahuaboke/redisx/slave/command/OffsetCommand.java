@@ -1,5 +1,7 @@
 package com.dahuaboke.redisx.slave.command;
 
+import com.dahuaboke.redisx.slave.SlaveConst;
+
 /**
  * 2024/5/8 9:33
  * auth: dahua
@@ -12,8 +14,12 @@ public class OffsetCommand extends SystemCommand {
 
     public OffsetCommand(String command) {
         String[] s = command.split(" ");
-        masterId = s[1];
-        offset = Long.parseLong(s[2]);
+        if (command.startsWith(SlaveConst.FULLRESYNC)) {
+            masterId = s[1];
+            offset = Long.parseLong(s[2]);
+        } else if (command.startsWith(SlaveConst.CONTINUE)) {
+            offset = Long.parseLong(s[1]);
+        }
     }
 
     public String getMasterId() {

@@ -7,16 +7,16 @@ package com.dahuaboke.redisx.slave.command;
  */
 public class SystemCommand {
 
-    protected String command;
+    protected Object command;
 
     public SystemCommand() {
     }
 
-    public SystemCommand(String command) {
+    public SystemCommand(Object command) {
         this.command = command;
     }
 
-    public String getCommand() {
+    public Object getCommand() {
         return command;
     }
 }

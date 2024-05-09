@@ -1,17 +1,13 @@
 package com.dahuaboke.redisx.slave.handler;
 
-import com.dahuaboke.redisx.slave.SyncCommandConst;
+import com.dahuaboke.redisx.slave.SlaveConst;
+import io.netty.buffer.ByteBuf;
+import io.netty.buffer.ByteBufUtil;
 import io.netty.channel.Channel;
 import io.netty.channel.ChannelDuplexHandler;
 import io.netty.channel.ChannelHandlerContext;
-import io.netty.util.concurrent.DefaultThreadFactory;
 import org.slf4j.Logger;
 import org.slf4j.LoggerFactory;
-
-import java.util.concurrent.ExecutorService;
-import java.util.concurrent.LinkedBlockingDeque;
-import java.util.concurrent.ThreadPoolExecutor;
-import java.util.concurrent.TimeUnit;
 
 /**
  * 2024/5/8 9:55
@@ -21,18 +17,26 @@ import java.util.concurrent.TimeUnit;
 public class AckOffsetHandler extends ChannelDuplexHandler {
 
     private static final Logger logger = LoggerFactory.getLogger(AckOffsetHandler.class);
-    private static final ExecutorService executor = new ThreadPoolExecutor(1, 1, 10L,
-            TimeUnit.SECONDS, new LinkedBlockingDeque(), new DefaultThreadFactory(SyncCommandConst.PROJECT_NAME));
+    private long offset;
 
     @Override
     public void handlerAdded(ChannelHandlerContext ctx) throws Exception {
-        logger.info("Ack offset task will start");
-        executor.execute(() -> {
+        logger.debug("Ack offset task beginning");
+        Thread heartBeatThread = new Thread(() -> {
             Channel channel = ctx.channel();
-            while (channel.isActive()) {
-                //TODO 心跳
-//                Long t = channel.attr(SyncCommandConst.OFFSET).get();
-                System.out.println("ackkkkkkkkkkkkkkkkkkkk");
+            while (true) {
+                if (channel.isActive()) {
+                    Long offsetSession = channel.attr(SlaveConst.OFFSET).get();
+                    if (offsetSession == null) {
+                        continue;
+                    } else if (offsetSession > -1L) {
+                        offset = offsetSession;
+                        channel.attr(SlaveConst.OFFSET).set(-1L);
+                    }
+                    channel.writeAndFlush(ByteBufUtil.writeUtf8(ctx.alloc(),
+                            "*3\r\n$8\r\nREPLCONF\r\n$3\r\nack\r\n$" + String.valueOf(offset).length() + "\r\n" + offset + "\r\n"));
+                    logger.debug("Ack offset {}", offset);
+                }
                 try {
                     Thread.sleep(1000);
                 } catch (InterruptedException e) {
@@ -40,14 +44,18 @@ public class AckOffsetHandler extends ChannelDuplexHandler {
                 }
             }
         });
+        heartBeatThread.setName(SlaveConst.PROJECT_NAME + "-HeartBeatThread");
+        heartBeatThread.setDaemon(true);
+        heartBeatThread.start();
     }
 
     @Override
-    public void handlerRemoved(ChannelHandlerContext ctx) throws Exception {
-        /**
-         * 强制关闭
-         */
-        logger.info("Ack offset task will shutdown");
-        executor.shutdownNow();
+    public void channelRead(ChannelHandlerContext ctx, Object msg) throws Exception {
+        if (msg instanceof ByteBuf) {
+            int i = ((ByteBuf) msg).readableBytes();
+            logger.debug("Receive command length {}, before offset {}", i, offset);
+            offset += i;
+        }
+        ctx.fireChannelRead(msg);
     }
 }
