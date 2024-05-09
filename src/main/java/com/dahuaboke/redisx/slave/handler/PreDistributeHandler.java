@@ -45,20 +45,21 @@ public class PreDistributeHandler extends ChannelInboundHandlerAdapter {
                     ByteBuf masterAndOffset = in.slice(0, in.readableBytes() - 2);
                     ctx.channel().attr(SlaveConst.RDB_STREAM_NEXT).set(true);
                     ctx.fireChannelRead(new OffsetCommand(masterAndOffset.toString(CharsetUtil.UTF_8)));
-                }
-                ByteBuf continueC = in.slice(0, 9);
-                if (SlaveConst.CONTINUE.equalsIgnoreCase(continueC.toString(CharsetUtil.UTF_8))) {
-                    if (in.readableBytes() > 11) {
-                        logger.debug("Find continue command and will reset offset");
-                        ByteBuf continueAndOffset = in.slice(0, in.readableBytes() - 2);
-                        ctx.fireChannelRead(new OffsetCommand(continueAndOffset.toString(CharsetUtil.UTF_8)));
-                    } else {
-                        logger.debug("Find continue command do nothing");
-                        in.release();
-                        return;
-                    }
                 } else {
-                    ctx.fireChannelRead(in);
+                    ByteBuf continueC = in.slice(0, 9);
+                    if (SlaveConst.CONTINUE.equalsIgnoreCase(continueC.toString(CharsetUtil.UTF_8))) {
+                        if (in.readableBytes() > 11) {
+                            logger.debug("Find continue command and will reset offset");
+                            ByteBuf continueAndOffset = in.slice(0, in.readableBytes() - 2);
+                            ctx.fireChannelRead(new OffsetCommand(continueAndOffset.toString(CharsetUtil.UTF_8)));
+                        } else {
+                            logger.debug("Find continue command do nothing");
+                            in.release();
+                            return;
+                        }
+                    } else {
+                        ctx.fireChannelRead(in);
+                    }
                 }
             }
         }

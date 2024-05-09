@@ -53,12 +53,14 @@ public class SyncInitializationHandler extends ChannelInboundHandlerAdapter {
                             state = SENT_ADDRESS;
                             channel.writeAndFlush(ByteBufUtil.writeUtf8(ctx.alloc(), "*3\r\n$8\r\nREPLCONF\r\n$10\r\nip-address\r\n$9\r\n127.0.0.1\r\n"));
                             logger.debug("Sent replconf address command");
+                            continue;
                         }
                         if ("OK".equalsIgnoreCase(reply) && state == SENT_ADDRESS) {
                             clearReply(ctx);
                             state = SENT_CAPA;
                             channel.writeAndFlush(ByteBufUtil.writeUtf8(ctx.alloc(), "*3\r\n$8\r\nREPLCONF\r\n$4\r\ncapa\r\n$3\r\neof\r\n"));
                             logger.debug("Sent replconf capa eof command");
+                            continue;
                         }
                         if ("OK".equalsIgnoreCase(reply) && state == SENT_CAPA) {
                             clearReply(ctx);
