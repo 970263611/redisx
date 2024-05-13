@@ -1,8 +1,8 @@
 package com.dahuaboke.redisx.slave.handler;
 
-import com.dahuaboke.redisx.slave.SlaveConst;
-import com.dahuaboke.redisx.slave.command.OffsetCommand;
-import com.dahuaboke.redisx.slave.command.RdbCommand;
+import com.dahuaboke.redisx.Constant;
+import com.dahuaboke.redisx.command.slave.OffsetCommand;
+import com.dahuaboke.redisx.command.slave.RdbCommand;
 import io.netty.buffer.ByteBuf;
 import io.netty.channel.ChannelHandlerContext;
 import io.netty.channel.ChannelInboundHandlerAdapter;
@@ -21,18 +21,18 @@ public class PreDistributeHandler extends ChannelInboundHandlerAdapter {
 
     @Override
     public void handlerAdded(ChannelHandlerContext ctx) throws Exception {
-        ctx.channel().attr(SlaveConst.RDB_STREAM_NEXT).set(false);
+        ctx.channel().attr(Constant.RDB_STREAM_NEXT).set(false);
     }
 
     @Override
     public void channelRead(ChannelHandlerContext ctx, Object msg) throws Exception {
         if (msg instanceof ByteBuf) {
             ByteBuf in = (ByteBuf) msg;
-            if (ctx.channel().attr(SlaveConst.RDB_STREAM_NEXT).get()) {
+            if (ctx.channel().attr(Constant.RDB_STREAM_NEXT).get()) {
                 if (in.isReadable()) {
                     if (in.getByte(0) == '$') {
                         logger.debug("Receive rdb byteStream length: {}", in.readableBytes());
-                        ctx.channel().attr(SlaveConst.RDB_STREAM_NEXT).set(false);
+                        ctx.channel().attr(Constant.RDB_STREAM_NEXT).set(false);
                         ctx.fireChannelRead(new RdbCommand(in));
                     }
                 } else {
@@ -40,14 +40,14 @@ public class PreDistributeHandler extends ChannelInboundHandlerAdapter {
                 }
             } else {
                 ByteBuf fullResyncC = in.slice(0, 11);
-                if (SlaveConst.FULLRESYNC.equalsIgnoreCase(fullResyncC.toString(CharsetUtil.UTF_8))) {
+                if (Constant.FULLRESYNC.equalsIgnoreCase(fullResyncC.toString(CharsetUtil.UTF_8))) {
                     logger.debug("Find fullReSync command");
                     ByteBuf masterAndOffset = in.slice(0, in.readableBytes() - 2);
-                    ctx.channel().attr(SlaveConst.RDB_STREAM_NEXT).set(true);
+                    ctx.channel().attr(Constant.RDB_STREAM_NEXT).set(true);
                     ctx.fireChannelRead(new OffsetCommand(masterAndOffset.toString(CharsetUtil.UTF_8)));
                 } else {
                     ByteBuf continueC = in.slice(0, 9);
-                    if (SlaveConst.CONTINUE.equalsIgnoreCase(continueC.toString(CharsetUtil.UTF_8))) {
+                    if (Constant.CONTINUE.equalsIgnoreCase(continueC.toString(CharsetUtil.UTF_8))) {
                         if (in.readableBytes() > 11) {
                             logger.debug("Find continue command and will reset offset");
                             ByteBuf continueAndOffset = in.slice(0, in.readableBytes() - 2);

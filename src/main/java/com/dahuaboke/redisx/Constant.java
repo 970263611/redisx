@@ -1,4 +1,4 @@
-package com.dahuaboke.redisx.slave;
+package com.dahuaboke.redisx;
 
 import io.netty.util.AttributeKey;
 
@@ -7,7 +7,7 @@ import io.netty.util.AttributeKey;
  * auth: dahua
  * desc:
  */
-public class SlaveConst {
+public class Constant {
 
     public static final String PROJECT_NAME = "RedisX";
 

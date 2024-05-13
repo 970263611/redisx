@@ -1,6 +1,7 @@
 package com.dahuaboke.redisx.slave.handler;
 
-import com.dahuaboke.redisx.slave.SlaveConst;
+import com.dahuaboke.redisx.Constant;
+import com.dahuaboke.redisx.slave.SlaveContext;
 import io.netty.buffer.ByteBufUtil;
 import io.netty.channel.Channel;
 import io.netty.channel.ChannelHandlerContext;
@@ -19,6 +20,11 @@ import static com.dahuaboke.redisx.slave.handler.SyncInitializationHandler.State
 public class SyncInitializationHandler extends ChannelInboundHandlerAdapter {
 
     private static final Logger logger = LoggerFactory.getLogger(SyncInitializationHandler.class);
+    private SlaveContext slaveContext;
+
+    public SyncInitializationHandler(SlaveContext slaveContext) {
+        this.slaveContext = slaveContext;
+    }
 
     enum State {
         INIT,
@@ -38,7 +44,7 @@ public class SyncInitializationHandler extends ChannelInboundHandlerAdapter {
                 State state = null;
                 String reply;
                 for (; ; ) {
-                    if ((reply = channel.attr(SlaveConst.SYNC_REPLY).get()) != null) {
+                    if ((reply = channel.attr(Constant.SYNC_REPLY).get()) != null) {
                         if (state == INIT) {
                             state = SENT_PING;
                         }
@@ -83,13 +89,13 @@ public class SyncInitializationHandler extends ChannelInboundHandlerAdapter {
                     }
                 }
             });
-            thread.setName(SlaveConst.PROJECT_NAME + "-SYNC-INIT");
+            thread.setName(Constant.PROJECT_NAME + "-SYNC-INIT-" + slaveContext.getMasterHost() + ":" + slaveContext.getMasterPort());
             thread.setDaemon(true);
             thread.start();
         }
     }
 
     private void clearReply(ChannelHandlerContext ctx) {
-        ctx.channel().attr(SlaveConst.SYNC_REPLY).set(null);
+        ctx.channel().attr(Constant.SYNC_REPLY).set(null);
     }
 }

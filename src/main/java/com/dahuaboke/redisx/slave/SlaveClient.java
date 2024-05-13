@@ -1,5 +1,6 @@
 package com.dahuaboke.redisx.slave;
 
+import com.dahuaboke.redisx.Constant;
 import com.dahuaboke.redisx.slave.handler.*;
 import io.netty.bootstrap.Bootstrap;
 import io.netty.channel.Channel;
@@ -23,21 +24,20 @@ public class SlaveClient {
 
     private static final Logger logger = LoggerFactory.getLogger(RdbByteStreamDecoder.class);
 
-    private String masterHost;
-    private int masterPort;
+    private SlaveContext slaveContext;
     private EventLoopGroup group = new NioEventLoopGroup(1);
 
-    public SlaveClient(String masterHost, int masterPort) {
-        this.masterHost = masterHost;
-        this.masterPort = masterPort;
+    public SlaveClient(SlaveContext slaveContext) {
+        this.slaveContext = slaveContext;
     }
 
     /**
      * 启动方法
      */
     public void start() {
+        String masterHost = slaveContext.getMasterHost();
+        int masterPort = slaveContext.getMasterPort();
         try {
-            SlaveContext slaveContext = new SlaveContext();
             Bootstrap bootstrap = new Bootstrap();
             bootstrap.group(group)
                     .channel(NioSocketChannel.class)
@@ -45,8 +45,8 @@ public class SlaveClient {
                         @Override
                         protected void initChannel(Channel channel) throws Exception {
                             ChannelPipeline pipeline = channel.pipeline();
-                            pipeline.addLast(SlaveConst.INIT_SYNC_HANDLER_NAME, new SyncInitializationHandler());
-                            pipeline.addLast(new AckOffsetHandler());
+                            pipeline.addLast(Constant.INIT_SYNC_HANDLER_NAME, new SyncInitializationHandler(slaveContext));
+                            pipeline.addLast(new AckOffsetHandler(slaveContext));
                             pipeline.addLast(new PreDistributeHandler());
                             pipeline.addLast(new OffsetCommandDecoder());
                             pipeline.addLast(new RdbByteStreamDecoder());
@@ -55,7 +55,7 @@ public class SlaveClient {
                             pipeline.addLast(new RedisArrayAggregator());
                             pipeline.addLast(new MessagePostProcessor());
                             pipeline.addLast(new PostDistributeHandler());
-                            pipeline.addLast(new SyncCommandHandler(slaveContext));
+                            pipeline.addLast(new SyncCommandPublisher(slaveContext));
                             pipeline.addLast(new PingCommandDecoder());
                         }
                     });

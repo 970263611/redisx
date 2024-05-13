@@ -1,16 +1,13 @@
-package com.dahuaboke.redisx.slave.command;
+package com.dahuaboke.redisx.command.slave;
 
-import org.slf4j.Logger;
-import org.slf4j.LoggerFactory;
+import com.dahuaboke.redisx.command.Command;
 
 /**
  * 2024/5/9 9:37
  * auth: dahua
  * desc:
  */
-public class SyncCommand {
-
-    private static final Logger logger = LoggerFactory.getLogger(SyncCommand.class);
+public class SyncCommand extends Command {
 
     private String command;
 

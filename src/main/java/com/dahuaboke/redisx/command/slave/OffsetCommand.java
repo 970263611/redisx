@@ -1,6 +1,6 @@
-package com.dahuaboke.redisx.slave.command;
+package com.dahuaboke.redisx.command.slave;
 
-import com.dahuaboke.redisx.slave.SlaveConst;
+import com.dahuaboke.redisx.Constant;
 
 /**
  * 2024/5/8 9:33
@@ -14,10 +14,10 @@ public class OffsetCommand extends SystemCommand {
 
     public OffsetCommand(String command) {
         String[] s = command.split(" ");
-        if (command.startsWith(SlaveConst.FULLRESYNC)) {
+        if (command.startsWith(Constant.FULLRESYNC)) {
             masterId = s[1];
             offset = Long.parseLong(s[2]);
-        } else if (command.startsWith(SlaveConst.CONTINUE)) {
+        } else if (command.startsWith(Constant.CONTINUE)) {
             offset = Long.parseLong(s[1]);
         }
     }

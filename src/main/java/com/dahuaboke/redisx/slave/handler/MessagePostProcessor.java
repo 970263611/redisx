@@ -1,8 +1,8 @@
 package com.dahuaboke.redisx.slave.handler;
 
-import com.dahuaboke.redisx.exception.DecodeException;
 import io.netty.channel.ChannelHandlerContext;
 import io.netty.channel.SimpleChannelInboundHandler;
+import io.netty.handler.codec.CodecException;
 import io.netty.handler.codec.redis.*;
 import io.netty.util.CharsetUtil;
 import org.slf4j.Logger;
@@ -24,7 +24,7 @@ public class MessagePostProcessor extends SimpleChannelInboundHandler<RedisMessa
             if (result != null) {
                 ctx.fireChannelRead(result);
             }
-        } catch (DecodeException e) {
+        } catch (CodecException e) {
             logger.error("Command cannot be parsed: {}", message, e);
         }
     }
@@ -52,7 +52,7 @@ public class MessagePostProcessor extends SimpleChannelInboundHandler<RedisMessa
             }
             return new String(sb).substring(0, sb.length() - 1);
         } else {
-            throw new DecodeException("unknown message type: " + msg);
+            throw new CodecException("Unknown message type: " + msg);
         }
     }
 }

@@ -1,6 +1,7 @@
 package com.dahuaboke.redisx.slave.handler;
 
-import com.dahuaboke.redisx.slave.SlaveConst;
+import com.dahuaboke.redisx.Constant;
+import com.dahuaboke.redisx.slave.SlaveContext;
 import io.netty.buffer.ByteBuf;
 import io.netty.buffer.ByteBufUtil;
 import io.netty.channel.Channel;
@@ -17,7 +18,12 @@ import org.slf4j.LoggerFactory;
 public class AckOffsetHandler extends ChannelDuplexHandler {
 
     private static final Logger logger = LoggerFactory.getLogger(AckOffsetHandler.class);
+    private SlaveContext slaveContext;
     private long offset;
+
+    public AckOffsetHandler(SlaveContext slaveContext) {
+        this.slaveContext = slaveContext;
+    }
 
     @Override
     public void handlerAdded(ChannelHandlerContext ctx) throws Exception {
@@ -26,12 +32,12 @@ public class AckOffsetHandler extends ChannelDuplexHandler {
             Channel channel = ctx.channel();
             while (true) {
                 if (channel.isActive()) {
-                    Long offsetSession = channel.attr(SlaveConst.OFFSET).get();
+                    Long offsetSession = channel.attr(Constant.OFFSET).get();
                     if (offsetSession == null) {
                         continue;
                     } else if (offsetSession > -1L) {
                         offset = offsetSession;
-                        channel.attr(SlaveConst.OFFSET).set(-1L);
+                        channel.attr(Constant.OFFSET).set(-1L);
                     }
                     channel.writeAndFlush(ByteBufUtil.writeUtf8(ctx.alloc(),
                             "*3\r\n$8\r\nREPLCONF\r\n$3\r\nack\r\n$" + String.valueOf(offset).length() + "\r\n" + offset + "\r\n"));
@@ -44,7 +50,7 @@ public class AckOffsetHandler extends ChannelDuplexHandler {
                 }
             }
         });
-        heartBeatThread.setName(SlaveConst.PROJECT_NAME + "-HeartBeatThread");
+        heartBeatThread.setName(Constant.PROJECT_NAME + "-AckThread-" + slaveContext.getMasterHost() + ":" + slaveContext.getMasterPort());
         heartBeatThread.setDaemon(true);
         heartBeatThread.start();
     }

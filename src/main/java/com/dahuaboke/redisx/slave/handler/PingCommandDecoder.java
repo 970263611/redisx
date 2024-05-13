@@ -1,6 +1,6 @@
 package com.dahuaboke.redisx.slave.handler;
 
-import com.dahuaboke.redisx.slave.command.PingCommand;
+import com.dahuaboke.redisx.command.slave.PingCommand;
 import io.netty.channel.ChannelHandlerContext;
 import io.netty.channel.SimpleChannelInboundHandler;
 import org.slf4j.Logger;

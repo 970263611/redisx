@@ -1,7 +1,7 @@
 package com.dahuaboke.redisx.slave.handler;
 
-import com.dahuaboke.redisx.slave.SlaveConst;
-import com.dahuaboke.redisx.slave.command.OffsetCommand;
+import com.dahuaboke.redisx.Constant;
+import com.dahuaboke.redisx.command.slave.OffsetCommand;
 import io.netty.channel.Channel;
 import io.netty.channel.ChannelHandlerContext;
 import io.netty.channel.SimpleChannelInboundHandler;
@@ -22,8 +22,8 @@ public class OffsetCommandDecoder extends SimpleChannelInboundHandler<OffsetComm
         Channel channel = ctx.channel();
         String masterId = msg.getMasterId();
         Long offset = msg.getOffset();
-        channel.attr(SlaveConst.MASTER_ID).set(masterId);
-        channel.attr(SlaveConst.OFFSET).set(offset);
+        channel.attr(Constant.MASTER_ID).set(masterId);
+        channel.attr(Constant.OFFSET).set(offset);
         logger.debug("Set masterId {} offset {}", masterId, offset);
     }
 }

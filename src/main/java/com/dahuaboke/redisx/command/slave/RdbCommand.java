@@ -1,5 +1,6 @@
-package com.dahuaboke.redisx.slave.command;
+package com.dahuaboke.redisx.command.slave;
 
+import com.dahuaboke.redisx.command.Command;
 import io.netty.buffer.ByteBuf;
 
 /**
@@ -7,7 +8,7 @@ import io.netty.buffer.ByteBuf;
  * auth: dahua
  * desc:
  */
-public class RdbCommand {
+public class RdbCommand extends Command {
 
     private ByteBuf in;
 

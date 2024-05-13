@@ -1,7 +1,7 @@
 package com.dahuaboke.redisx.slave.handler;
 
+import com.dahuaboke.redisx.command.slave.SyncCommand;
 import com.dahuaboke.redisx.slave.SlaveContext;
-import com.dahuaboke.redisx.slave.command.SyncCommand;
 import io.netty.channel.ChannelHandlerContext;
 import io.netty.channel.SimpleChannelInboundHandler;
 import org.slf4j.Logger;
@@ -12,18 +12,23 @@ import org.slf4j.LoggerFactory;
  * auth: dahua
  * desc:
  */
-public class SyncCommandHandler extends SimpleChannelInboundHandler<SyncCommand> {
+public class SyncCommandPublisher extends SimpleChannelInboundHandler<SyncCommand> {
 
-    private static final Logger logger = LoggerFactory.getLogger(SyncCommandHandler.class);
+    private static final Logger logger = LoggerFactory.getLogger(SyncCommandPublisher.class);
     private SlaveContext slaveContext;
 
-    public SyncCommandHandler(SlaveContext slaveContext) {
+    public SyncCommandPublisher(SlaveContext slaveContext) {
         this.slaveContext = slaveContext;
     }
 
     @Override
     protected void channelRead0(ChannelHandlerContext ctx, SyncCommand msg) throws Exception {
         String command = msg.getCommand();
-        logger.info("Receive need sync command {}", command);
+        boolean success = slaveContext.send(command);
+        if (success) {
+            logger.debug("Success sync command {}", command);
+        } else {
+            logger.error("Sync command {} failed", command);
+        }
     }
 }

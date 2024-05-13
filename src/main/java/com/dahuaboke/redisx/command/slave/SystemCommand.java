@@ -1,11 +1,13 @@
-package com.dahuaboke.redisx.slave.command;
+package com.dahuaboke.redisx.command.slave;
+
+import com.dahuaboke.redisx.command.Command;
 
 /**
  * 2024/5/8 9:32
  * auth: dahua
  * desc:
  */
-public class SystemCommand {
+public class SystemCommand extends Command {
 
     protected Object command;
 
