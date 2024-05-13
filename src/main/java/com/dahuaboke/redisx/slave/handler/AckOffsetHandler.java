@@ -3,7 +3,6 @@ package com.dahuaboke.redisx.slave.handler;
 import com.dahuaboke.redisx.Constant;
 import com.dahuaboke.redisx.slave.SlaveContext;
 import io.netty.buffer.ByteBuf;
-import io.netty.buffer.ByteBufUtil;
 import io.netty.channel.Channel;
 import io.netty.channel.ChannelDuplexHandler;
 import io.netty.channel.ChannelHandlerContext;
@@ -39,9 +38,8 @@ public class AckOffsetHandler extends ChannelDuplexHandler {
                         offset = offsetSession;
                         channel.attr(Constant.OFFSET).set(-1L);
                     }
-                    channel.writeAndFlush(ByteBufUtil.writeUtf8(ctx.alloc(),
-                            "*3\r\n$8\r\nREPLCONF\r\n$3\r\nack\r\n$" + String.valueOf(offset).length() + "\r\n" + offset + "\r\n"));
-                    logger.debug("Ack offset {}", offset);
+                    channel.writeAndFlush(Constant.ACK_COMMAND_PREFIX + offset);
+                    logger.debug("Ack offset [{}]", offset);
                 }
                 try {
                     Thread.sleep(1000);
@@ -59,7 +57,7 @@ public class AckOffsetHandler extends ChannelDuplexHandler {
     public void channelRead(ChannelHandlerContext ctx, Object msg) throws Exception {
         if (msg instanceof ByteBuf) {
             int i = ((ByteBuf) msg).readableBytes();
-            logger.debug("Receive command length {}, before offset {}", i, offset);
+            logger.debug("Receive command length [{}], before offset [{}]", i, offset);
             offset += i;
         }
         ctx.fireChannelRead(msg);

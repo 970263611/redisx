@@ -31,7 +31,7 @@ public class PreDistributeHandler extends ChannelInboundHandlerAdapter {
             if (ctx.channel().attr(Constant.RDB_STREAM_NEXT).get()) {
                 if (in.isReadable()) {
                     if (in.getByte(0) == '$') {
-                        logger.debug("Receive rdb byteStream length: {}", in.readableBytes());
+                        logger.debug("Receive rdb byteStream length [{}]", in.readableBytes());
                         ctx.channel().attr(Constant.RDB_STREAM_NEXT).set(false);
                         ctx.fireChannelRead(new RdbCommand(in));
                     }

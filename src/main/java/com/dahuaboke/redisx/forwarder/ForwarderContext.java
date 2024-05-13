@@ -9,18 +9,22 @@ import org.slf4j.LoggerFactory;
  * auth: dahua
  * desc:
  */
-public class ForwardContext {
+public class ForwarderContext {
 
-    private static final Logger logger = LoggerFactory.getLogger(ForwardContext.class);
+    private static final Logger logger = LoggerFactory.getLogger(ForwarderContext.class);
 
     private CommandCache commandCache;
     private String forwardHost;
     private int forwardPort;
+    private boolean forwarderIsCluster;
+    private int slotBegin;
+    private int slotEnd;
 
-    public ForwardContext(CommandCache commandCache, String forwardHost, int forwardPort) {
+    public ForwarderContext(CommandCache commandCache, String forwardHost, int forwardPort, boolean forwarderIsCluster) {
         this.commandCache = commandCache;
         this.forwardHost = forwardHost;
         this.forwardPort = forwardPort;
+        this.forwarderIsCluster = forwarderIsCluster;
     }
 
     public String getForwardHost() {
@@ -32,6 +36,10 @@ public class ForwardContext {
     }
 
     public String listen() {
-        return commandCache.listen();
+        return commandCache.listen(this);
+    }
+
+    public boolean isAdapt(int hash) {
+        return hash >= slotBegin && hash <= slotEnd;
     }
 }

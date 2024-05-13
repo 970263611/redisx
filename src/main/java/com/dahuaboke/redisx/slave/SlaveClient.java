@@ -1,6 +1,8 @@
 package com.dahuaboke.redisx.slave;
 
 import com.dahuaboke.redisx.Constant;
+import com.dahuaboke.redisx.handler.CommandEncoder;
+import com.dahuaboke.redisx.handler.DirtyDataHandler;
 import com.dahuaboke.redisx.slave.handler.*;
 import io.netty.bootstrap.Bootstrap;
 import io.netty.channel.Channel;
@@ -12,6 +14,7 @@ import io.netty.channel.socket.nio.NioSocketChannel;
 import io.netty.handler.codec.redis.RedisArrayAggregator;
 import io.netty.handler.codec.redis.RedisBulkStringAggregator;
 import io.netty.handler.codec.redis.RedisDecoder;
+import io.netty.handler.codec.redis.RedisEncoder;
 import org.slf4j.Logger;
 import org.slf4j.LoggerFactory;
 
@@ -45,24 +48,28 @@ public class SlaveClient {
                         @Override
                         protected void initChannel(Channel channel) throws Exception {
                             ChannelPipeline pipeline = channel.pipeline();
+                            pipeline.addLast(new RedisEncoder());
+                            pipeline.addLast(new CommandEncoder());
                             pipeline.addLast(Constant.INIT_SYNC_HANDLER_NAME, new SyncInitializationHandler(slaveContext));
                             pipeline.addLast(new AckOffsetHandler(slaveContext));
                             pipeline.addLast(new PreDistributeHandler());
                             pipeline.addLast(new OffsetCommandDecoder());
                             pipeline.addLast(new RdbByteStreamDecoder());
-                            pipeline.addLast(new RedisDecoder());
+                            pipeline.addLast(new RedisDecoder(true));
                             pipeline.addLast(new RedisBulkStringAggregator());
                             pipeline.addLast(new RedisArrayAggregator());
                             pipeline.addLast(new MessagePostProcessor());
                             pipeline.addLast(new PostDistributeHandler());
                             pipeline.addLast(new SyncCommandPublisher(slaveContext));
                             pipeline.addLast(new PingCommandDecoder());
+                            pipeline.addLast(new DirtyDataHandler());
                         }
                     });
-            logger.info("Slave will start at {} {}", masterHost, masterPort);
-            bootstrap.connect(masterHost, masterPort).sync();
+            Channel channel = bootstrap.connect(masterHost, masterPort).sync().channel();
+            slaveContext.setSlaveChannel(channel);
+            logger.info("Slave start at [{}:{}]", masterHost, masterPort);
         } catch (InterruptedException e) {
-            logger.error("Connect to {} {} exception", masterHost, masterPort, e);
+            logger.error("Connect to [{}:{}] exception", masterHost, masterPort, e);
             destroy();
         }
     }

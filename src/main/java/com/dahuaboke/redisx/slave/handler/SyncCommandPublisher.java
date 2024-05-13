@@ -24,11 +24,11 @@ public class SyncCommandPublisher extends SimpleChannelInboundHandler<SyncComman
     @Override
     protected void channelRead0(ChannelHandlerContext ctx, SyncCommand msg) throws Exception {
         String command = msg.getCommand();
-        boolean success = slaveContext.send(command);
+        boolean success = slaveContext.publish(command);
         if (success) {
-            logger.debug("Success sync command {}", command);
+            logger.debug("Success sync command [{}]", command);
         } else {
-            logger.error("Sync command {} failed", command);
+            logger.error("Sync command [{}] failed", command);
         }
     }
 }

@@ -2,7 +2,6 @@ package com.dahuaboke.redisx.slave.handler;
 
 import com.dahuaboke.redisx.Constant;
 import com.dahuaboke.redisx.slave.SlaveContext;
-import io.netty.buffer.ByteBufUtil;
 import io.netty.channel.Channel;
 import io.netty.channel.ChannelHandlerContext;
 import io.netty.channel.ChannelInboundHandlerAdapter;
@@ -20,6 +19,7 @@ import static com.dahuaboke.redisx.slave.handler.SyncInitializationHandler.State
 public class SyncInitializationHandler extends ChannelInboundHandlerAdapter {
 
     private static final Logger logger = LoggerFactory.getLogger(SyncInitializationHandler.class);
+
     private SlaveContext slaveContext;
 
     public SyncInitializationHandler(SlaveContext slaveContext) {
@@ -48,30 +48,30 @@ public class SyncInitializationHandler extends ChannelInboundHandlerAdapter {
                         if (state == INIT) {
                             state = SENT_PING;
                         }
-                        if ("PONG".equalsIgnoreCase(reply) && state == SENT_PING) {
+                        if (Constant.PONG_COMMAND.equalsIgnoreCase(reply) && state == SENT_PING) {
                             clearReply(ctx);
                             state = SENT_PORT;
-                            channel.writeAndFlush(ByteBufUtil.writeUtf8(ctx.alloc(), "*3\r\n$8\r\nREPLCONF\r\n$14\r\nlistening-port\r\n$4\r\n8080\r\n"));
+                            channel.writeAndFlush(Constant.CONFIG_PORT_COMMAND_PREFIX + slaveContext.getLocalPort());
                             logger.debug("Sent replconf listening-port command");
                         }
-                        if ("OK".equalsIgnoreCase(reply) && state == SENT_PORT) {
+                        if (Constant.OK_COMMAND.equalsIgnoreCase(reply) && state == SENT_PORT) {
                             clearReply(ctx);
                             state = SENT_ADDRESS;
-                            channel.writeAndFlush(ByteBufUtil.writeUtf8(ctx.alloc(), "*3\r\n$8\r\nREPLCONF\r\n$10\r\nip-address\r\n$9\r\n127.0.0.1\r\n"));
+                            channel.writeAndFlush(Constant.CONFIG_HOST_COMMAND_PREFIX + slaveContext.getLocalHost());
                             logger.debug("Sent replconf address command");
                             continue;
                         }
-                        if ("OK".equalsIgnoreCase(reply) && state == SENT_ADDRESS) {
+                        if (Constant.OK_COMMAND.equalsIgnoreCase(reply) && state == SENT_ADDRESS) {
                             clearReply(ctx);
                             state = SENT_CAPA;
-                            channel.writeAndFlush(ByteBufUtil.writeUtf8(ctx.alloc(), "*3\r\n$8\r\nREPLCONF\r\n$4\r\ncapa\r\n$3\r\neof\r\n"));
+                            channel.writeAndFlush(Constant.CONFIG_CAPA_COMMAND);
                             logger.debug("Sent replconf capa eof command");
                             continue;
                         }
-                        if ("OK".equalsIgnoreCase(reply) && state == SENT_CAPA) {
+                        if (Constant.OK_COMMAND.equalsIgnoreCase(reply) && state == SENT_CAPA) {
                             clearReply(ctx);
                             state = SENT_PSYNC;
-                            channel.writeAndFlush(ByteBufUtil.writeUtf8(ctx.alloc(), "*3\r\n$5\r\nPSYNC\r\n$1\r\n?\r\n$2\r\n-1\r\n"));
+                            channel.writeAndFlush(Constant.CONFIG_ALL_PSYNC_COMMAND);
                             logger.debug("Sent psync ? -1 command");
                         }
                         if (state == SENT_PSYNC) {
@@ -83,7 +83,7 @@ public class SyncInitializationHandler extends ChannelInboundHandlerAdapter {
                     } else {
                         if (state == null) {
                             state = INIT;
-                            channel.writeAndFlush(ByteBufUtil.writeUtf8(ctx.alloc(), "*1\r\n$4\r\nPING\r\n"));
+                            channel.writeAndFlush(Constant.PING_COMMAND);
                             logger.debug("Sent ping command");
                         }
                     }

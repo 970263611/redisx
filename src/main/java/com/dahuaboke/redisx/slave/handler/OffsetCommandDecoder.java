@@ -24,6 +24,6 @@ public class OffsetCommandDecoder extends SimpleChannelInboundHandler<OffsetComm
         Long offset = msg.getOffset();
         channel.attr(Constant.MASTER_ID).set(masterId);
         channel.attr(Constant.OFFSET).set(offset);
-        logger.debug("Set masterId {} offset {}", masterId, offset);
+        logger.debug("Set masterId [{}] offset [{}]", masterId, offset);
     }
 }

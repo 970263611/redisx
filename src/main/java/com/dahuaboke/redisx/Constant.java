@@ -9,15 +9,13 @@ import io.netty.util.AttributeKey;
  */
 public class Constant {
 
-    public static final String PROJECT_NAME = "RedisX";
-
-    public static final String PING = "+PING";
+    public static final String PROJECT_NAME = "Redis-x";
 
     public static final String PING_COMMAND = "PING";
 
-    public static final String PONG = "+PONG";
-
     public static final String PONG_COMMAND = "PONG";
+
+    public static final String OK_COMMAND = "OK";
 
     public static final String CONTINUE = "+CONTINUE";
 
@@ -32,5 +30,15 @@ public class Constant {
     public static final AttributeKey<Boolean> RDB_STREAM_NEXT = AttributeKey.valueOf("rdbStreamNext");
 
     public static final String INIT_SYNC_HANDLER_NAME = "INIT_SYNC_HANDLER";
+
+    public static final String ACK_COMMAND_PREFIX = "REPLCONF ack ";
+
+    public static final String CONFIG_PORT_COMMAND_PREFIX = "REPLCONF listening-port ";
+
+    public static final String CONFIG_HOST_COMMAND_PREFIX = "REPLCONF ip-address ";
+
+    public static final String CONFIG_CAPA_COMMAND = "REPLCONF capa eof";
+
+    public static final String CONFIG_ALL_PSYNC_COMMAND = "PSYNC ? -1";
 
 }

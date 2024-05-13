@@ -1,8 +1,11 @@
 package com.dahuaboke.redisx.slave;
 
 import com.dahuaboke.redisx.cache.CommandCache;
+import io.netty.channel.Channel;
 import org.slf4j.Logger;
 import org.slf4j.LoggerFactory;
+
+import java.net.InetSocketAddress;
 
 /**
  * 2024/5/6 16:18
@@ -16,6 +19,9 @@ public class SlaveContext {
     private CommandCache commandCache;
     private String masterHost;
     private int masterPort;
+    private Channel slaveChannel;
+    private String localHost;
+    private int localPort;
 
     public SlaveContext(CommandCache commandCache, String masterHost, int masterPort) {
         this.commandCache = commandCache;
@@ -31,7 +37,22 @@ public class SlaveContext {
         return masterPort;
     }
 
-    public boolean send(String command) {
-        return commandCache.send(command);
+    public boolean publish(String command) {
+        return commandCache.publish(command);
+    }
+
+    public void setSlaveChannel(Channel slaveChannel) {
+        this.slaveChannel = slaveChannel;
+        InetSocketAddress inetSocketAddress = (InetSocketAddress) this.slaveChannel.localAddress();
+        this.localHost = inetSocketAddress.getHostName();
+        this.localPort = inetSocketAddress.getPort();
+    }
+
+    public String getLocalHost() {
+        return localHost;
+    }
+
+    public int getLocalPort() {
+        return localPort;
     }
 }

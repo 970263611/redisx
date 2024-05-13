@@ -1,6 +1,8 @@
 package com.dahuaboke.redisx.forwarder;
 
 import com.dahuaboke.redisx.forwarder.handler.SyncCommandListener;
+import com.dahuaboke.redisx.handler.CommandEncoder;
+import com.dahuaboke.redisx.handler.DirtyDataHandler;
 import io.netty.bootstrap.Bootstrap;
 import io.netty.channel.Channel;
 import io.netty.channel.ChannelInitializer;
@@ -8,7 +10,10 @@ import io.netty.channel.ChannelPipeline;
 import io.netty.channel.EventLoopGroup;
 import io.netty.channel.nio.NioEventLoopGroup;
 import io.netty.channel.socket.nio.NioSocketChannel;
+import io.netty.handler.codec.redis.RedisArrayAggregator;
+import io.netty.handler.codec.redis.RedisBulkStringAggregator;
 import io.netty.handler.codec.redis.RedisDecoder;
+import io.netty.handler.codec.redis.RedisEncoder;
 import org.slf4j.Logger;
 import org.slf4j.LoggerFactory;
 
@@ -17,23 +22,23 @@ import org.slf4j.LoggerFactory;
  * auth: dahua
  * desc:
  */
-public class ForwardClient {
+public class ForwarderClient {
 
-    private static final Logger logger = LoggerFactory.getLogger(ForwardClient.class);
+    private static final Logger logger = LoggerFactory.getLogger(ForwarderClient.class);
 
-    private ForwardContext forwardContext;
+    private ForwarderContext forwarderContext;
     private EventLoopGroup group = new NioEventLoopGroup(1);
 
-    public ForwardClient(ForwardContext forwardContext) {
-        this.forwardContext = forwardContext;
+    public ForwarderClient(ForwarderContext forwarderContext) {
+        this.forwarderContext = forwarderContext;
     }
 
     /**
      * 启动方法
      */
     public void start() {
-        String forwardHost = forwardContext.getForwardHost();
-        int forwardPort = forwardContext.getForwardPort();
+        String forwardHost = forwarderContext.getForwardHost();
+        int forwardPort = forwarderContext.getForwardPort();
         try {
             Bootstrap bootstrap = new Bootstrap();
             bootstrap.group(group)
@@ -42,14 +47,19 @@ public class ForwardClient {
                         @Override
                         protected void initChannel(Channel channel) throws Exception {
                             ChannelPipeline pipeline = channel.pipeline();
-                            pipeline.addLast(new RedisDecoder());
-                            pipeline.addLast(new SyncCommandListener(forwardContext));
+                            pipeline.addLast(new RedisEncoder());
+                            pipeline.addLast(new CommandEncoder());
+                            pipeline.addLast(new RedisDecoder(true));
+                            pipeline.addLast(new RedisBulkStringAggregator());
+                            pipeline.addLast(new RedisArrayAggregator());
+                            pipeline.addLast(new SyncCommandListener(forwarderContext));
+                            pipeline.addLast(new DirtyDataHandler());
                         }
                     });
-            logger.info("Connect redis master {} {}", forwardHost, forwardPort);
             bootstrap.connect(forwardHost, forwardPort).sync();
+            logger.info("Connect redis master [{}:{}]", forwardHost, forwardPort);
         } catch (InterruptedException e) {
-            logger.error("Connect to {} {} exception", forwardHost, forwardPort, e);
+            logger.error("Connect to {{}:{}] exception", forwardHost, forwardPort, e);
             destroy();
         }
     }
