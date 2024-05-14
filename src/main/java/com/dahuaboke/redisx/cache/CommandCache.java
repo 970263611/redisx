@@ -1,11 +1,9 @@
 package com.dahuaboke.redisx.cache;
 
-import com.dahuaboke.redisx.CRC16;
-import com.dahuaboke.redisx.forwarder.ForwarderContext;
+import com.dahuaboke.redisx.Context;
 import org.slf4j.Logger;
 import org.slf4j.LoggerFactory;
 
-import java.nio.charset.StandardCharsets;
 import java.util.HashMap;
 import java.util.Map;
 import java.util.concurrent.BlockingQueue;
@@ -20,54 +18,58 @@ public final class CommandCache {
 
     private static final Logger logger = LoggerFactory.getLogger(CommandCache.class);
 
-    private Map<ForwarderContext, BlockingQueue<String>> forwarderCache = new HashMap();
+    private Map<Context, BlockingQueue<String>> cache = new HashMap();
     private boolean forwarderIsCluster;
 
     public CommandCache(boolean forwarderIsCluster) {
         this.forwarderIsCluster = forwarderIsCluster;
     }
 
-    public void registerForwarder(ForwarderContext forwarderContext) {
-        BlockingQueue<String> cache = new LinkedBlockingQueue();
-        forwarderCache.put(forwarderContext, cache);
+    public void register(Context context) {
+        BlockingQueue<String> queue = new LinkedBlockingQueue();
+        cache.put(context, queue);
     }
 
+    /**
+     * 非web模式走这个方法，因为只有web才能context发布方和监听发布方是一致的
+     *
+     * @param command
+     * @return
+     */
     public boolean publish(String command) {
-        for (Map.Entry<ForwarderContext, BlockingQueue<String>> entry : forwarderCache.entrySet()) {
-            ForwarderContext k = entry.getKey();
+        for (Map.Entry<Context, BlockingQueue<String>> entry : cache.entrySet()) {
+            Context k = entry.getKey();
             BlockingQueue<String> v = entry.getValue();
-            if (forwarderIsCluster) {
-                int hash = calculateHash(command);
-                if (k.isAdapt(hash)) {
-                    return v.offer(command);
-                }
-            } else {
-                //非cluster，cache里面只有一组就是请求的这个node
+            if (k.isAdapt(forwarderIsCluster, command)) {
                 return v.offer(command);
             }
         }
         return false;
     }
 
-    public String listen(ForwarderContext forwarderContext) {
+    /**
+     * web模式发布方式
+     *
+     * @param context
+     * @param command
+     * @return
+     */
+    public boolean publish(Context context, String command) {
+        BlockingQueue<String> queue = cache.get(context);
+        if (queue != null) {
+            return queue.offer(command);
+        }
+        return false;
+    }
+
+    public String listen(Context context) {
         try {
-            if (forwarderCache.containsKey(forwarderContext)) {
-                //非cluster，cache里面只有一组就是请求的这个node
-                return forwarderCache.get(forwarderContext).take();
+            if (cache.containsKey(context)) {
+                return cache.get(context).take();
             }
         } catch (InterruptedException e) {
             logger.error("Listener command thread interrupted");
         }
         return null;
-    }
-
-    private int calculateHash(String command) {
-        String[] ary = command.split(" ");
-        if (ary.length > 1) {
-            return CRC16.crc16(ary[1].getBytes(StandardCharsets.UTF_8));
-        } else {
-            logger.warn("Command split length should > 1");
-            return 0;
-        }
     }
 }

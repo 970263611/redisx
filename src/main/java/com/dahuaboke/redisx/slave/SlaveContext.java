@@ -1,5 +1,6 @@
 package com.dahuaboke.redisx.slave;
 
+import com.dahuaboke.redisx.Context;
 import com.dahuaboke.redisx.cache.CommandCache;
 import io.netty.channel.Channel;
 import org.slf4j.Logger;
@@ -12,7 +13,7 @@ import java.net.InetSocketAddress;
  * auth: dahua
  * desc: 从节点上下文
  */
-public class SlaveContext {
+public class SlaveContext extends Context {
 
     private static final Logger logger = LoggerFactory.getLogger(SlaveContext.class);
 

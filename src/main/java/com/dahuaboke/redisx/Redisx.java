@@ -14,7 +14,8 @@ public class Redisx {
         List<InetSocketAddress> slaves = new ArrayList() {{
             add(new InetSocketAddress("127.0.0.1", 6379));
         }};
+        InetSocketAddress webAddress = new InetSocketAddress("127.0.0.1", 9090);
         Context context = new Context();
-        context.start(forwards, slaves);
+        context.start(forwards, slaves, webAddress);
     }
 }
