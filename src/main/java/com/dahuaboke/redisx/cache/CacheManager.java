@@ -64,7 +64,7 @@ public final class CacheManager {
         return null;
     }
 
-    public static class CommandReference<T> {
+    public static class CommandReference {
         private String content;
         private CountDownLatch countDownLatch;
         private String result;
