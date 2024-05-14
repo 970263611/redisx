@@ -5,13 +5,16 @@ import com.dahuaboke.redisx.forwarder.ForwarderClient;
 import com.dahuaboke.redisx.forwarder.ForwarderContext;
 import com.dahuaboke.redisx.slave.SlaveClient;
 import com.dahuaboke.redisx.slave.SlaveContext;
+import com.dahuaboke.redisx.thread.RedisxThreadFactory;
 import com.dahuaboke.redisx.web.WebContext;
 import com.dahuaboke.redisx.web.WebServer;
+import io.netty.util.concurrent.ThreadPerTaskExecutor;
 import org.slf4j.Logger;
 import org.slf4j.LoggerFactory;
 
 import java.net.InetSocketAddress;
 import java.util.List;
+import java.util.concurrent.Executor;
 
 /**
  * 2024/5/13 11:09
@@ -53,6 +56,11 @@ public class Context {
         return false;
     }
 
+    public Executor getExecutor(String name) {
+        RedisxThreadFactory defaultThreadFactory = new RedisxThreadFactory(Constant.PROJECT_NAME + "-" + name);
+        return new ThreadPerTaskExecutor(defaultThreadFactory);
+    }
+
     private class ForwarderNode extends Thread {
         private CacheManager cacheManager;
         private String forwardHost;
@@ -71,7 +79,7 @@ public class Context {
         public void run() {
             ForwarderContext forwarderContext = new ForwarderContext(cacheManager, forwardHost, forwardPort, forwarderIsCluster);
             cacheManager.register(forwarderContext);
-            ForwarderClient forwarderClient = new ForwarderClient(forwarderContext);
+            ForwarderClient forwarderClient = new ForwarderClient(forwarderContext, getExecutor("ForwarderEventLoop-" + forwardHost + ":" + forwardPort));
             forwarderClient.start();
         }
     }
@@ -92,7 +100,7 @@ public class Context {
         @Override
         public void run() {
             SlaveContext slaveContext = new SlaveContext(cacheManager, masterHost, masterPort);
-            SlaveClient slaveClient = new SlaveClient(slaveContext);
+            SlaveClient slaveClient = new SlaveClient(slaveContext, getExecutor("SlaveEventLoop-" + masterHost + ":" + masterPort));
             slaveClient.start();
         }
     }
@@ -104,12 +112,11 @@ public class Context {
         private int timeout;
 
         public WebNode(CacheManager cacheManager, int port, int timeout) {
-            this.cacheManager = cacheManager;
-            this.port = port;
-            this.timeout = timeout;
+            this(cacheManager, null, port, timeout);
         }
 
         public WebNode(CacheManager cacheManager, String host, int port, int timeout) {
+            this.setName(Constant.PROJECT_NAME + "-WebNode-" + host + "-" + port);
             this.cacheManager = cacheManager;
             this.host = host;
             this.port = port;
@@ -120,7 +127,8 @@ public class Context {
         public void run() {
             WebContext webContext = new WebContext(cacheManager, host, port, timeout);
             cacheManager.register(webContext);
-            WebServer webServer = new WebServer(webContext);
+            WebServer webServer = new WebServer(webContext, getExecutor("WebBossEventLoop-" + host + ":" + port),
+                    getExecutor("WebWorkerEventLoop-" + host + ":" + port));
             webServer.start();
         }
     }

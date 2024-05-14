@@ -17,6 +17,8 @@ import io.netty.handler.codec.redis.RedisEncoder;
 import org.slf4j.Logger;
 import org.slf4j.LoggerFactory;
 
+import java.util.concurrent.Executor;
+
 /**
  * 2024/5/13 10:32
  * auth: dahua
@@ -27,10 +29,11 @@ public class ForwarderClient {
     private static final Logger logger = LoggerFactory.getLogger(ForwarderClient.class);
 
     private ForwarderContext forwarderContext;
-    private EventLoopGroup group = new NioEventLoopGroup(1);
+    private EventLoopGroup group;
 
-    public ForwarderClient(ForwarderContext forwarderContext) {
+    public ForwarderClient(ForwarderContext forwarderContext, Executor executor) {
         this.forwarderContext = forwarderContext;
+        group = new NioEventLoopGroup(1, executor);
     }
 
     /**

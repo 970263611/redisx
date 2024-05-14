@@ -14,6 +14,8 @@ import io.netty.handler.codec.http.HttpServerCodec;
 import org.slf4j.Logger;
 import org.slf4j.LoggerFactory;
 
+import java.util.concurrent.Executor;
+
 /**
  * 2024/5/13 10:32
  * auth: dahua
@@ -24,11 +26,13 @@ public class WebServer {
     private static final Logger logger = LoggerFactory.getLogger(WebServer.class);
 
     private WebContext webContext;
-    private EventLoopGroup bossGroup = new NioEventLoopGroup(1);
-    private EventLoopGroup workerGroup = new NioEventLoopGroup(1);
+    private EventLoopGroup bossGroup;
+    private EventLoopGroup workerGroup;
 
-    public WebServer(WebContext webContext) {
+    public WebServer(WebContext webContext, Executor bossExecutor, Executor workerExecutor) {
         this.webContext = webContext;
+        bossGroup = new NioEventLoopGroup(1, bossExecutor);
+        workerGroup = new NioEventLoopGroup(1, workerExecutor);
     }
 
     /**

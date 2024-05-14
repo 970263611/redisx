@@ -18,6 +18,8 @@ import io.netty.handler.codec.redis.RedisEncoder;
 import org.slf4j.Logger;
 import org.slf4j.LoggerFactory;
 
+import java.util.concurrent.Executor;
+
 /**
  * 2024/5/6 11:02
  * auth: dahua
@@ -28,10 +30,11 @@ public class SlaveClient {
     private static final Logger logger = LoggerFactory.getLogger(RdbByteStreamDecoder.class);
 
     private SlaveContext slaveContext;
-    private EventLoopGroup group = new NioEventLoopGroup(1);
+    private EventLoopGroup group;
 
-    public SlaveClient(SlaveContext slaveContext) {
+    public SlaveClient(SlaveContext slaveContext, Executor executor) {
         this.slaveContext = slaveContext;
+        group = new NioEventLoopGroup(1, executor);
     }
 
     /**

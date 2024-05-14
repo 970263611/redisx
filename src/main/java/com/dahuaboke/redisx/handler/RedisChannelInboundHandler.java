@@ -28,10 +28,9 @@ public abstract class RedisChannelInboundHandler extends SimpleChannelInboundHan
         if (msg instanceof SimpleStringRedisMessage) {
             return ((SimpleStringRedisMessage) msg).content();
         } else if (msg instanceof ErrorRedisMessage) {
-            logger.debug("Receive error message [{}]", ((ErrorRedisMessage) msg).content());
+            logger.warn("Receive error message [{}]", ((ErrorRedisMessage) msg).content());
             return ((ErrorRedisMessage) msg).content();
         } else if (msg instanceof IntegerRedisMessage) {
-            logger.debug("Receive integer message [{}]", ((IntegerRedisMessage) msg).value());
             return String.valueOf(((IntegerRedisMessage) msg).value());
         } else if (msg instanceof FullBulkStringRedisMessage) {
             FullBulkStringRedisMessage fullMsg = (FullBulkStringRedisMessage) msg;
