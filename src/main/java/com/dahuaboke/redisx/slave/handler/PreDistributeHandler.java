@@ -6,12 +6,9 @@ import com.dahuaboke.redisx.command.slave.RdbCommand;
 import io.netty.buffer.ByteBuf;
 import io.netty.channel.ChannelHandlerContext;
 import io.netty.channel.ChannelInboundHandlerAdapter;
-import io.netty.handler.codec.DecoderException;
 import io.netty.util.CharsetUtil;
 import org.slf4j.Logger;
 import org.slf4j.LoggerFactory;
-
-import java.nio.charset.Charset;
 
 /**
  * 2024/5/8 12:52
@@ -35,7 +32,6 @@ public class PreDistributeHandler extends ChannelInboundHandlerAdapter {
                 if (in.isReadable()) {
                     if (in.getByte(0) == '$') {
                         logger.debug("Receive rdb byteStream length [{}]", in.readableBytes());
-                        ctx.channel().attr(Constant.RDB_STREAM_NEXT).set(false);
                         ctx.fireChannelRead(new RdbCommand(in));
                     }
                 } else {
@@ -61,12 +57,7 @@ public class PreDistributeHandler extends ChannelInboundHandlerAdapter {
                             return;
                         }
                     } else {
-                        try {
-                            ctx.fireChannelRead(in);
-                        } catch (Exception e) {
-                            logger.error("Error byteBuf data {}", in.toString(Charset.defaultCharset()));
-                            throw new DecoderException();
-                        }
+                        ctx.fireChannelRead(in);
                     }
                 }
             }
