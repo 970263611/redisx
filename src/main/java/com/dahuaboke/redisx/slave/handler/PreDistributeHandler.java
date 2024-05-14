@@ -6,9 +6,12 @@ import com.dahuaboke.redisx.command.slave.RdbCommand;
 import io.netty.buffer.ByteBuf;
 import io.netty.channel.ChannelHandlerContext;
 import io.netty.channel.ChannelInboundHandlerAdapter;
+import io.netty.handler.codec.DecoderException;
 import io.netty.util.CharsetUtil;
 import org.slf4j.Logger;
 import org.slf4j.LoggerFactory;
+
+import java.nio.charset.Charset;
 
 /**
  * 2024/5/8 12:52
@@ -58,7 +61,12 @@ public class PreDistributeHandler extends ChannelInboundHandlerAdapter {
                             return;
                         }
                     } else {
-                        ctx.fireChannelRead(in);
+                        try {
+                            ctx.fireChannelRead(in);
+                        } catch (Exception e) {
+                            logger.error("Error byteBuf data {}", in.toString(Charset.defaultCharset()));
+                            throw new DecoderException();
+                        }
                     }
                 }
             }

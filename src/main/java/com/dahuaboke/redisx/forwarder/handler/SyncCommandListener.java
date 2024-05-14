@@ -28,7 +28,7 @@ public class SyncCommandListener extends RedisChannelInboundHandler {
                 String command = forwarderContext.listen();
                 if (command != null) {
                     ctx.writeAndFlush(command);
-                    logger.debug("Write sync command success [{}]", command);
+                    logger.debug("Write command success [{}]", command);
                 }
             }
         });
@@ -40,5 +40,6 @@ public class SyncCommandListener extends RedisChannelInboundHandler {
     @Override
     public void channelRead1(ChannelHandlerContext ctx, String reply) throws Exception {
         logger.debug("Receive redis reply [{}]", reply);
+        forwarderContext.callBack(reply);
     }
 }

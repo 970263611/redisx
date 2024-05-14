@@ -1,11 +1,13 @@
 package com.dahuaboke.redisx.forwarder;
 
 import com.dahuaboke.redisx.Context;
-import com.dahuaboke.redisx.cache.CommandCache;
+import com.dahuaboke.redisx.cache.CacheManager;
 import org.slf4j.Logger;
 import org.slf4j.LoggerFactory;
 
 import java.nio.charset.StandardCharsets;
+import java.util.LinkedList;
+import java.util.List;
 
 /**
  * 2024/5/13 10:38
@@ -16,18 +18,20 @@ public class ForwarderContext extends Context {
 
     private static final Logger logger = LoggerFactory.getLogger(ForwarderContext.class);
 
-    private CommandCache commandCache;
+    private CacheManager cacheManager;
     private String forwardHost;
     private int forwardPort;
     private boolean forwarderIsCluster;
     private int slotBegin;
     private int slotEnd;
+    private List<CacheManager.CommandReference> callBackList;
 
-    public ForwarderContext(CommandCache commandCache, String forwardHost, int forwardPort, boolean forwarderIsCluster) {
-        this.commandCache = commandCache;
+    public ForwarderContext(CacheManager cacheManager, String forwardHost, int forwardPort, boolean forwarderIsCluster) {
+        this.cacheManager = cacheManager;
         this.forwardHost = forwardHost;
         this.forwardPort = forwardPort;
         this.forwarderIsCluster = forwarderIsCluster;
+        this.callBackList = new LinkedList();
     }
 
     public String getForwardHost() {
@@ -39,7 +43,21 @@ public class ForwarderContext extends Context {
     }
 
     public String listen() {
-        return commandCache.listen(this);
+        CacheManager.CommandReference listen = cacheManager.listen(this);
+        if (listen.getCountDownLatch() == null) {
+            callBackList.add(null);
+        } else {
+            callBackList.add(listen);
+        }
+        return listen.getContent();
+    }
+
+    public void callBack(String reply) {
+        CacheManager.CommandReference commandReference = callBackList.remove(0);
+        if (commandReference != null) {
+            commandReference.setResult(reply);
+            commandReference.getCountDownLatch().countDown();
+        }
     }
 
     @Override
@@ -50,11 +68,8 @@ public class ForwarderContext extends Context {
             return hash >= slotBegin && hash <= slotEnd;
         } else {
             //哨兵模式或者单节点则只存在一个为ForwarderContext类型的context
-            if (obj instanceof ForwarderContext) {
-                return true;
-            }
+            return true;
         }
-        return false;
     }
 
     private int calculateHash(String command) {

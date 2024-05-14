@@ -15,7 +15,8 @@ public class Redisx {
             add(new InetSocketAddress("127.0.0.1", 6379));
         }};
         InetSocketAddress webAddress = new InetSocketAddress("127.0.0.1", 9090);
+        int webTimeout = 300000;
         Context context = new Context();
-        context.start(forwards, slaves, webAddress);
+        context.start(forwards, slaves, webAddress, webTimeout);
     }
 }

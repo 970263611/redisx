@@ -41,4 +41,6 @@ public class Constant {
 
     public static final String CONFIG_ALL_PSYNC_COMMAND = "PSYNC ? -1";
 
+    public static final String WEB_URI_PREFIX = "/command";
+
 }

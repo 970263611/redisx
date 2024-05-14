@@ -1,6 +1,6 @@
 package com.dahuaboke.redisx;
 
-import com.dahuaboke.redisx.cache.CommandCache;
+import com.dahuaboke.redisx.cache.CacheManager;
 import com.dahuaboke.redisx.forwarder.ForwarderClient;
 import com.dahuaboke.redisx.forwarder.ForwarderContext;
 import com.dahuaboke.redisx.slave.SlaveClient;
@@ -21,7 +21,7 @@ import java.util.List;
 public class Context {
 
     private static final Logger logger = LoggerFactory.getLogger(Context.class);
-    private CommandCache commandCache;
+    private CacheManager cacheManager;
     private boolean forwarderIsCluster;
 
     public Context() {
@@ -29,24 +29,24 @@ public class Context {
     }
 
     public Context(boolean forwarderIsCluster) {
-        commandCache = new CommandCache(forwarderIsCluster);
+        cacheManager = new CacheManager(forwarderIsCluster);
         this.forwarderIsCluster = forwarderIsCluster;
     }
 
-    public void start(List<InetSocketAddress> forwardNodeAddresses, List<InetSocketAddress> slaveNodeAddresses, InetSocketAddress webAddress) {
+    public void start(List<InetSocketAddress> forwardNodeAddresses, List<InetSocketAddress> slaveNodeAddresses, InetSocketAddress webAddress, int webTimeout) {
         forwardNodeAddresses.forEach(address -> {
             String host = address.getHostName();
             int port = address.getPort();
-            new ForwarderNode(commandCache, host, port, forwarderIsCluster).start();
+            new ForwarderNode(cacheManager, host, port, forwarderIsCluster).start();
         });
         slaveNodeAddresses.forEach(address -> {
             String host = address.getHostName();
             int port = address.getPort();
-            new SlaveNode(commandCache, host, port).start();
+            new SlaveNode(cacheManager, host, port).start();
         });
         String webHost = webAddress.getHostName();
         int webPort = webAddress.getPort();
-        new WebNode(commandCache, webHost, webPort).start();
+        new WebNode(cacheManager, webHost, webPort, webTimeout).start();
     }
 
     public boolean isAdapt(boolean forwarderIsCluster, Object obj) {
@@ -54,14 +54,14 @@ public class Context {
     }
 
     private class ForwarderNode extends Thread {
-        private CommandCache commandCache;
+        private CacheManager cacheManager;
         private String forwardHost;
         private int forwardPort;
         private boolean forwarderIsCluster;
 
-        public ForwarderNode(CommandCache commandCache, String forwardHost, int forwardPort, boolean forwarderIsCluster) {
+        public ForwarderNode(CacheManager cacheManager, String forwardHost, int forwardPort, boolean forwarderIsCluster) {
             this.setName(Constant.PROJECT_NAME + "-ForwardNode-" + forwardHost + "-" + forwardPort);
-            this.commandCache = commandCache;
+            this.cacheManager = cacheManager;
             this.forwardHost = forwardHost;
             this.forwardPort = forwardPort;
             this.forwarderIsCluster = forwarderIsCluster;
@@ -69,54 +69,57 @@ public class Context {
 
         @Override
         public void run() {
-            ForwarderContext forwarderContext = new ForwarderContext(commandCache, forwardHost, forwardPort, forwarderIsCluster);
-            commandCache.register(forwarderContext);
+            ForwarderContext forwarderContext = new ForwarderContext(cacheManager, forwardHost, forwardPort, forwarderIsCluster);
+            cacheManager.register(forwarderContext);
             ForwarderClient forwarderClient = new ForwarderClient(forwarderContext);
             forwarderClient.start();
         }
     }
 
     private class SlaveNode extends Thread {
-        private CommandCache commandCache;
+        private CacheManager cacheManager;
         private String masterHost;
         private int masterPort;
 
-        public SlaveNode(CommandCache commandCache, String masterHost, int masterPort) {
+        public SlaveNode(CacheManager cacheManager, String masterHost, int masterPort) {
             this.setName(Constant.PROJECT_NAME + "-SlaveNode-" + masterHost + "-" + masterPort);
             this.setDaemon(true);
-            this.commandCache = commandCache;
+            this.cacheManager = cacheManager;
             this.masterHost = masterHost;
             this.masterPort = masterPort;
         }
 
         @Override
         public void run() {
-            SlaveContext slaveContext = new SlaveContext(commandCache, masterHost, masterPort);
+            SlaveContext slaveContext = new SlaveContext(cacheManager, masterHost, masterPort);
             SlaveClient slaveClient = new SlaveClient(slaveContext);
             slaveClient.start();
         }
     }
 
     private class WebNode extends Thread {
-        private CommandCache commandCache;
+        private CacheManager cacheManager;
         private String host;
         private int port;
+        private int timeout;
 
-        public WebNode(CommandCache commandCache, int port) {
-            this.commandCache = commandCache;
+        public WebNode(CacheManager cacheManager, int port, int timeout) {
+            this.cacheManager = cacheManager;
             this.port = port;
+            this.timeout = timeout;
         }
 
-        public WebNode(CommandCache commandCache, String host, int port) {
-            this.commandCache = commandCache;
+        public WebNode(CacheManager cacheManager, String host, int port, int timeout) {
+            this.cacheManager = cacheManager;
             this.host = host;
             this.port = port;
+            this.timeout = timeout;
         }
 
         @Override
         public void run() {
-            WebContext webContext = new WebContext(commandCache, host, port);
-            commandCache.register(webContext);
+            WebContext webContext = new WebContext(cacheManager, host, port, timeout);
+            cacheManager.register(webContext);
             WebServer webServer = new WebServer(webContext);
             webServer.start();
         }

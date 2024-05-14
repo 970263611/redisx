@@ -40,7 +40,7 @@ public class WebServer {
         ServerBootstrap serverBootstrap = new ServerBootstrap();
         serverBootstrap.group(bossGroup, workerGroup)
                 .channel(NioServerSocketChannel.class)
-                .handler(new ChannelInitializer() {
+                .childHandler(new ChannelInitializer() {
                     @Override
                     protected void initChannel(Channel channel) throws Exception {
                         ChannelPipeline pipeline = channel.pipeline();
@@ -55,7 +55,7 @@ public class WebServer {
         } else {
             serverBootstrap.bind(port);
         }
-        logger.info("Connect redis master [{}:{}]", host, port);
+        logger.info("Publish server at [{}:{}]", host, port);
     }
 
     /**
