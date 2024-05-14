@@ -5,6 +5,7 @@ import com.dahuaboke.redisx.command.slave.RdbCommand;
 import io.netty.buffer.ByteBuf;
 import io.netty.channel.ChannelHandlerContext;
 import io.netty.channel.ChannelInboundHandlerAdapter;
+import io.netty.util.ReferenceCountUtil;
 import org.slf4j.Logger;
 import org.slf4j.LoggerFactory;
 
@@ -24,12 +25,15 @@ public class RdbByteStreamDecoder extends ChannelInboundHandlerAdapter {
             logger.info("Now processing the RDB stream");
             ByteBuf in = rdb.getIn();
             int readTotal = in.readableBytes();
-            ByteBuf slice = in.slice(readTotal - 9, 9);
-            //10-255 16-ff
-            if (255 == (slice.readByte() & 0xff)) {
-                //TODO
-                logger.info("The RDB stream has been processed");
-                ctx.channel().attr(Constant.RDB_STREAM_NEXT).set(false);
+            if (readTotal > 9) {
+                ByteBuf slice = in.slice(readTotal - 9, 9);
+                //10-255 16-ff
+                if (255 == (slice.readByte() & 0xff)) {
+                    //TODO
+                    logger.info("The RDB stream has been processed");
+                    ReferenceCountUtil.release(msg);
+                    ctx.channel().attr(Constant.RDB_STREAM_NEXT).set(false);
+                }
             }
             return;
         } else {
