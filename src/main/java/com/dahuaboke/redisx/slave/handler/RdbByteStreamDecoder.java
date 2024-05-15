@@ -31,17 +31,7 @@ public class RdbByteStreamDecoder extends ChannelInboundHandlerAdapter {
                     //TODO
                     logger.info("The RDB stream has been processed");
                     ctx.channel().attr(Constant.RDB_STREAM_NEXT).set(false);
-                } else {
-                    /**
-                     * 可以手动ReferenceCountUtil.release(msg);避免两次return
-                     */
-                    return;
                 }
-            } else {
-                /**
-                 * 可以手动ReferenceCountUtil.release(msg);避免两次return
-                 */
-                return;
             }
         } else {
             ctx.fireChannelRead(msg);

@@ -25,10 +25,12 @@ public class SyncCommandListener extends RedisChannelInboundHandler {
     public void handlerAdded(ChannelHandlerContext ctx) throws Exception {
         Thread thread = new Thread(() -> {
             for (; ; ) {
-                String command = forwarderContext.listen();
-                if (command != null) {
-                    ctx.writeAndFlush(command);
-                    logger.debug("Write command success [{}]", command);
+                if (ctx.channel().pipeline().get(Constant.SLOT_HANDLER_NAME) == null) {
+                    String command = forwarderContext.listen();
+                    if (command != null) {
+                        ctx.writeAndFlush(command);
+                        logger.debug("Write command success [{}]", command);
+                    }
                 }
             }
         });

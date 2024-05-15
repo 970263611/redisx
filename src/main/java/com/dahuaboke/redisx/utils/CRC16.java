@@ -13,7 +13,7 @@
  * See the License for the specific language governing permissions and
  * limitations under the License.
  */
-package com.dahuaboke.redisx.forwarder;
+package com.dahuaboke.redisx.utils;
 
 import io.netty.buffer.ByteBuf;
 

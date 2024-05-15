@@ -6,6 +6,7 @@ import org.slf4j.LoggerFactory;
 
 import java.util.HashMap;
 import java.util.Map;
+import java.util.concurrent.BlockingDeque;
 import java.util.concurrent.BlockingQueue;
 import java.util.concurrent.CountDownLatch;
 import java.util.concurrent.LinkedBlockingQueue;
@@ -18,12 +19,13 @@ import java.util.concurrent.LinkedBlockingQueue;
 public final class CacheManager {
 
     private static final Logger logger = LoggerFactory.getLogger(CacheManager.class);
-
     private Map<Context, BlockingQueue<CommandReference>> cache = new HashMap();
     private boolean forwarderIsCluster;
+    private boolean masterIsCluster;
 
-    public CacheManager(boolean forwarderIsCluster) {
+    public CacheManager(boolean forwarderIsCluster, boolean masterIsCluster) {
         this.forwarderIsCluster = forwarderIsCluster;
+        this.masterIsCluster = masterIsCluster;
     }
 
     public void register(Context context) {
@@ -66,32 +68,13 @@ public final class CacheManager {
 
     public static class CommandReference {
         private String content;
-        private CountDownLatch countDownLatch;
-        private String result;
 
         public CommandReference(String content) {
             this.content = content;
         }
 
-        public CommandReference(String content, CountDownLatch countDownLatch) {
-            this.content = content;
-            this.countDownLatch = countDownLatch;
-        }
-
         public String getContent() {
             return content;
-        }
-
-        public CountDownLatch getCountDownLatch() {
-            return countDownLatch;
-        }
-
-        public String getResult() {
-            return result;
-        }
-
-        public void setResult(String result) {
-            this.result = result;
         }
     }
 }

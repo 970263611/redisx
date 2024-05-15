@@ -5,9 +5,8 @@ import com.dahuaboke.redisx.cache.CacheManager;
 import org.slf4j.Logger;
 import org.slf4j.LoggerFactory;
 
-import java.nio.charset.StandardCharsets;
-import java.util.LinkedList;
-import java.util.List;
+import java.util.concurrent.LinkedBlockingDeque;
+import java.util.concurrent.TimeUnit;
 
 /**
  * 2024/5/13 10:38
@@ -24,14 +23,18 @@ public class ForwarderContext extends Context {
     private boolean forwarderIsCluster;
     private int slotBegin;
     private int slotEnd;
-    private List<CacheManager.CommandReference> callBackList;
+    private ForwarderClient forwarderClient;
+    protected boolean isConsole;
 
-    public ForwarderContext(CacheManager cacheManager, String forwardHost, int forwardPort, boolean forwarderIsCluster) {
+    public ForwarderContext(CacheManager cacheManager, String forwardHost, int forwardPort, boolean forwarderIsCluster, boolean isConsole) {
         this.cacheManager = cacheManager;
         this.forwardHost = forwardHost;
         this.forwardPort = forwardPort;
         this.forwarderIsCluster = forwarderIsCluster;
-        this.callBackList = new LinkedList();
+        this.isConsole = isConsole;
+        if (isConsole) {
+            replyQueue = new LinkedBlockingDeque();
+        }
     }
 
     public String getForwardHost() {
@@ -43,27 +46,24 @@ public class ForwarderContext extends Context {
     }
 
     public String listen() {
-        CacheManager.CommandReference listen = cacheManager.listen(this);
-        if (listen.getCountDownLatch() == null) {
-            callBackList.add(null);
-        } else {
-            callBackList.add(listen);
-        }
-        return listen.getContent();
+        return cacheManager.listen(this).getContent();
     }
 
-    public void callBack(String reply) {
-        CacheManager.CommandReference commandReference = callBackList.remove(0);
-        if (commandReference != null) {
-            commandReference.setResult(reply);
-            commandReference.getCountDownLatch().countDown();
+    public boolean callBack(String reply) {
+        if (isConsole) {
+            if (replyQueue == null) {
+                throw new IllegalStateException("By console mode replyQueue need init");
+            } else {
+                return replyQueue.offer(reply);
+            }
+        } else {
+            return true;
         }
     }
 
     @Override
-    public boolean isAdapt(boolean forwarderIsCluster, Object obj) {
-        if (forwarderIsCluster && obj != null && obj instanceof String) {
-            String command = (String) obj;
+    public boolean isAdapt(boolean forwarderIsCluster, String command) {
+        if (forwarderIsCluster && command != null) {
             int hash = calculateHash(command);
             return hash >= slotBegin && hash <= slotEnd;
         } else {
@@ -72,13 +72,38 @@ public class ForwarderContext extends Context {
         }
     }
 
-    private int calculateHash(String command) {
-        String[] ary = command.split(" ");
-        if (ary.length > 1) {
-            return CRC16.crc16(ary[1].getBytes(StandardCharsets.UTF_8));
+    @Override
+    public String sendCommand(String command, int timeout) {
+        if (replyQueue == null) {
+            throw new IllegalStateException("By console mode replyQueue need init");
         } else {
-            logger.warn("Command split length should > 1");
-            return 0;
+            replyQueue.clear();
+            forwarderClient.sendCommand(command);
+            try {
+                return replyQueue.poll(timeout, TimeUnit.MILLISECONDS);
+            } catch (InterruptedException e) {
+                return null;
+            }
         }
+    }
+
+    public void setSlotBegin(int slotBegin) {
+        this.slotBegin = slotBegin;
+    }
+
+    public void setSlotEnd(int slotEnd) {
+        this.slotEnd = slotEnd;
+    }
+
+    public void setForwarderClient(ForwarderClient forwarderClient) {
+        this.forwarderClient = forwarderClient;
+    }
+
+    public boolean isForwarderIsCluster() {
+        return forwarderIsCluster;
+    }
+
+    public void close() {
+        this.forwarderClient.destroy();
     }
 }

@@ -1,5 +1,6 @@
 package com.dahuaboke.redisx.forwarder;
 
+import com.dahuaboke.redisx.console.handler.SlotInfoHandler;
 import com.dahuaboke.redisx.forwarder.handler.SyncCommandListener;
 import com.dahuaboke.redisx.handler.CommandEncoder;
 import com.dahuaboke.redisx.handler.DirtyDataHandler;
@@ -30,6 +31,7 @@ public class ForwarderClient {
 
     private ForwarderContext forwarderContext;
     private EventLoopGroup group;
+    private Channel channel;
 
     public ForwarderClient(ForwarderContext forwarderContext, Executor executor) {
         this.forwarderContext = forwarderContext;
@@ -55,15 +57,26 @@ public class ForwarderClient {
                             pipeline.addLast(new RedisDecoder(true));
                             pipeline.addLast(new RedisBulkStringAggregator());
                             pipeline.addLast(new RedisArrayAggregator());
+                            if (forwarderContext.isForwarderIsCluster()) {
+                                pipeline.addLast(new SlotInfoHandler(forwarderContext));
+                            }
                             pipeline.addLast(new SyncCommandListener(forwarderContext));
                             pipeline.addLast(new DirtyDataHandler());
                         }
                     });
-            bootstrap.connect(forwardHost, forwardPort).sync();
+            channel = bootstrap.connect(forwardHost, forwardPort).sync().channel();
+            channel.closeFuture().sync();
             logger.info("Connect redis master [{}:{}]", forwardHost, forwardPort);
         } catch (InterruptedException e) {
             logger.error("Connect to {{}:{}] exception", forwardHost, forwardPort, e);
-            destroy();
+        } finally {
+            group.shutdownGracefully();
+        }
+    }
+
+    public void sendCommand(String command) {
+        if (channel.isActive()) {
+            channel.writeAndFlush(command);
         }
     }
 
@@ -71,7 +84,11 @@ public class ForwarderClient {
      * 销毁方法
      */
     public void destroy() {
-        group.shutdownGracefully();
+        if (channel != null) {
+            String forwardHost = forwarderContext.getForwardHost();
+            int forwardPort = forwarderContext.getForwardPort();
+            channel.close();
+            logger.info("Close forwarder [{}:{}]", forwardHost, forwardPort);
+        }
     }
-
 }

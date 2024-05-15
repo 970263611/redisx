@@ -7,7 +7,7 @@ import com.dahuaboke.redisx.Constant;
  * auth: dahua
  * desc:
  */
-public class OffsetCommand extends SystemCommand {
+public class OffsetCommand {
 
     private String masterId;
     private Long offset;

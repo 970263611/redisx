@@ -1,6 +1,7 @@
 package com.dahuaboke.redisx.slave;
 
 import com.dahuaboke.redisx.Constant;
+import com.dahuaboke.redisx.console.handler.SlotInfoHandler;
 import com.dahuaboke.redisx.handler.CommandEncoder;
 import com.dahuaboke.redisx.handler.DirtyDataHandler;
 import com.dahuaboke.redisx.slave.handler.*;
@@ -31,6 +32,7 @@ public class SlaveClient {
 
     private SlaveContext slaveContext;
     private EventLoopGroup group;
+    private Channel channel;
 
     public SlaveClient(SlaveContext slaveContext, Executor executor) {
         this.slaveContext = slaveContext;
@@ -51,16 +53,22 @@ public class SlaveClient {
                         @Override
                         protected void initChannel(Channel channel) throws Exception {
                             ChannelPipeline pipeline = channel.pipeline();
+                            boolean console = slaveContext.isConsole();
                             pipeline.addLast(new RedisEncoder());
                             pipeline.addLast(new CommandEncoder());
-                            pipeline.addLast(Constant.INIT_SYNC_HANDLER_NAME, new SyncInitializationHandler(slaveContext));
-                            pipeline.addLast(new AckOffsetHandler(slaveContext));
-                            pipeline.addLast(new PreDistributeHandler());
-                            pipeline.addLast(new OffsetCommandDecoder());
-                            pipeline.addLast(new RdbByteStreamDecoder());
+                            if (!console) {
+                                pipeline.addLast(Constant.INIT_SYNC_HANDLER_NAME, new SyncInitializationHandler(slaveContext));
+                                pipeline.addLast(new AckOffsetHandler(slaveContext));
+                                pipeline.addLast(new PreDistributeHandler());
+                                pipeline.addLast(new OffsetCommandDecoder());
+                                pipeline.addLast(new RdbByteStreamDecoder());
+                            }
                             pipeline.addLast(new RedisDecoder(true));
                             pipeline.addLast(new RedisBulkStringAggregator());
                             pipeline.addLast(new RedisArrayAggregator());
+                            if (slaveContext.isMasterIsCluster()) {
+                                pipeline.addLast(Constant.SLOT_HANDLER_NAME, new SlotInfoHandler(slaveContext));
+                            }
                             pipeline.addLast(new MessagePostProcessor());
                             pipeline.addLast(new PostDistributeHandler());
                             pipeline.addLast(new SyncCommandPublisher(slaveContext));
@@ -68,12 +76,20 @@ public class SlaveClient {
                             pipeline.addLast(new DirtyDataHandler());
                         }
                     });
-            Channel channel = bootstrap.connect(masterHost, masterPort).sync().channel();
+            channel = bootstrap.connect(masterHost, masterPort).sync().channel();
             slaveContext.setSlaveChannel(channel);
+            channel.closeFuture().sync();
             logger.info("Slave start at [{}:{}]", masterHost, masterPort);
         } catch (InterruptedException e) {
             logger.error("Connect to [{}:{}] exception", masterHost, masterPort, e);
-            destroy();
+        } finally {
+            group.shutdownGracefully();
+        }
+    }
+
+    public void sendCommand(String command) {
+        if (channel.isActive()) {
+            channel.writeAndFlush(command);
         }
     }
 
@@ -81,6 +97,11 @@ public class SlaveClient {
      * 销毁方法
      */
     public void destroy() {
-        group.shutdownGracefully();
+        if (channel != null) {
+            String masterHost = slaveContext.getMasterHost();
+            int masterPort = slaveContext.getMasterPort();
+            channel.close();
+            logger.info("Close slave [{}:{}]", masterHost, masterPort);
+        }
     }
 }

@@ -44,47 +44,49 @@ public class SyncInitializationHandler extends ChannelInboundHandlerAdapter {
                 State state = null;
                 String reply;
                 for (; ; ) {
-                    if ((reply = channel.attr(Constant.SYNC_REPLY).get()) != null) {
-                        if (state == INIT) {
-                            state = SENT_PING;
-                        }
-                        if (Constant.PONG_COMMAND.equalsIgnoreCase(reply) && state == SENT_PING) {
-                            clearReply(ctx);
-                            state = SENT_PORT;
-                            channel.writeAndFlush(Constant.CONFIG_PORT_COMMAND_PREFIX + slaveContext.getLocalPort());
-                            logger.debug("Sent replconf listening-port command");
-                        }
-                        if (Constant.OK_COMMAND.equalsIgnoreCase(reply) && state == SENT_PORT) {
-                            clearReply(ctx);
-                            state = SENT_ADDRESS;
-                            channel.writeAndFlush(Constant.CONFIG_HOST_COMMAND_PREFIX + slaveContext.getLocalHost());
-                            logger.debug("Sent replconf address command");
-                            continue;
-                        }
-                        if (Constant.OK_COMMAND.equalsIgnoreCase(reply) && state == SENT_ADDRESS) {
-                            clearReply(ctx);
-                            state = SENT_CAPA;
-                            channel.writeAndFlush(Constant.CONFIG_CAPA_COMMAND);
-                            logger.debug("Sent replconf capa eof command");
-                            continue;
-                        }
-                        if (Constant.OK_COMMAND.equalsIgnoreCase(reply) && state == SENT_CAPA) {
-                            clearReply(ctx);
-                            state = SENT_PSYNC;
-                            channel.writeAndFlush(Constant.CONFIG_ALL_PSYNC_COMMAND);
-                            logger.debug("Sent psync ? -1 command");
-                        }
-                        if (state == SENT_PSYNC) {
-                            ChannelPipeline pipeline = channel.pipeline();
-                            pipeline.remove(this);
-                            logger.debug("Sent all sync command");
-                            break;
-                        }
-                    } else {
-                        if (state == null) {
-                            state = INIT;
-                            channel.writeAndFlush(Constant.PING_COMMAND);
-                            logger.debug("Sent ping command");
+                    if (channel.pipeline().get(Constant.SLOT_HANDLER_NAME) == null) {
+                        if ((reply = channel.attr(Constant.SYNC_REPLY).get()) != null) {
+                            if (state == INIT) {
+                                state = SENT_PING;
+                            }
+                            if (Constant.PONG_COMMAND.equalsIgnoreCase(reply) && state == SENT_PING) {
+                                clearReply(ctx);
+                                state = SENT_PORT;
+                                channel.writeAndFlush(Constant.CONFIG_PORT_COMMAND_PREFIX + slaveContext.getLocalPort());
+                                logger.debug("Sent replconf listening-port command");
+                            }
+                            if (Constant.OK_COMMAND.equalsIgnoreCase(reply) && state == SENT_PORT) {
+                                clearReply(ctx);
+                                state = SENT_ADDRESS;
+                                channel.writeAndFlush(Constant.CONFIG_HOST_COMMAND_PREFIX + slaveContext.getLocalHost());
+                                logger.debug("Sent replconf address command");
+                                continue;
+                            }
+                            if (Constant.OK_COMMAND.equalsIgnoreCase(reply) && state == SENT_ADDRESS) {
+                                clearReply(ctx);
+                                state = SENT_CAPA;
+                                channel.writeAndFlush(Constant.CONFIG_CAPA_COMMAND);
+                                logger.debug("Sent replconf capa eof command");
+                                continue;
+                            }
+                            if (Constant.OK_COMMAND.equalsIgnoreCase(reply) && state == SENT_CAPA) {
+                                clearReply(ctx);
+                                state = SENT_PSYNC;
+                                channel.writeAndFlush(Constant.CONFIG_ALL_PSYNC_COMMAND);
+                                logger.debug("Sent psync ? -1 command");
+                            }
+                            if (state == SENT_PSYNC) {
+                                ChannelPipeline pipeline = channel.pipeline();
+                                pipeline.remove(this);
+                                logger.debug("Sent all sync command");
+                                break;
+                            }
+                        } else {
+                            if (state == null) {
+                                state = INIT;
+                                channel.writeAndFlush(Constant.PING_COMMAND);
+                                logger.debug("Sent ping command");
+                            }
                         }
                     }
                 }

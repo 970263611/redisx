@@ -31,6 +31,8 @@ public class Constant {
 
     public static final String INIT_SYNC_HANDLER_NAME = "INIT_SYNC_HANDLER";
 
+    public static final String SLOT_HANDLER_NAME = "SLOT_HANDLER";
+
     public static final String ACK_COMMAND_PREFIX = "REPLCONF ack ";
 
     public static final String CONFIG_PORT_COMMAND_PREFIX = "REPLCONF listening-port ";
@@ -41,6 +43,18 @@ public class Constant {
 
     public static final String CONFIG_ALL_PSYNC_COMMAND = "PSYNC ? -1";
 
-    public static final String WEB_URI_PREFIX = "/command";
+    public static final String CONSOLE_URI_PREFIX = "/console";
+
+    public static final String CONSOLE_COMMAND = "command";
+
+    public static final String CONSOLE_TYPE = "type";
+
+    public static final String NODE_MASTER = "master";
+
+    public static final String NODE_SLAVE = "slave";
+
+    public final static String GET_SLOT_COMMAND = "CLUSTER NODES";
+
+    public final static String SLOT_REX = "^[0-9a-z]{40}.*";
 
 }

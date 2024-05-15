@@ -5,5 +5,5 @@ package com.dahuaboke.redisx.command.slave;
  * auth: dahua
  * desc:
  */
-public class PingCommand extends SystemCommand {
+public class PingCommand {
 }

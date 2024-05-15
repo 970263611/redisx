@@ -14,9 +14,13 @@ public class Redisx {
         List<InetSocketAddress> slaves = new ArrayList() {{
             add(new InetSocketAddress("127.0.0.1", 6379));
         }};
-        InetSocketAddress webAddress = new InetSocketAddress("127.0.0.1", 9090);
-        int webTimeout = 300000;
-        Context context = new Context();
-        context.start(forwards, slaves, webAddress, webTimeout);
+        InetSocketAddress console = new InetSocketAddress("127.0.0.1", 9090);
+        int consoleTimeout = 5000;
+
+        boolean forwarderIsCluster = false;
+        boolean masterIsCluster = false;
+
+        Context context = new Context(forwarderIsCluster, masterIsCluster);
+        context.start(forwards, slaves, console, consoleTimeout);
     }
 }
