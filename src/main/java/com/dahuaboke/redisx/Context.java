@@ -257,7 +257,6 @@ public class Context {
                 slaveNode.start();
             });
             ConsoleServer consoleServer = new ConsoleServer(consoleContext, getExecutor("Console-Boss"), getExecutor("Console-Worker"));
-            this.consoleContext = consoleContext;
             consoleServer.start();
         }
 
