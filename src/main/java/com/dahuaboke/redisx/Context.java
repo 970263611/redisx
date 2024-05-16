@@ -3,7 +3,7 @@ package com.dahuaboke.redisx;
 import com.dahuaboke.redisx.cache.CacheManager;
 import com.dahuaboke.redisx.console.ConsoleContext;
 import com.dahuaboke.redisx.console.ConsoleServer;
-import com.dahuaboke.redisx.console.handler.SlotInfoHandler;
+import com.dahuaboke.redisx.handler.SlotInfoHandler;
 import com.dahuaboke.redisx.forwarder.ForwarderClient;
 import com.dahuaboke.redisx.forwarder.ForwarderContext;
 import com.dahuaboke.redisx.slave.SlaveClient;

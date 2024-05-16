@@ -54,6 +54,10 @@ public class ForwarderContext extends Context {
             if (replyQueue == null) {
                 throw new IllegalStateException("By console mode replyQueue need init");
             } else {
+                //针对控制台返回特殊处理
+                if (reply == null) {
+                    reply = "(null)";
+                }
                 return replyQueue.offer(reply);
             }
         } else {

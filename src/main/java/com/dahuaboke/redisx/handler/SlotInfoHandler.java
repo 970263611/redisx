@@ -1,4 +1,4 @@
-package com.dahuaboke.redisx.console.handler;
+package com.dahuaboke.redisx.handler;
 
 import com.dahuaboke.redisx.Constant;
 import com.dahuaboke.redisx.Context;

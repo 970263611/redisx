@@ -1,6 +1,6 @@
 package com.dahuaboke.redisx.forwarder;
 
-import com.dahuaboke.redisx.console.handler.SlotInfoHandler;
+import com.dahuaboke.redisx.handler.SlotInfoHandler;
 import com.dahuaboke.redisx.forwarder.handler.SyncCommandListener;
 import com.dahuaboke.redisx.handler.CommandEncoder;
 import com.dahuaboke.redisx.handler.DirtyDataHandler;

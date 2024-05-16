@@ -30,7 +30,7 @@ public class AckOffsetHandler extends ChannelDuplexHandler {
         Thread heartBeatThread = new Thread(() -> {
             Channel channel = ctx.channel();
             while (true) {
-                if (channel.isActive()) {
+                if (channel.isActive() && channel.pipeline().get(Constant.INIT_SYNC_HANDLER_NAME) == null) {
                     Long offsetSession = channel.attr(Constant.OFFSET).get();
                     if (offsetSession == null) {
                         continue;

@@ -2,7 +2,6 @@ package com.dahuaboke.redisx.slave;
 
 import com.dahuaboke.redisx.Context;
 import com.dahuaboke.redisx.cache.CacheManager;
-import com.dahuaboke.redisx.console.handler.SlotInfoHandler;
 import io.netty.channel.Channel;
 import org.slf4j.Logger;
 import org.slf4j.LoggerFactory;

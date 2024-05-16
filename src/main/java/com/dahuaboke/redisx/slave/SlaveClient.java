@@ -1,9 +1,9 @@
 package com.dahuaboke.redisx.slave;
 
 import com.dahuaboke.redisx.Constant;
-import com.dahuaboke.redisx.console.handler.SlotInfoHandler;
 import com.dahuaboke.redisx.handler.CommandEncoder;
 import com.dahuaboke.redisx.handler.DirtyDataHandler;
+import com.dahuaboke.redisx.handler.SlotInfoHandler;
 import com.dahuaboke.redisx.slave.handler.*;
 import io.netty.bootstrap.Bootstrap;
 import io.netty.channel.Channel;
