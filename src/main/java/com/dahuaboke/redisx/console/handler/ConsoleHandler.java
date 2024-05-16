@@ -54,6 +54,15 @@ public class ConsoleHandler extends SimpleChannelInboundHandler<FullHttpRequest>
             }
             if (reply == null) {
                 reply = "Send command error or request param error, uri should be [/console?command=xxx&type=left/right]";
+            } else {
+                StringBuilder sb = new StringBuilder();
+                for (String s : reply.split(" ")) {
+                    if (sb.length() != 0) {
+                        sb.append("\r\n");
+                    }
+                    sb.append(s);
+                }
+                reply = new String(sb);
             }
             FullHttpResponse response = new DefaultFullHttpResponse(request.protocolVersion(),
                     HttpResponseStatus.OK,

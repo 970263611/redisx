@@ -6,10 +6,7 @@ import com.dahuaboke.redisx.handler.DirtyDataHandler;
 import com.dahuaboke.redisx.handler.SlotInfoHandler;
 import com.dahuaboke.redisx.slave.handler.*;
 import io.netty.bootstrap.Bootstrap;
-import io.netty.channel.Channel;
-import io.netty.channel.ChannelInitializer;
-import io.netty.channel.ChannelPipeline;
-import io.netty.channel.EventLoopGroup;
+import io.netty.channel.*;
 import io.netty.channel.nio.NioEventLoopGroup;
 import io.netty.channel.socket.nio.NioSocketChannel;
 import io.netty.handler.codec.redis.RedisArrayAggregator;
@@ -78,11 +75,14 @@ public class SlaveClient {
                     });
             channel = bootstrap.connect(masterHost, masterPort).sync().channel();
             slaveContext.setSlaveChannel(channel);
-            channel.closeFuture().sync();
+            channel.closeFuture().addListener((ChannelFutureListener) future -> {
+                slaveContext.setClose(true);
+            }).sync();
             logger.info("Slave start at [{}:{}]", masterHost, masterPort);
         } catch (InterruptedException e) {
             logger.error("Connect to [{}:{}] exception", masterHost, masterPort, e);
         } finally {
+            destroy();
             group.shutdownGracefully();
         }
     }
@@ -97,6 +97,7 @@ public class SlaveClient {
      * 销毁方法
      */
     public void destroy() {
+        slaveContext.setClose(true);
         if (channel != null) {
             String masterHost = slaveContext.getMasterHost();
             int masterPort = slaveContext.getMasterPort();

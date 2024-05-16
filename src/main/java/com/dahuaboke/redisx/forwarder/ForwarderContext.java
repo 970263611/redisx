@@ -24,7 +24,6 @@ public class ForwarderContext extends Context {
     private int slotBegin;
     private int slotEnd;
     private ForwarderClient forwarderClient;
-    protected boolean isConsole;
 
     public ForwarderContext(CacheManager cacheManager, String forwardHost, int forwardPort, boolean forwarderIsCluster, boolean isConsole) {
         this.cacheManager = cacheManager;
@@ -46,7 +45,11 @@ public class ForwarderContext extends Context {
     }
 
     public String listen() {
-        return cacheManager.listen(this).getContent();
+        CacheManager.CommandReference listen = cacheManager.listen(this);
+        if (listen != null) {
+            return listen.getContent();
+        }
+        return null;
     }
 
     public boolean callBack(String reply) {

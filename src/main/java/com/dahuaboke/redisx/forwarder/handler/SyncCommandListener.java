@@ -24,7 +24,7 @@ public class SyncCommandListener extends RedisChannelInboundHandler {
     @Override
     public void handlerAdded(ChannelHandlerContext ctx) throws Exception {
         Thread thread = new Thread(() -> {
-            for (; ; ) {
+            while (!forwarderContext.isClose()) {
                 if (ctx.channel().pipeline().get(Constant.SLOT_HANDLER_NAME) == null) {
                     String command = forwarderContext.listen();
                     if (command != null) {
@@ -34,8 +34,7 @@ public class SyncCommandListener extends RedisChannelInboundHandler {
                 }
             }
         });
-        thread.setDaemon(true);
-        thread.setName(Constant.PROJECT_NAME + "-Forwarder-" + forwarderContext.getForwardHost() + ":" + forwarderContext.getForwardPort());
+        thread.setName(Constant.PROJECT_NAME + "-Forwarder-Writer-" + forwarderContext.getForwardHost() + ":" + forwarderContext.getForwardPort());
         thread.start();
     }
 

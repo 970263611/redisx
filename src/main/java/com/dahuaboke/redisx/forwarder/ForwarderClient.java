@@ -1,14 +1,11 @@
 package com.dahuaboke.redisx.forwarder;
 
-import com.dahuaboke.redisx.handler.SlotInfoHandler;
 import com.dahuaboke.redisx.forwarder.handler.SyncCommandListener;
 import com.dahuaboke.redisx.handler.CommandEncoder;
 import com.dahuaboke.redisx.handler.DirtyDataHandler;
+import com.dahuaboke.redisx.handler.SlotInfoHandler;
 import io.netty.bootstrap.Bootstrap;
-import io.netty.channel.Channel;
-import io.netty.channel.ChannelInitializer;
-import io.netty.channel.ChannelPipeline;
-import io.netty.channel.EventLoopGroup;
+import io.netty.channel.*;
 import io.netty.channel.nio.NioEventLoopGroup;
 import io.netty.channel.socket.nio.NioSocketChannel;
 import io.netty.handler.codec.redis.RedisArrayAggregator;
@@ -65,11 +62,14 @@ public class ForwarderClient {
                         }
                     });
             channel = bootstrap.connect(forwardHost, forwardPort).sync().channel();
-            channel.closeFuture().sync();
+            channel.closeFuture().addListener((ChannelFutureListener) future -> {
+                forwarderContext.setClose(true);
+            }).sync();
             logger.info("Connect redis master [{}:{}]", forwardHost, forwardPort);
         } catch (InterruptedException e) {
             logger.error("Connect to {{}:{}] exception", forwardHost, forwardPort, e);
         } finally {
+            destroy();
             group.shutdownGracefully();
         }
     }
@@ -84,6 +84,7 @@ public class ForwarderClient {
      * 销毁方法
      */
     public void destroy() {
+        forwarderContext.setClose(true);
         if (channel != null) {
             String forwardHost = forwarderContext.getForwardHost();
             int forwardPort = forwarderContext.getForwardPort();

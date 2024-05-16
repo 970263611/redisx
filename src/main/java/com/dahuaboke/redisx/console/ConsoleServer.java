@@ -3,10 +3,7 @@ package com.dahuaboke.redisx.console;
 import com.dahuaboke.redisx.console.handler.ConsoleHandler;
 import com.dahuaboke.redisx.handler.DirtyDataHandler;
 import io.netty.bootstrap.ServerBootstrap;
-import io.netty.channel.Channel;
-import io.netty.channel.ChannelInitializer;
-import io.netty.channel.ChannelPipeline;
-import io.netty.channel.EventLoopGroup;
+import io.netty.channel.*;
 import io.netty.channel.nio.NioEventLoopGroup;
 import io.netty.channel.socket.nio.NioServerSocketChannel;
 import io.netty.handler.codec.http.HttpObjectAggregator;
@@ -61,13 +58,16 @@ public class ConsoleServer {
             } else {
                 channel = serverBootstrap.bind(port).sync().channel();
             }
-            channel.closeFuture().sync();
+            channel.closeFuture().addListener((ChannelFutureListener) future -> {
+                consoleContext.setClose(true);
+            }).sync();
             logger.info("Publish console server at [{}:{}]", host, port);
         } catch (Exception e) {
             logger.error("Publish at {{}:{}] exception", host, port, e);
         } finally {
             bossGroup.shutdownGracefully();
             workerGroup.shutdownGracefully();
+            destroy();
         }
     }
 
@@ -75,6 +75,7 @@ public class ConsoleServer {
      * 销毁方法
      */
     public void destroy() {
+        consoleContext.setClose(true);
         if (channel != null) {
             String host = consoleContext.getHost();
             int port = consoleContext.getPort();

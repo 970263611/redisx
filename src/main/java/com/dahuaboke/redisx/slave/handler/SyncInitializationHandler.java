@@ -43,7 +43,7 @@ public class SyncInitializationHandler extends ChannelInboundHandlerAdapter {
             Thread thread = new Thread(() -> {
                 State state = null;
                 String reply;
-                for (; ; ) {
+                while (!slaveContext.isClose()) {
                     if (channel.pipeline().get(Constant.SLOT_HANDLER_NAME) == null) {
                         if ((reply = channel.attr(Constant.SYNC_REPLY).get()) != null) {
                             if (state == INIT) {
@@ -92,7 +92,6 @@ public class SyncInitializationHandler extends ChannelInboundHandlerAdapter {
                 }
             });
             thread.setName(Constant.PROJECT_NAME + "-SYNC-INIT-" + slaveContext.getMasterHost() + ":" + slaveContext.getMasterPort());
-            thread.setDaemon(true);
             thread.start();
         }
     }

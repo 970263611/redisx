@@ -29,7 +29,7 @@ public class AckOffsetHandler extends ChannelDuplexHandler {
         logger.debug("Ack offset task beginning");
         Thread heartBeatThread = new Thread(() -> {
             Channel channel = ctx.channel();
-            while (true) {
+            while (!slaveContext.isClose()) {
                 if (channel.isActive() && channel.pipeline().get(Constant.INIT_SYNC_HANDLER_NAME) == null) {
                     Long offsetSession = channel.attr(Constant.OFFSET).get();
                     if (offsetSession == null) {
@@ -49,7 +49,6 @@ public class AckOffsetHandler extends ChannelDuplexHandler {
             }
         });
         heartBeatThread.setName(Constant.PROJECT_NAME + "-AckThread-" + slaveContext.getMasterHost() + ":" + slaveContext.getMasterPort());
-        heartBeatThread.setDaemon(true);
         heartBeatThread.start();
     }
 

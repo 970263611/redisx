@@ -6,10 +6,9 @@ import org.slf4j.LoggerFactory;
 
 import java.util.HashMap;
 import java.util.Map;
-import java.util.concurrent.BlockingDeque;
 import java.util.concurrent.BlockingQueue;
-import java.util.concurrent.CountDownLatch;
 import java.util.concurrent.LinkedBlockingQueue;
+import java.util.concurrent.TimeUnit;
 
 /**
  * 2024/5/13 10:45
@@ -58,7 +57,7 @@ public final class CacheManager {
     public CommandReference listen(Context context) {
         try {
             if (cache.containsKey(context)) {
-                return cache.get(context).take();
+                return cache.get(context).poll(1, TimeUnit.SECONDS);
             }
         } catch (InterruptedException e) {
             logger.error("Listener command thread interrupted");
