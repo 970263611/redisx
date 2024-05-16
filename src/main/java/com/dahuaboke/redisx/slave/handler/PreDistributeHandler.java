@@ -30,10 +30,8 @@ public class PreDistributeHandler extends ChannelInboundHandlerAdapter {
             ByteBuf in = (ByteBuf) msg;
             if (ctx.channel().attr(Constant.RDB_STREAM_NEXT).get()) {
                 if (in.isReadable()) {
-                    if (in.getByte(0) == '$' || in.getByte(0) == 'R') {
-                        logger.debug("Receive rdb byteStream length [{}]", in.readableBytes());
-                        ctx.fireChannelRead(new RdbCommand(in));
-                    }
+                    logger.debug("Receive rdb byteStream length [{}]", in.readableBytes());
+                    ctx.fireChannelRead(new RdbCommand(in));
                 }
             } else {
                 ByteBuf fullResyncC = in.slice(0, 11);
