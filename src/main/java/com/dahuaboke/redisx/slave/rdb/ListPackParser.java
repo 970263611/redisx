@@ -20,6 +20,11 @@ public class ListPackParser {
         for (int i = 0; i < numElements; i++) {
             list.add(getListPackEntry(byteBuf));
         }
+        //尾部结束符
+        int end = byteBuf.readByte() & 0xFF;
+        if (end != 255) {
+            throw new AssertionError("listPack expect 255 but " + end);
+        }
         return list;
     }
 
@@ -39,7 +44,7 @@ public class ListPackParser {
      */
     public byte[] getListPackEntry(ByteBuf byteBuf) {
         //encoding-type 编码类型
-        int encodingType = byteBuf.readByte();
+        int encodingType = byteBuf.readByte() & 0xFF;
         //element-data 原始字节
         byte[] value;
         //element-tot-len=encoding-type + element-data的总长度,不包含自己的长度
@@ -55,22 +60,23 @@ public class ListPackParser {
             byteBuf.readBytes(value);
         } else if ((encodingType & 0xE0) == 0xC0) { //取前三位判断是否是110
             elementTotLen = 2;
-            int next = byteBuf.readByte();
+            int next = byteBuf.readByte() & 0xFF;
             value = String.valueOf((((encodingType & 0x1F) << 8) | next) << 19 >> 19).getBytes();
         } else if ((encodingType & 0xFF) == 0xF1) {
             elementTotLen = 3;
-            value = String.valueOf(byteBuf.readBytes(2)).getBytes();
+            value = String.valueOf(byteBuf.readShortLE()).getBytes();
         } else if ((encodingType & 0xFF) == 0xF2) {
             elementTotLen = 4;
+            //TODO 后续处理小端
             value = String.valueOf(byteBuf.readBytes(3)).getBytes();
         } else if ((encodingType & 0xFF) == 0xF3) {
             elementTotLen = 5;
-            value = String.valueOf(byteBuf.readBytes(4)).getBytes();
+            value = String.valueOf(byteBuf.readIntLE()).getBytes();
         } else if ((encodingType & 0xFF) == 0xF4) {
             elementTotLen = 9;
-            value = String.valueOf(byteBuf.readBytes(8)).getBytes();
+            value = String.valueOf(byteBuf.readLongLE()).getBytes();
         } else if ((encodingType & 0xF0) == 0xE0) {
-            int len = ((encodingType & 0x0F) << 8) | byteBuf.readByte();
+            int len = ((encodingType & 0x0F) << 8) | byteBuf.readByte() & 0xFF;
             elementTotLen = 2 + len;
             value = new byte[len];
             byteBuf.readBytes(value);
