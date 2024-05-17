@@ -13,6 +13,8 @@ import static com.dahuaboke.redisx.Constant.*;
  */
 public class ZipListParser {
 
+    ZipListParser zipListParser = new ZipListParser();
+
     public List<byte[]> parseZipList(ByteBuf byteBuf) {
         List<byte[]> list = new LinkedList();
         //总字节长度
@@ -70,8 +72,7 @@ public class ZipListParser {
             case ZIP_INT_16B:
                 return String.valueOf(byteBuf.readShortLE()).getBytes();
             case ZIP_INT_24B:
-                //TODO 后续处理小端
-                return String.valueOf(byteBuf.readBytes(3)).getBytes();
+                return String.valueOf(zipListParser.verseBigEndian(byteBuf,3)).getBytes();
             case ZIP_INT_32B:
                 return String.valueOf(byteBuf.readIntLE()).getBytes();
             case ZIP_INT_64B:
@@ -82,4 +83,19 @@ public class ZipListParser {
         }
     }
 
+    /**
+     * litterEndian verse bigEndian
+     * @param byteBuf
+     * @param length
+     * @return
+     */
+    public int verseBigEndian(ByteBuf byteBuf, int length){
+        int r = 0;
+        for (int i = 0; i < length; ++i) {
+            final int v = byteBuf.readByte() & 0xFF;
+            r |= (v << (i << 3));
+        }
+        int c;
+        return r << (c = (4 - length << 3)) >> c;
+    }
 }

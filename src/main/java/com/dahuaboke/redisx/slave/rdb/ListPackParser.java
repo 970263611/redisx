@@ -10,7 +10,7 @@ import java.util.List;
  * @Date：2024/5/17 14:26
  */
 public class ListPackParser {
-
+    ListPackParser listPackParser = new ListPackParser();
     public List<byte[]> parseListPack(ByteBuf byteBuf) {
         List<byte[]> list = new LinkedList();
         //tot-bytes总字节长度
@@ -67,8 +67,7 @@ public class ListPackParser {
             value = String.valueOf(byteBuf.readShortLE()).getBytes();
         } else if ((encodingType & 0xFF) == 0xF2) {
             elementTotLen = 4;
-            //TODO 后续处理小端
-            value = String.valueOf(byteBuf.readBytes(3)).getBytes();
+            value = String.valueOf(listPackParser.verseBigEndian(byteBuf,3)).getBytes();
         } else if ((encodingType & 0xFF) == 0xF3) {
             elementTotLen = 5;
             value = String.valueOf(byteBuf.readIntLE()).getBytes();
@@ -103,4 +102,19 @@ public class ListPackParser {
         return value;
     }
 
+    /**
+     * litterEndian verse bigEndian
+     * @param byteBuf
+     * @param length
+     * @return
+     */
+    public int verseBigEndian(ByteBuf byteBuf, int length){
+        int r = 0;
+        for (int i = 0; i < length; ++i) {
+            final int v = byteBuf.readByte() & 0xFF;
+            r |= (v << (i << 3));
+        }
+        int c;
+        return r << (c = (4 - length << 3)) >> c;
+    }
 }
