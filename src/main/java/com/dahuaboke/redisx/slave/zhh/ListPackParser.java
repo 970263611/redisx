@@ -1,4 +1,4 @@
-package com.dahuaboke.redisx.slave.rdb;
+package com.dahuaboke.redisx.slave.zhh;
 
 import io.netty.buffer.ByteBuf;
 import java.util.LinkedList;
@@ -10,7 +10,6 @@ import java.util.List;
  * @Date：2024/5/17 14:26
  */
 public class ListPackParser {
-    ListPackParser listPackParser = new ListPackParser();
     public List<byte[]> parseListPack(ByteBuf byteBuf) {
         List<byte[]> list = new LinkedList();
         //tot-bytes总字节长度
@@ -67,7 +66,7 @@ public class ListPackParser {
             value = String.valueOf(byteBuf.readShortLE()).getBytes();
         } else if ((encodingType & 0xFF) == 0xF2) {
             elementTotLen = 4;
-            value = String.valueOf(listPackParser.verseBigEndian(byteBuf,3)).getBytes();
+            value = String.valueOf(this.verseBigEndian(byteBuf,3)).getBytes();
         } else if ((encodingType & 0xFF) == 0xF3) {
             elementTotLen = 5;
             value = String.valueOf(byteBuf.readIntLE()).getBytes();

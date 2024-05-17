@@ -1,11 +1,16 @@
 package dahuaboke.redisx;
 
-import com.dahuaboke.redisx.slave.rdb.ListPackParser;
-import com.dahuaboke.redisx.slave.rdb.ZipListParser;
-import io.netty.buffer.ByteBufAllocator;
+import com.dahuaboke.redisx.slave.zhh.ListPackParser;
+import com.dahuaboke.redisx.slave.zhh.ZipListParser;
 import io.netty.buffer.ByteBuf;
+import io.netty.buffer.Unpooled;
+import org.junit.Before;
 import org.junit.Test;
-
+import java.io.File;
+import java.io.FileInputStream;
+import java.io.IOException;
+import java.nio.ByteBuffer;
+import java.nio.channels.FileChannel;
 import java.nio.charset.StandardCharsets;
 import java.util.List;
 
@@ -15,25 +20,41 @@ import java.util.List;
  * @Date：2024/5/17 17:33
  */
 public class RdbParserTest {
+
     ListPackParser listPackParser = new ListPackParser();
     ZipListParser zipListParser = new ZipListParser();
 
+    ByteBuf byteBuf = null;
+    @Before
+    public void initByteBuf()  {
+        File file = new File("C:\\Users\\15536\\Desktop\\test.rdb");
+        long fileLength = file.length();
+        // 创建足够大小的ByteBuf来存储文件内容
+        ByteBuf byteBuf = Unpooled.buffer(Math.toIntExact(fileLength));
+        try (FileInputStream fis = new FileInputStream(file);
+             FileChannel fileChannel = fis.getChannel()) {
+            // 使用ByteBuffer作为临时缓冲区来从FileChannel中读取数据
+            ByteBuffer byteBuffer = ByteBuffer.allocateDirect((int) fileLength);
+            // 读取文件内容到ByteBuffer
+            while (fileChannel.read(byteBuffer) > 0) {
+                // 准备缓冲区以进行读取（flip）
+                byteBuffer.flip();
+                // 将ByteBuffer的内容写入ByteBuf
+                byteBuf.writeBytes(byteBuffer);
+                // 清空ByteBuffer以便再次读取
+                byteBuffer.clear();
+            }
+            // 确保所有内容都已写入ByteBuf
+            byteBuf.writerIndex(byteBuf.capacity());
+        } catch (IOException e) {
+            // 如果发生异常，则释放ByteBuf
+            byteBuf.release();
+        }
+        this.byteBuf = byteBuf;
+    }
+
     @Test
     public void testListPack(){
-        // 使用ByteBufAllocator来分配一个新的ByteBuf
-        ByteBuf byteBuf = ByteBufAllocator.DEFAULT.buffer();
-        // 定义十六进制值对应的listPack byte数组
-        byte[] hexValues = new byte[]{
-                (byte) 0x11,(byte) 0x00, (byte) 0x00, (byte) 0x00,
-                (byte) 0x04,(byte) 0x00,
-                (byte) 0x81,(byte) 0x62,(byte) 0x02,
-                (byte) 0x81,(byte) 0x61,(byte) 0x02,
-                (byte) 0x02,(byte) 0x01,
-                (byte) 0x01,(byte) 0x01,
-                (byte) 0xFF
-        };
-        // 将byte数组写入ByteBuf
-        byteBuf.writeBytes(hexValues);
         List<byte[]> bytes = listPackParser.parseListPack(byteBuf);
         bytes.forEach(entry -> {
             String str = new String(entry, StandardCharsets.UTF_8);
@@ -42,21 +63,6 @@ public class RdbParserTest {
     }
     @Test
     public void testZipList(){
-        // 使用ByteBufAllocator来分配一个新的ByteBuf
-        ByteBuf byteBuf = ByteBufAllocator.DEFAULT.buffer();
-        // 定义十六进制值对应的ziplist byte数组
-        byte[] hexValues = new byte[]{
-                (byte) 0x15,(byte) 0x00,(byte) 0x00,(byte) 0x00,
-                (byte) 0x12,(byte) 0x00,(byte)0x00,(byte) 0x00,
-                (byte) 0x04,(byte) 0x00,
-                (byte) 0x00,(byte) 0x01,(byte) 0x62,
-                (byte) 0x03,(byte) 0x01,(byte) 0x61,
-                (byte) 0x03,(byte) 0xF3,
-                (byte) 0x02,(byte) 0xF2,
-                (byte) 0xFF
-        };
-        // 将byte数组写入ByteBuf
-        byteBuf.writeBytes(hexValues);
         List<byte[]> bytes = zipListParser.parseZipList(byteBuf);
         bytes.forEach(entry -> {
             String str = new String(entry, StandardCharsets.UTF_8);

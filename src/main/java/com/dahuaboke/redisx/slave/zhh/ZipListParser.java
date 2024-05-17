@@ -1,4 +1,4 @@
-package com.dahuaboke.redisx.slave.rdb;
+package com.dahuaboke.redisx.slave.zhh;
 
 import io.netty.buffer.ByteBuf;
 import java.util.LinkedList;
@@ -12,8 +12,6 @@ import static com.dahuaboke.redisx.Constant.*;
  * @Date：2024/5/17 16:08
  */
 public class ZipListParser {
-
-    ZipListParser zipListParser = new ZipListParser();
 
     public List<byte[]> parseZipList(ByteBuf byteBuf) {
         List<byte[]> list = new LinkedList();
@@ -72,7 +70,7 @@ public class ZipListParser {
             case ZIP_INT_16B:
                 return String.valueOf(byteBuf.readShortLE()).getBytes();
             case ZIP_INT_24B:
-                return String.valueOf(zipListParser.verseBigEndian(byteBuf,3)).getBytes();
+                return String.valueOf(this.verseBigEndian(byteBuf,3)).getBytes();
             case ZIP_INT_32B:
                 return String.valueOf(byteBuf.readIntLE()).getBytes();
             case ZIP_INT_64B:
