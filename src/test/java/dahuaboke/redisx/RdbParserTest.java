@@ -23,7 +23,6 @@ public class RdbParserTest {
 
     ListPackParser listPackParser = new ListPackParser();
     ZipListParser zipListParser = new ZipListParser();
-
     ByteBuf byteBuf = null;
     @Before
     public void initByteBuf()  {
