@@ -2,6 +2,8 @@ package dahuaboke.redisx;
 
 import com.dahuaboke.redisx.slave.zhh.ListPackParser;
 import com.dahuaboke.redisx.slave.zhh.ZipListParser;
+import com.dahuaboke.redisx.slave.zhh.list.ListQuickList2Parser;
+import com.dahuaboke.redisx.slave.zhh.list.ListQuickListParser;
 import io.netty.buffer.ByteBuf;
 import io.netty.buffer.Unpooled;
 import org.junit.Before;
@@ -23,6 +25,8 @@ public class RdbParserTest {
 
     ListPackParser listPackParser = new ListPackParser();
     ZipListParser zipListParser = new ZipListParser();
+    ListQuickListParser listQuickListParser = new ListQuickListParser();
+    ListQuickList2Parser listQuickList2Parser = new ListQuickList2Parser();
     ByteBuf byteBuf = null;
     @Before
     public void initByteBuf()  {
@@ -63,6 +67,24 @@ public class RdbParserTest {
     @Test
     public void testZipList(){
         List<byte[]> bytes = zipListParser.parseZipList(byteBuf);
+        bytes.forEach(entry -> {
+            String str = new String(entry, StandardCharsets.UTF_8);
+            System.out.println(str);
+        });
+    }
+
+    @Test
+    public void testQuickList(){
+        List<byte[]> bytes = listQuickListParser.parseQuickList(byteBuf);
+        bytes.forEach(entry -> {
+            String str = new String(entry, StandardCharsets.UTF_8);
+            System.out.println(str);
+        });
+    }
+
+    @Test
+    public void testQuickList2(){
+        List<byte[]> bytes = listQuickList2Parser.parseQuickList2(byteBuf);
         bytes.forEach(entry -> {
             String str = new String(entry, StandardCharsets.UTF_8);
             System.out.println(str);
