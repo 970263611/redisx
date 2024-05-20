@@ -2,7 +2,7 @@ package com.dahuaboke.redisx.slave.zhh;
 
 import io.netty.buffer.ByteBuf;
 
-import java.util.HashSet;
+import java.util.LinkedHashSet;
 import java.util.Set;
 
 /**
@@ -12,10 +12,10 @@ import java.util.Set;
  */
 public class IntSetParser {
     public Set<byte[]> parseIntSet(ByteBuf byteBuf){
-        Set<byte[]> set = new HashSet<>();
+        Set<byte[]> set = new LinkedHashSet<>();
         //编码类型
         int encoding = byteBuf.readIntLE();
-        //元素个数
+        //元素个数 TODO 为什么这样写? 原rdb存储是四个字节大端存储 例: 00 00 00 05
         long contentLength  = byteBuf.readIntLE() & 0xFFFFFFFFL;
         for (int i = 0; i < contentLength; i++) {
             switch (encoding) {

@@ -12,7 +12,7 @@ import static com.dahuaboke.redisx.Constant.QUICKLIST_NODE_CONTAINER_PACKED;
 import static com.dahuaboke.redisx.Constant.QUICKLIST_NODE_CONTAINER_PLAIN;
 
 /**
- * @Desc: quickList2 = list + listpack
+ * @Desc: quickList2 = list + listPack  Redis 7.x版本
  * @Author：zhh
  * @Date：2024/5/20 15:18
  */

@@ -11,7 +11,7 @@ import java.util.LinkedList;
 import java.util.List;
 
 /**
- * @Desc: qucikList = list+ziplist
+ * @Desc: quickList = list+zipList  Redis 6.x版本
  * @Author：zhh
  * @Date：2024/5/20 13:48
  */

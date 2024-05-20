@@ -4,6 +4,9 @@ import com.dahuaboke.redisx.slave.zhh.ListPackParser;
 import com.dahuaboke.redisx.slave.zhh.ZipListParser;
 import com.dahuaboke.redisx.slave.zhh.list.ListQuickList2Parser;
 import com.dahuaboke.redisx.slave.zhh.list.ListQuickListParser;
+import com.dahuaboke.redisx.slave.zhh.set.SetIntSetParser;
+import com.dahuaboke.redisx.slave.zhh.set.SetListPackParser;
+import com.dahuaboke.redisx.slave.zhh.set.SetParser;
 import io.netty.buffer.ByteBuf;
 import io.netty.buffer.Unpooled;
 import org.junit.Before;
@@ -15,6 +18,7 @@ import java.nio.ByteBuffer;
 import java.nio.channels.FileChannel;
 import java.nio.charset.StandardCharsets;
 import java.util.List;
+import java.util.Set;
 
 /**
  * @Desc: rdb解析测试类
@@ -25,8 +29,14 @@ public class RdbParserTest {
 
     ListPackParser listPackParser = new ListPackParser();
     ZipListParser zipListParser = new ZipListParser();
+
     ListQuickListParser listQuickListParser = new ListQuickListParser();
     ListQuickList2Parser listQuickList2Parser = new ListQuickList2Parser();
+
+    SetParser setParser = new SetParser();
+    SetIntSetParser setIntSetParser = new SetIntSetParser();
+    SetListPackParser setListPackParser = new SetListPackParser();
+
     ByteBuf byteBuf = null;
     @Before
     public void initByteBuf()  {
@@ -85,6 +95,31 @@ public class RdbParserTest {
     @Test
     public void testQuickList2(){
         List<byte[]> bytes = listQuickList2Parser.parseQuickList2(byteBuf);
+        bytes.forEach(entry -> {
+            String str = new String(entry, StandardCharsets.UTF_8);
+            System.out.println(str);
+        });
+    }
+    @Test
+    public void testSet(){
+        Set<byte[]> bytes = setParser.parseSet(byteBuf);
+        bytes.forEach(entry -> {
+            String str = new String(entry, StandardCharsets.UTF_8);
+            System.out.println(str);
+        });
+    }
+    @Test
+    public void testSetIntSet(){
+        Set<byte[]> bytes = setIntSetParser.parseSetIntSet(byteBuf);
+        bytes.forEach(entry -> {
+            String str = new String(entry, StandardCharsets.UTF_8);
+            System.out.println(str);
+        });
+    }
+
+    @Test
+    public void testSetListPack(){
+        Set<byte[]> bytes = setListPackParser.parseSetListPack(byteBuf);
         bytes.forEach(entry -> {
             String str = new String(entry, StandardCharsets.UTF_8);
             System.out.println(str);
