@@ -40,5 +40,6 @@
             <artifactId>compress-lzf</artifactId>
             <version>1.1.2</version>
         </dependency>
+		
     </dependencies>
 </project>
