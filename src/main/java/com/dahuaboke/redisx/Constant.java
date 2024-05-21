@@ -39,7 +39,7 @@ public class Constant {
 
     public static final String CONFIG_HOST_COMMAND_PREFIX = "REPLCONF ip-address ";
 
-    public static final String CONFIG_CAPA_COMMAND = "REPLCONF capa eof";
+    public static final String CONFIG_CAPA_COMMAND = "REPLCONF capa eof capa psync2";
 
     public static final String CONFIG_ALL_PSYNC_COMMAND = "PSYNC ? -1";
 

@@ -12,7 +12,7 @@ public class Redisx {
             add(new InetSocketAddress("127.0.0.1", 6380));
         }};
         List<InetSocketAddress> slaves = new ArrayList() {{
-            add(new InetSocketAddress("127.0.0.1", 6379));
+            add(new InetSocketAddress("127.0.0.1", 6381));
         }};
         InetSocketAddress console = new InetSocketAddress("127.0.0.1", 9090);
         int consoleTimeout = 5000;
