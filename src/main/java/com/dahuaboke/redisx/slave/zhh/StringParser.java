@@ -68,7 +68,46 @@ public class StringParser {
     }
 
     private byte[] parseLzfStringObject(ByteBuf byteBuf) {
-        //TODO 压缩字符串解析
-        return null;
+        //压缩后长度
+        int compressedLen = (int)length.parseLength(byteBuf).len;
+        //压缩前长度
+        int len = (int)length.parseLength(byteBuf).len;
+        //压缩后字节数组
+        byte[] src = new byte[compressedLen];
+        byteBuf.readBytes(src);
+        //压缩前字节数组
+        byte[] dest = new byte[len];
+        Lzf.expand(src,dest);
+        return dest;
+    }
+
+    final static class Lzf {
+        private static int MAX_LITERAL = 32;
+
+        static void expand(byte[] src, byte[] dest) {
+            int srcPos = 0;
+            int destPos = 0;
+            do {
+                int ctrl = src[srcPos++] & 0xff;
+                if (ctrl < MAX_LITERAL) {
+                    ctrl++;
+                    System.arraycopy(src, srcPos, dest, destPos, ctrl);
+                    destPos += ctrl;
+                    srcPos += ctrl;
+                } else {
+                    int len = ctrl >> 5;
+                    if (len == 7) {
+                        len += src[srcPos++] & 0xff;
+                    }
+                    len += 2;
+                    ctrl = -((ctrl & 0x1f) << 8) - 1;
+                    ctrl -= src[srcPos++] & 0xff;
+                    ctrl += destPos;
+                    for (int i = 0; i < len; i++) {
+                        dest[destPos++] = dest[ctrl++];
+                    }
+                }
+            } while (destPos < dest.length);
+        }
     }
 }

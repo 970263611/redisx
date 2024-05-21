@@ -1,6 +1,7 @@
 package dahuaboke.redisx;
 
 import com.dahuaboke.redisx.slave.zhh.ListPackParser;
+import com.dahuaboke.redisx.slave.zhh.StringParser;
 import com.dahuaboke.redisx.slave.zhh.ZipListParser;
 import com.dahuaboke.redisx.slave.zhh.list.ListQuickList2Parser;
 import com.dahuaboke.redisx.slave.zhh.list.ListQuickListParser;
@@ -26,6 +27,8 @@ import java.util.Set;
  * @Date：2024/5/17 17:33
  */
 public class RdbParserTest {
+
+    StringParser stringParser = new StringParser();
 
     ListPackParser listPackParser = new ListPackParser();
     ZipListParser zipListParser = new ZipListParser();
@@ -124,5 +127,11 @@ public class RdbParserTest {
             String str = new String(entry, StandardCharsets.UTF_8);
             System.out.println(str);
         });
+    }
+    @Test
+    public void testLzfString(){
+        byte[] bytes = stringParser.parseString(byteBuf);
+        String str = new String(bytes, StandardCharsets.UTF_8);
+        System.out.println(str);
     }
 }
