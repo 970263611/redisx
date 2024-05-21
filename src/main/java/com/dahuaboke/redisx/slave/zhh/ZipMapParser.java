@@ -20,14 +20,12 @@ public class ZipMapParser {
             int keyLength = zmElementLen(byteBuf);
             //使用FF做标志位跳出遍历
             if (keyLength == 255) {
-                //key is null
                 break;
             }
             byte[] key = new byte[keyLength];
             byteBuf.readBytes(key);
             //value
             int valueLength = zmElementLen(byteBuf);
-            //使用FF做标志位跳出遍历
             if (valueLength == 255) {
                 //value is null
                 map.put(key, null);
@@ -39,11 +37,6 @@ public class ZipMapParser {
             byteBuf.readBytes(value);
             byteBuf.skipBytes(freeLength);
             map.put(key,value);
-        }
-        //尾部结束符
-        int end = byteBuf.readByte() & 0xFF;
-        if (end != 255) {
-            throw new AssertionError("zipMap expect 255 but " + end);
         }
         return map;
     }
