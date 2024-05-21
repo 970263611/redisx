@@ -36,7 +36,7 @@ public class LengthParser {
         return new Len(value, isencoded);
     }
 
-    public static class Len {
+    public  class Len {
         public final long len;
 
         /**
