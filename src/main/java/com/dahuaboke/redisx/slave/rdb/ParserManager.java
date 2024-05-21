@@ -1,5 +1,7 @@
 package com.dahuaboke.redisx.slave.rdb;
 
+import com.dahuaboke.redisx.slave.rdb.base.Parser;
+import com.dahuaboke.redisx.slave.rdb.base.StringParser;
 import org.slf4j.Logger;
 import org.slf4j.LoggerFactory;
 
@@ -14,7 +16,7 @@ public class ParserManager {
 
     private static final Logger logger = LoggerFactory.getLogger(ParserManager.class);
 
-    public final Parser<byte[]> STRING = new StringParser();
+    public static final Parser<byte[]> STRING_00 = new StringParser();
 
-    public final Parser<Map<byte[], byte[]>> ZIP_MAP = new StringParser();
+    public static final Parser<Map<byte[], byte[]>> ZIP_MAP = new StringParser();
 }

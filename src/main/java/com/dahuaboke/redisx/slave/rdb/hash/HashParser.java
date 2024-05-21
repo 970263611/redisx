@@ -1,7 +1,7 @@
-package com.dahuaboke.redisx.slave.zhh.hash;
+package com.dahuaboke.redisx.slave.rdb.hash;
 
-import com.dahuaboke.redisx.slave.zhh.LengthParser;
-import com.dahuaboke.redisx.slave.zhh.StringParser;
+import com.dahuaboke.redisx.slave.rdb.base.LengthParser;
+import com.dahuaboke.redisx.slave.rdb.base.StringParser;
 import io.netty.buffer.ByteBuf;
 
 import java.util.HashMap;

@@ -1,4 +1,4 @@
-package com.dahuaboke.redisx.slave.rdb;
+package com.dahuaboke.redisx.slave.rdb.base;
 
 import io.netty.buffer.ByteBuf;
 
