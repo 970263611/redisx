@@ -12,6 +12,7 @@ import java.util.Set;
 
 /**
  * @Desc: element与score是zipList中的element,成对出现
+ *        Redis < 7.x版本
  * @Author：zhh
  * @Date：2024/5/20 17:43
  */

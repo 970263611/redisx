@@ -8,7 +8,8 @@ import java.util.LinkedHashSet;
 import java.util.Set;
 
 /**
- * @Desc: Set存储的非数字时触发SetListPack   Redis >= 7.x版本
+ * @Desc: Set存储的非数字时触发SetListPack
+ *        Redis >= 7.x版本
  * @Author：zhh
  * @Date：2024/5/20 15:59
  */

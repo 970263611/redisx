@@ -12,6 +12,7 @@ import java.util.Set;
 
 /**
  * @Desc: element与score是listPack中的element,成对出现
+ *        Redis >= 7.x版本
  * @Author：zhh
  * @Date：2024/5/20 18:08
  */
@@ -19,7 +20,7 @@ public class ZSetListPackParser {
     StringParser string = new StringParser();
     ListPackParser listPack = new ListPackParser();
 
-    public Set<ZSetEntry> parseZSetZipList(ByteBuf byteBuf){
+    public Set<ZSetEntry> parseZSetListPack(ByteBuf byteBuf){
         Set<ZSetEntry> zset = new LinkedHashSet<>();
         byte[] bytes = string.parseString(byteBuf);
         // 创建一个ByteBuf

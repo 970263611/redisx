@@ -7,7 +7,8 @@ import java.util.LinkedHashSet;
 import java.util.Set;
 
 /**
- * @Desc: Set存储的非数字时触发Set  Redis <= 7.x 版本
+ * @Desc: Set存储的非数字时触发Set
+ *        Redis < 7.x 版本
  * @Author：zhh
  * @Date：2024/5/20 15:47
  */
