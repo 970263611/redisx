@@ -1,6 +1,8 @@
 package com.dahuaboke.redisx.slave.rdb;
 
-import java.util.Arrays;
+import java.util.List;
+import java.util.Map;
+import java.util.Set;
 
 /**
  * @Desc: RDB解析类，差分Header
@@ -33,7 +35,7 @@ public class RdbData {
     //value
     private Object value;
 
-    public void clear(){
+    public void clear() {
         this.expireTime = -1;
         this.dataNum++;
         this.rdbType = 0;
@@ -107,14 +109,42 @@ public class RdbData {
 
     @Override
     public String toString() {
-        return "RdbData{" +
+        String str = "RdbData{" +
                 "selectDB=" + selectDB +
                 ", dataCount=" + dataCount +
                 ", ttlCount=" + ttlCount +
                 ", dataNum=" + dataNum +
                 ", expireTime=" + expireTime +
                 ", rdbType=" + rdbType +
-              //  ", key=" + new String(key) +
-                '}';
+                ", key=" + new String(key);
+        String valueStr = "";
+        if (value instanceof byte[]) {
+            valueStr = new String((byte[]) value);
+        } else if (value instanceof List) {
+            for (byte[] bytes : ((List<byte[]>) value)) {
+                if (valueStr.length() > 0) {
+                    valueStr += ",";
+                }
+                valueStr += new String(bytes);
+            }
+        } else if (value instanceof Set) {
+            for (byte[] bytes : ((Set<byte[]>) value)) {
+                if (valueStr.length() > 0) {
+                    valueStr += ",";
+                }
+                valueStr += new String(bytes);
+            }
+        } else if (value instanceof Map) {
+            for (Map.Entry<byte[], byte[]> kAbdV : ((Map<byte[], byte[]>) value).entrySet()) {
+                if (valueStr.length() > 0) {
+                    valueStr += ",";
+                }
+                valueStr += new String(kAbdV.getKey());
+                valueStr += ":";
+                valueStr += new String(kAbdV.getValue());
+            }
+        }
+        str += ", value=" + valueStr + "}";
+        return str;
     }
 }

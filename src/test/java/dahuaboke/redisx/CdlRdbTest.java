@@ -19,17 +19,14 @@ public class CdlRdbTest {
         FileInputStream inputStream = new FileInputStream(new File(root + filename));
         int length = inputStream.available();
         ByteBuf byteBuf = ByteBufAllocator.DEFAULT.buffer();
-        byteBuf.writeBytes(inputStream,length);
+        byteBuf.writeBytes(inputStream, length);
         RdbParser parser = new RdbParser(byteBuf);
         parser.parseHeader();
         System.out.println(parser.getRdbInfo().getRdbHeader());
-        while(true){
+        while (!parser.getRdbInfo().isEnd()) {
             parser.parseData();
             System.out.println("==============================");
             System.out.println(parser.getRdbInfo().getRdbData());
-            if(parser.getRdbInfo().isEnd()){
-                break;
-            }
         }
         System.out.println("end");
     }
