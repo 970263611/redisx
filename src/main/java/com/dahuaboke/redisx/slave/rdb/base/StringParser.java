@@ -1,5 +1,6 @@
 package com.dahuaboke.redisx.slave.rdb.base;
 
+import com.dahuaboke.redisx.slave.rdb.ParserManager;
 import io.netty.buffer.ByteBuf;
 import com.dahuaboke.redisx.slave.rdb.base.LengthParser.Len;
 import static com.dahuaboke.redisx.Constant.*;
@@ -11,9 +12,8 @@ import static com.dahuaboke.redisx.Constant.*;
  */
 public class StringParser implements Parser {
 
-    LengthParser length = new LengthParser();
     public byte[] parse(ByteBuf byteBuf){
-        Len lenObj = length.parse(byteBuf);
+        Len lenObj = ParserManager.LENGTH.parse(byteBuf);
         long len = (int) lenObj.len;
         boolean isEncoded = lenObj.encoded;
         //特殊格式编码,整数/压缩字符串
@@ -69,9 +69,9 @@ public class StringParser implements Parser {
 
     private byte[] parseLzfStringObject(ByteBuf byteBuf) {
         //压缩后长度
-        int compressedLen = (int)length.parse(byteBuf).len;
+        int compressedLen = (int)ParserManager.LENGTH.parse(byteBuf).len;
         //压缩前长度
-        int len = (int)length.parse(byteBuf).len;
+        int len = (int)ParserManager.LENGTH.parse(byteBuf).len;
         //压缩后字节数组
         byte[] src = new byte[compressedLen];
         byteBuf.readBytes(src);

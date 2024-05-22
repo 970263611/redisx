@@ -1,5 +1,6 @@
 package com.dahuaboke.redisx.slave.rdb.list;
 
+import com.dahuaboke.redisx.slave.rdb.ParserManager;
 import com.dahuaboke.redisx.slave.rdb.base.LengthParser;
 import com.dahuaboke.redisx.slave.rdb.base.Parser;
 import com.dahuaboke.redisx.slave.rdb.base.StringParser;
@@ -15,14 +16,11 @@ import java.util.List;
  */
 public class ListParser implements Parser {
 
-    LengthParser length = new LengthParser();
-    StringParser string = new StringParser();
-
     public List<byte[]> parse(ByteBuf byteBuf){
-        long len = length.parse(byteBuf).len;
+        long len = ParserManager.LENGTH.parse(byteBuf).len;
         List<byte[]> list = new LinkedList<>();
         for (int i = 0; i < len; i++) {
-            list.add(string.parse(byteBuf));
+            list.add(ParserManager.STRING_00.parse(byteBuf));
         }
         return list;
     }

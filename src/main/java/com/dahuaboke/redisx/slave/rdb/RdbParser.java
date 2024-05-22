@@ -1,6 +1,5 @@
 package com.dahuaboke.redisx.slave.rdb;
 
-import com.dahuaboke.redisx.slave.rdb.base.LengthParser;
 import io.netty.buffer.ByteBuf;
 import org.slf4j.Logger;
 import org.slf4j.LoggerFactory;
@@ -79,11 +78,12 @@ public class RdbParser {
                     break;
                 case RdbConstants.EOF:
                     rdbInfo.setEnd(true);
-                    break;
+                    rdbInfo.setRdbData(null);
+                    return;
                 default:
                     rdbInfo.getRdbData().setRdbType(b);
                     rdbInfo.getRdbData().setKey(ParserManager.STRING_00.parse(byteBuf));
-                    rdbInfo.getRdbData().setValue(ParserManager.getParser(b));
+                    rdbInfo.getRdbData().setValue(ParserManager.getParser(b).parse(byteBuf));
                     return;
             }
         }

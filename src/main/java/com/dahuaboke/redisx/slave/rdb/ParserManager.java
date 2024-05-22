@@ -1,8 +1,6 @@
 package com.dahuaboke.redisx.slave.rdb;
 
-import com.dahuaboke.redisx.slave.rdb.base.LengthParser;
-import com.dahuaboke.redisx.slave.rdb.base.Parser;
-import com.dahuaboke.redisx.slave.rdb.base.StringParser;
+import com.dahuaboke.redisx.slave.rdb.base.*;
 import com.dahuaboke.redisx.slave.rdb.hash.HashListPackParser;
 import com.dahuaboke.redisx.slave.rdb.hash.HashParser;
 import com.dahuaboke.redisx.slave.rdb.hash.HashZipListParser;
@@ -38,6 +36,14 @@ public class ParserManager {
     private static Map<Integer,Parser> parserMap = new HashMap<>();
 
     public static final Parser<LengthParser.Len> LENGTH = new LengthParser();
+
+    public static final Parser<List<byte[]>> LISTPACK = new ListPackParser();
+
+    public static final Parser<List<byte[]>> ZIPLIST = new ZipListParser();
+
+    public static final Parser<Map<byte[],byte[]>> ZIPMAP = new ZipMapParser();
+
+    public static final Parser<Set<byte[]>> INTSET = new IntSetParser();
 
     public static final Parser<byte[]> STRING_00 = new StringParser();
 

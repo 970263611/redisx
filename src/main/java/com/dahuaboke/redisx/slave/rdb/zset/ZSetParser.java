@@ -1,5 +1,6 @@
 package com.dahuaboke.redisx.slave.rdb.zset;
 
+import com.dahuaboke.redisx.slave.rdb.ParserManager;
 import com.dahuaboke.redisx.slave.rdb.base.LengthParser;
 import com.dahuaboke.redisx.slave.rdb.base.Parser;
 import com.dahuaboke.redisx.slave.rdb.base.StringParser;
@@ -15,14 +16,11 @@ import java.util.Set;
  */
 public class ZSetParser implements Parser {
 
-    LengthParser length = new LengthParser();
-    StringParser string = new StringParser();
-
     public Set<ZSetEntry> parse(ByteBuf byteBuf){
         Set<ZSetEntry> zset = new LinkedHashSet<>();
-        long len = length.parse(byteBuf).len;
+        long len = ParserManager.LENGTH.parse(byteBuf).len;
         for (int i = 0; i < len; i++) {
-            byte[] element = string.parse(byteBuf);
+            byte[] element = ParserManager.STRING_00.parse(byteBuf);
             double score = this.parseDoubleValue(byteBuf);
             zset.add(new ZSetEntry(element, score));
         }

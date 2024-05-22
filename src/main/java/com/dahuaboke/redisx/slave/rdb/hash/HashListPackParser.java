@@ -1,5 +1,6 @@
 package com.dahuaboke.redisx.slave.rdb.hash;
 
+import com.dahuaboke.redisx.slave.rdb.ParserManager;
 import com.dahuaboke.redisx.slave.rdb.base.ListPackParser;
 import com.dahuaboke.redisx.slave.rdb.base.Parser;
 import com.dahuaboke.redisx.slave.rdb.base.StringParser;
@@ -16,17 +17,15 @@ import java.util.Map;
  * @Date：2024/5/21 9:57
  */
 public class HashListPackParser implements Parser {
-    StringParser string = new StringParser();
-    ListPackParser listPack = new ListPackParser();
 
     public Map<byte[],byte[]> parse(ByteBuf byteBuf){
         Map<byte[],byte[]> map = new HashMap<>();
-        byte[] bytes = string.parse(byteBuf);
+        byte[] bytes = ParserManager.STRING_00.parse(byteBuf);
         // 创建一个ByteBuf
         ByteBuf buf = Unpooled.buffer();
         // 将byte数组写入ByteBuf
         buf.writeBytes(bytes);
-        List<byte[]> list = listPack.parse(buf);
+        List<byte[]> list = ParserManager.LISTPACK.parse(buf);
         for (int i = 0; i < list.size(); i += 2) {
             if(i + 1 < list.size()){
                 byte[] key = list.get(i);

@@ -109,6 +109,7 @@ public class RdbData {
                 ", dataNum=" + dataNum +
                 ", expireTime=" + expireTime +
                 ", rdbType=" + rdbType +
+              //  ", key=" + new String(key) +
                 '}';
     }
 }

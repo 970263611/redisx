@@ -1,5 +1,6 @@
 package com.dahuaboke.redisx.slave.rdb.set;
 
+import com.dahuaboke.redisx.slave.rdb.ParserManager;
 import com.dahuaboke.redisx.slave.rdb.base.ListPackParser;
 import com.dahuaboke.redisx.slave.rdb.base.Parser;
 import com.dahuaboke.redisx.slave.rdb.base.StringParser;
@@ -15,17 +16,15 @@ import java.util.Set;
  * @Date：2024/5/20 15:59
  */
 public class SetListPackParser implements Parser {
-    StringParser string = new StringParser();
-    ListPackParser listPackParser = new ListPackParser();
 
     public Set<byte[]> parse(ByteBuf byteBuf){
         Set<byte[]> set = new LinkedHashSet<>();
-        byte[] bytes = string.parse(byteBuf);
+        byte[] bytes = ParserManager.STRING_00.parse(byteBuf);
         // 创建一个ByteBuf
         ByteBuf buf = Unpooled.buffer();
         // 将byte数组写入ByteBuf
         buf.writeBytes(bytes);
-        listPackParser.parse(buf).forEach(listByte -> set.add(listByte));
+        ParserManager.LISTPACK.parse(buf).forEach(listByte -> set.add(listByte));
         return set;
     }
 }

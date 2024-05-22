@@ -1,5 +1,6 @@
 package com.dahuaboke.redisx.slave.rdb.set;
 
+import com.dahuaboke.redisx.slave.rdb.ParserManager;
 import com.dahuaboke.redisx.slave.rdb.base.LengthParser;
 import com.dahuaboke.redisx.slave.rdb.base.Parser;
 import com.dahuaboke.redisx.slave.rdb.base.StringParser;
@@ -14,14 +15,12 @@ import java.util.Set;
  * @Date：2024/5/20 15:47
  */
 public class SetParser implements Parser {
-    LengthParser length = new LengthParser();
-    StringParser string = new StringParser();
 
     public Set<byte[]> parse(ByteBuf byteBuf){
-        long len = length.parse(byteBuf).len;
+        long len = ParserManager.LENGTH.parse(byteBuf).len;
         Set<byte[]> set = new LinkedHashSet<>();
         for (int i = 0; i < len; i++) {
-            byte[] element = string.parse(byteBuf);
+            byte[] element = ParserManager.STRING_00.parse(byteBuf);
             set.add(element);
         }
         return set;

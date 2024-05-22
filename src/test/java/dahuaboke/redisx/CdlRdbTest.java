@@ -22,9 +22,16 @@ public class CdlRdbTest {
         byteBuf.writeBytes(inputStream,length);
         RdbParser parser = new RdbParser(byteBuf);
         parser.parseHeader();
-        parser.parseData();
-        System.out.println(parser.getRdbInfo());
-
+        System.out.println(parser.getRdbInfo().getRdbHeader());
+        while(true){
+            parser.parseData();
+            System.out.println("==============================");
+            System.out.println(parser.getRdbInfo().getRdbData());
+            if(parser.getRdbInfo().isEnd()){
+                break;
+            }
+        }
+        System.out.println("end");
     }
 
 }
