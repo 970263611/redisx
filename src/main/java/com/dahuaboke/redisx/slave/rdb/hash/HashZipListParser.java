@@ -11,7 +11,7 @@ import java.util.List;
 import java.util.Map;
 
 /**
- * @Desc:
+ * @Desc: Redis < 7.x 版本
  * @Author：zhh
  * @Date：2024/5/21 9:57
  */
