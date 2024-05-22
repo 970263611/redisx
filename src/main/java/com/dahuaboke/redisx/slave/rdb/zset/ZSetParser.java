@@ -1,9 +1,7 @@
 package com.dahuaboke.redisx.slave.rdb.zset;
 
 import com.dahuaboke.redisx.slave.rdb.ParserManager;
-import com.dahuaboke.redisx.slave.rdb.base.LengthParser;
 import com.dahuaboke.redisx.slave.rdb.base.Parser;
-import com.dahuaboke.redisx.slave.rdb.base.StringParser;
 import io.netty.buffer.ByteBuf;
 
 import java.util.LinkedHashSet;
@@ -16,7 +14,7 @@ import java.util.Set;
  */
 public class ZSetParser implements Parser {
 
-    public Set<ZSetEntry> parse(ByteBuf byteBuf){
+    public Set<ZSetEntry> parse(ByteBuf byteBuf) {
         Set<ZSetEntry> zset = new LinkedHashSet<>();
         long len = ParserManager.LENGTH.parse(byteBuf).len;
         for (int i = 0; i < len; i++) {
@@ -26,7 +24,8 @@ public class ZSetParser implements Parser {
         }
         return zset;
     }
-    public double parseDoubleValue(ByteBuf byteBuf){
+
+    public double parseDoubleValue(ByteBuf byteBuf) {
         int len = byteBuf.readByte() & 0xFF;
         switch (len) {
             case 255:

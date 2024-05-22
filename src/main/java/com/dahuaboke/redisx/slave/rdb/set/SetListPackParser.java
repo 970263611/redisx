@@ -1,23 +1,22 @@
 package com.dahuaboke.redisx.slave.rdb.set;
 
 import com.dahuaboke.redisx.slave.rdb.ParserManager;
-import com.dahuaboke.redisx.slave.rdb.base.ListPackParser;
 import com.dahuaboke.redisx.slave.rdb.base.Parser;
-import com.dahuaboke.redisx.slave.rdb.base.StringParser;
 import io.netty.buffer.ByteBuf;
 import io.netty.buffer.Unpooled;
+
 import java.util.LinkedHashSet;
 import java.util.Set;
 
 /**
  * @Desc: Set存储的非数字时触发SetListPack
- *        Redis >= 7.x版本
+ * Redis >= 7.x版本
  * @Author：zhh
  * @Date：2024/5/20 15:59
  */
 public class SetListPackParser implements Parser {
 
-    public Set<byte[]> parse(ByteBuf byteBuf){
+    public Set<byte[]> parse(ByteBuf byteBuf) {
         Set<byte[]> set = new LinkedHashSet<>();
         byte[] bytes = ParserManager.STRING_00.parse(byteBuf);
         // 创建一个ByteBuf

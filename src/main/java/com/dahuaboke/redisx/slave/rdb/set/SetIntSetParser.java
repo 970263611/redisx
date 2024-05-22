@@ -1,9 +1,7 @@
 package com.dahuaboke.redisx.slave.rdb.set;
 
 import com.dahuaboke.redisx.slave.rdb.ParserManager;
-import com.dahuaboke.redisx.slave.rdb.base.IntSetParser;
 import com.dahuaboke.redisx.slave.rdb.base.Parser;
-import com.dahuaboke.redisx.slave.rdb.base.StringParser;
 import io.netty.buffer.ByteBuf;
 import io.netty.buffer.Unpooled;
 
@@ -16,7 +14,7 @@ import java.util.Set;
  */
 public class SetIntSetParser implements Parser {
 
-    public Set<byte[]> parse(ByteBuf byteBuf){
+    public Set<byte[]> parse(ByteBuf byteBuf) {
         byte[] bytes = ParserManager.STRING_00.parse(byteBuf);
         // 创建一个ByteBuf
         ByteBuf buf = Unpooled.buffer();

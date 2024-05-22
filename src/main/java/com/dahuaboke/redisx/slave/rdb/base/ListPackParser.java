@@ -1,6 +1,7 @@
 package com.dahuaboke.redisx.slave.rdb.base;
 
 import io.netty.buffer.ByteBuf;
+
 import java.util.LinkedList;
 import java.util.List;
 
@@ -9,7 +10,7 @@ import java.util.List;
  * @Author：zhh
  * @Date：2024/5/17 14:26
  */
-public class ListPackParser implements Parser{
+public class ListPackParser implements Parser {
     public List<byte[]> parse(ByteBuf byteBuf) {
         List<byte[]> list = new LinkedList();
         //tot-bytes总字节长度
@@ -66,7 +67,7 @@ public class ListPackParser implements Parser{
             value = String.valueOf(byteBuf.readShortLE()).getBytes();
         } else if ((encodingType & 0xFF) == 0xF2) {
             elementTotLen = 4;
-            value = String.valueOf(this.verseBigEndian(byteBuf,3)).getBytes();
+            value = String.valueOf(this.verseBigEndian(byteBuf, 3)).getBytes();
         } else if ((encodingType & 0xFF) == 0xF3) {
             elementTotLen = 5;
             value = String.valueOf(byteBuf.readIntLE()).getBytes();
@@ -103,11 +104,12 @@ public class ListPackParser implements Parser{
 
     /**
      * litterEndian verse bigEndian
+     *
      * @param byteBuf
      * @param length
      * @return
      */
-    public int verseBigEndian(ByteBuf byteBuf, int length){
+    public int verseBigEndian(ByteBuf byteBuf, int length) {
         int r = 0;
         for (int i = 0; i < length; ++i) {
             final int v = byteBuf.readByte() & 0xFF;

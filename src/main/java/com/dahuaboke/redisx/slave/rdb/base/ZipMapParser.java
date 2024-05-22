@@ -1,6 +1,7 @@
 package com.dahuaboke.redisx.slave.rdb.base;
 
 import io.netty.buffer.ByteBuf;
+
 import java.util.HashMap;
 import java.util.Map;
 
@@ -9,10 +10,10 @@ import java.util.Map;
  * @Author：zhh
  * @Date：2024/5/20 9:36
  */
-public class ZipMapParser implements Parser{
+public class ZipMapParser implements Parser {
 
-    public Map<byte[],byte[]> parse(ByteBuf byteBuf){
-        HashMap<byte[],byte[]> map = new HashMap<>();
+    public Map<byte[], byte[]> parse(ByteBuf byteBuf) {
+        HashMap<byte[], byte[]> map = new HashMap<>();
         //不使用zmlen做遍历
         int zmlen = byteBuf.readByte() & 0xFF;
         while (true) {
@@ -36,10 +37,11 @@ public class ZipMapParser implements Parser{
             byte[] value = new byte[valueLength];
             byteBuf.readBytes(value);
             byteBuf.skipBytes(freeLength);
-            map.put(key,value);
+            map.put(key, value);
         }
         return map;
     }
+
     public int zmElementLen(ByteBuf byteBuf) {
         int len = byteBuf.readByte() & 0xFF;
         if (len >= 0 && len <= 253) {

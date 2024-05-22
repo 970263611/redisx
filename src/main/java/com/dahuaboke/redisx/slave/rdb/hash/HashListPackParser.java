@@ -1,9 +1,7 @@
 package com.dahuaboke.redisx.slave.rdb.hash;
 
 import com.dahuaboke.redisx.slave.rdb.ParserManager;
-import com.dahuaboke.redisx.slave.rdb.base.ListPackParser;
 import com.dahuaboke.redisx.slave.rdb.base.Parser;
-import com.dahuaboke.redisx.slave.rdb.base.StringParser;
 import io.netty.buffer.ByteBuf;
 import io.netty.buffer.Unpooled;
 
@@ -18,8 +16,8 @@ import java.util.Map;
  */
 public class HashListPackParser implements Parser {
 
-    public Map<byte[],byte[]> parse(ByteBuf byteBuf){
-        Map<byte[],byte[]> map = new HashMap<>();
+    public Map<byte[], byte[]> parse(ByteBuf byteBuf) {
+        Map<byte[], byte[]> map = new HashMap<>();
         byte[] bytes = ParserManager.STRING_00.parse(byteBuf);
         // 创建一个ByteBuf
         ByteBuf buf = Unpooled.buffer();
@@ -27,11 +25,11 @@ public class HashListPackParser implements Parser {
         buf.writeBytes(bytes);
         List<byte[]> list = ParserManager.LISTPACK.parse(buf);
         for (int i = 0; i < list.size(); i += 2) {
-            if(i + 1 < list.size()){
+            if (i + 1 < list.size()) {
                 byte[] key = list.get(i);
                 byte[] value = list.get(i + 1);
-                map.put(key,value);
-            }else {
+                map.put(key, value);
+            } else {
                 break;
             }
         }

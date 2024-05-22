@@ -1,9 +1,7 @@
 package com.dahuaboke.redisx.slave.rdb.list;
 
 import com.dahuaboke.redisx.slave.rdb.ParserManager;
-import com.dahuaboke.redisx.slave.rdb.base.LengthParser;
 import com.dahuaboke.redisx.slave.rdb.base.Parser;
-import com.dahuaboke.redisx.slave.rdb.base.StringParser;
 import io.netty.buffer.ByteBuf;
 
 import java.util.LinkedList;
@@ -16,7 +14,7 @@ import java.util.List;
  */
 public class ListParser implements Parser {
 
-    public List<byte[]> parse(ByteBuf byteBuf){
+    public List<byte[]> parse(ByteBuf byteBuf) {
         long len = ParserManager.LENGTH.parse(byteBuf).len;
         List<byte[]> list = new LinkedList<>();
         for (int i = 0; i < len; i++) {

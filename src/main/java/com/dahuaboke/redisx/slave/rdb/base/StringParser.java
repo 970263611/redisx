@@ -1,8 +1,9 @@
 package com.dahuaboke.redisx.slave.rdb.base;
 
 import com.dahuaboke.redisx.slave.rdb.ParserManager;
-import io.netty.buffer.ByteBuf;
 import com.dahuaboke.redisx.slave.rdb.base.LengthParser.Len;
+import io.netty.buffer.ByteBuf;
+
 import static com.dahuaboke.redisx.Constant.*;
 
 /**

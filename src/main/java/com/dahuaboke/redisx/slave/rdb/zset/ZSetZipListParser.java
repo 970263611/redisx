@@ -2,8 +2,6 @@ package com.dahuaboke.redisx.slave.rdb.zset;
 
 import com.dahuaboke.redisx.slave.rdb.ParserManager;
 import com.dahuaboke.redisx.slave.rdb.base.Parser;
-import com.dahuaboke.redisx.slave.rdb.base.StringParser;
-import com.dahuaboke.redisx.slave.rdb.base.ZipListParser;
 import io.netty.buffer.ByteBuf;
 import io.netty.buffer.Unpooled;
 
@@ -13,14 +11,14 @@ import java.util.List;
 import java.util.Set;
 
 /**
- * @Desc: element与score是zipList中的element,成对出现
- *        Redis < 7.x版本
+ * @Desc: element与score是zipList中的element, 成对出现
+ * Redis < 7.x版本
  * @Author：zhh
  * @Date：2024/5/20 17:43
  */
 public class ZSetZipListParser implements Parser {
 
-    public Set<ZSetEntry> parse(ByteBuf byteBuf){
+    public Set<ZSetEntry> parse(ByteBuf byteBuf) {
         Set<ZSetEntry> zset = new LinkedHashSet<>();
         byte[] bytes = ParserManager.STRING_00.parse(byteBuf);
         // 创建一个ByteBuf

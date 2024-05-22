@@ -1,10 +1,7 @@
 package com.dahuaboke.redisx.slave.rdb.list;
 
 import com.dahuaboke.redisx.slave.rdb.ParserManager;
-import com.dahuaboke.redisx.slave.rdb.base.LengthParser;
 import com.dahuaboke.redisx.slave.rdb.base.Parser;
-import com.dahuaboke.redisx.slave.rdb.base.StringParser;
-import com.dahuaboke.redisx.slave.rdb.base.ZipListParser;
 import io.netty.buffer.ByteBuf;
 import io.netty.buffer.Unpooled;
 
@@ -13,13 +10,13 @@ import java.util.List;
 
 /**
  * @Desc: quickList = list+zipList
- *        Redis < 7.x 版本
+ * Redis < 7.x 版本
  * @Author：zhh
  * @Date：2024/5/20 13:48
  */
 public class ListQuickListParser implements Parser {
 
-    public List<byte[]> parse(ByteBuf byteBuf){
+    public List<byte[]> parse(ByteBuf byteBuf) {
         //元素个数
         long len = ParserManager.LENGTH.parse(byteBuf).len;
         List<byte[]> list = new LinkedList<>();

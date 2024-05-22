@@ -19,7 +19,7 @@ public class RdbParser {
 
     private ByteBuf byteBuf;
 
-    public RdbParser(ByteBuf byteBuf){
+    public RdbParser(ByteBuf byteBuf) {
         this.rdbInfo = new RdbInfo(byteBuf);
         this.byteBuf = byteBuf;
     }
@@ -29,15 +29,15 @@ public class RdbParser {
      */
     public void parseHeader() {
         //必须已REDIS开头
-        if(!RdbConstants.START.equals(byteBuf.readBytes(5).toString(Charset.defaultCharset()))){
+        if (!RdbConstants.START.equals(byteBuf.readBytes(5).toString(Charset.defaultCharset()))) {
             return;
         }
         //后面四位是版本
         rdbInfo.getRdbHeader().setVer(byteBuf.readBytes(4).toString(Charset.defaultCharset()));
         boolean flag = true;
-        while (flag){
+        while (flag) {
             int b = byteBuf.getByte(byteBuf.readerIndex()) & 0xff;
-            switch (b){
+            switch (b) {
                 //各类信息解析
                 case RdbConstants.AUX:
                     readOneByte();
@@ -58,15 +58,15 @@ public class RdbParser {
                     break;
             }
         }
-        logger.debug("rdbHeader message : {} " , rdbInfo.getRdbHeader());
+        logger.debug("rdbHeader message : {} ", rdbInfo.getRdbHeader());
     }
 
     /**
      * 解析具体数据，每次生产一条
      */
-    public void parseData(){
+    public void parseData() {
         rdbInfo.getRdbData().clear();
-        while(true) {
+        while (true) {
             int b = byteBuf.readByte() & 0xff;
             switch (b) {
                 case RdbConstants.DBSELECT:
@@ -99,7 +99,7 @@ public class RdbParser {
     private void auxParse() {
         String key = new String(ParserManager.STRING_00.parse(byteBuf));
         String value = new String(ParserManager.STRING_00.parse(byteBuf));
-        switch (key){
+        switch (key) {
             case "redis-ver":
                 rdbInfo.getRdbHeader().setRedisVer(value);
                 return;
@@ -129,7 +129,7 @@ public class RdbParser {
         }
     }
 
-    private void moduleParse(){
+    private void moduleParse() {
         //rdbHeader.set();
     }
 
@@ -138,7 +138,7 @@ public class RdbParser {
         rdbInfo.getRdbHeader().getFunction().add(value);
     }
 
-    private void readOneByte(){
+    private void readOneByte() {
         byteBuf.readByte();
     }
 

@@ -10,13 +10,13 @@ import java.util.Set;
  * @Author：zhh
  * @Date：2024/5/20 10:23
  */
-public class IntSetParser implements Parser{
-    public Set<byte[]> parse(ByteBuf byteBuf){
+public class IntSetParser implements Parser {
+    public Set<byte[]> parse(ByteBuf byteBuf) {
         Set<byte[]> set = new LinkedHashSet<>();
         //编码类型
         int encoding = byteBuf.readIntLE();
         //元素个数 TODO 为什么这样写? 原rdb存储是四个字节大端存储 例: 00 00 00 05
-        long contentLength  = byteBuf.readIntLE() & 0xFFFFFFFFL;
+        long contentLength = byteBuf.readIntLE() & 0xFFFFFFFFL;
         for (int i = 0; i < contentLength; i++) {
             switch (encoding) {
                 case 2:

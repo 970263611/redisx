@@ -20,7 +20,7 @@ public class RdbInfo {
     //文件数据信息，单条
     private RdbData rdbData;
 
-    public RdbInfo(ByteBuf byteBuf){
+    public RdbInfo(ByteBuf byteBuf) {
         this.byteBuf = byteBuf;
         this.rdbHeader = new RdbHeader();
         this.rdbData = new RdbData();
