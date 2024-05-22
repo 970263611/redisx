@@ -1,10 +1,9 @@
-package com.dahuaboke.redisx.slave.zhh.zset;
+package com.dahuaboke.redisx.slave.rdb.zset;
 
-import com.dahuaboke.redisx.slave.zhh.LengthParser;
-import com.dahuaboke.redisx.slave.zhh.StringParser;
+import com.dahuaboke.redisx.slave.rdb.base.LengthParser;
+import com.dahuaboke.redisx.slave.rdb.base.StringParser;
 import io.netty.buffer.ByteBuf;
 
-import java.io.IOException;
 import java.util.LinkedHashSet;
 import java.util.Set;
 

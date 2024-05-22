@@ -1,7 +1,7 @@
-package com.dahuaboke.redisx.slave.zhh;
+package com.dahuaboke.redisx.slave.rdb.base;
 
 import io.netty.buffer.ByteBuf;
-import com.dahuaboke.redisx.slave.zhh.LengthParser.Len;
+import com.dahuaboke.redisx.slave.rdb.base.LengthParser.Len;
 import static com.dahuaboke.redisx.Constant.*;
 
 /**
@@ -9,10 +9,10 @@ import static com.dahuaboke.redisx.Constant.*;
  * @Author：zhh
  * @Date：2024/5/20 14:01
  */
-public class StringParser {
+public class StringParser implements Parser {
 
     LengthParser length = new LengthParser();
-    public byte[] parseString(ByteBuf byteBuf){
+    public byte[] parse(ByteBuf byteBuf){
         Len lenObj = length.parseLength(byteBuf);
         long len = (int) lenObj.len;
         boolean isEncoded = lenObj.encoded;

@@ -1,4 +1,4 @@
-package com.dahuaboke.redisx.slave.zhh.zset;
+package com.dahuaboke.redisx.slave.rdb.zset;
 
 import java.util.Arrays;
 import java.util.Objects;

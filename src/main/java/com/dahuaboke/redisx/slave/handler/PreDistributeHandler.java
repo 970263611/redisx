@@ -28,32 +28,38 @@ public class PreDistributeHandler extends ChannelInboundHandlerAdapter {
     public void channelRead(ChannelHandlerContext ctx, Object msg) throws Exception {
         if (msg instanceof ByteBuf) {
             ByteBuf in = (ByteBuf) msg;
-            if (ctx.channel().attr(Constant.RDB_STREAM_NEXT).get()) {
-                if (in.isReadable()) {
-                    logger.debug("Receive rdb byteStream length [{}]", in.readableBytes());
-                    ctx.fireChannelRead(new RdbCommand(in));
-                }
+            if (in.readableBytes() == 1 && in.getByte(0) == '\n') {
+                //redis 7.X版本会发空字符串后在fullresync
+                in.release();
             } else {
-                ByteBuf fullResyncC = in.slice(0, 11);
-                if (Constant.FULLRESYNC.equalsIgnoreCase(fullResyncC.toString(CharsetUtil.UTF_8))) {
-                    logger.debug("Find fullReSync command");
-                    ByteBuf masterAndOffset = in.slice(0, in.readableBytes() - 2);
-                    ctx.channel().attr(Constant.RDB_STREAM_NEXT).set(true);
-                    ctx.fireChannelRead(new OffsetCommand(masterAndOffset.toString(CharsetUtil.UTF_8)));
+                if (ctx.channel().attr(Constant.RDB_STREAM_NEXT).get()) {
+                    if (in.isReadable()) {
+                        logger.debug("Receive rdb byteStream length [{}]", in.readableBytes());
+                        ctx.fireChannelRead(new RdbCommand(in));
+                    }
                 } else {
-                    ByteBuf continueC = in.slice(0, 9);
-                    if (Constant.CONTINUE.equalsIgnoreCase(continueC.toString(CharsetUtil.UTF_8))) {
-                        if (in.readableBytes() > 11) {
-                            logger.debug("Find continue command and will reset offset");
-                            ByteBuf continueAndOffset = in.slice(0, in.readableBytes() - 2);
-                            ctx.fireChannelRead(new OffsetCommand(continueAndOffset.toString(CharsetUtil.UTF_8)));
-                        } else {
-                            logger.debug("Find continue command do nothing");
-                            in.release();
-                            return;
-                        }
+                    //兼容7.X的fullresync指令前面会带着\n所以取到了12位
+                    ByteBuf fullResyncC = in.slice(0, 12);
+                    if (fullResyncC.toString(CharsetUtil.UTF_8).trim().startsWith(Constant.FULLRESYNC)) {
+                        logger.debug("Find fullReSync command");
+                        ByteBuf masterAndOffset = in.slice(0, in.readableBytes() - 2);
+                        ctx.channel().attr(Constant.RDB_STREAM_NEXT).set(true);
+                        ctx.fireChannelRead(new OffsetCommand(masterAndOffset.toString(CharsetUtil.UTF_8).trim()));
                     } else {
-                        ctx.fireChannelRead(in);
+                        ByteBuf continueC = in.slice(0, 10);
+                        if (continueC.toString(CharsetUtil.UTF_8).trim().startsWith(Constant.CONTINUE)) {
+                            if (in.readableBytes() > 11) {
+                                logger.debug("Find continue command and will reset offset");
+                                ByteBuf continueAndOffset = in.slice(0, in.readableBytes() - 2);
+                                ctx.fireChannelRead(new OffsetCommand(continueAndOffset.toString(CharsetUtil.UTF_8).trim()));
+                            } else {
+                                logger.debug("Find continue command do nothing");
+                                in.release();
+                                return;
+                            }
+                        } else {
+                            ctx.fireChannelRead(in);
+                        }
                     }
                 }
             }

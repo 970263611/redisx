@@ -58,10 +58,9 @@ public class RdbByteStreamDecoder extends ChannelInboundHandlerAdapter {
                         logger.info("The RDB stream has been processed");
                         ctx.channel().attr(Constant.RDB_STREAM_NEXT).set(false);
                     } else {
-                        //无法识别流，为了避免特殊数据，所以传播到下游
+                        //无法识别流
                         logger.error("Unknown RDB stream format");
                         ctx.channel().attr(Constant.RDB_STREAM_NEXT).set(false);
-                        ctx.fireChannelRead(in);
                     }
                 }
                 //else 空指令跳过

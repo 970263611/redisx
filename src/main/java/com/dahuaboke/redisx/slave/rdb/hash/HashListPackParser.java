@@ -1,7 +1,7 @@
-package com.dahuaboke.redisx.slave.zhh.hash;
+package com.dahuaboke.redisx.slave.rdb.hash;
 
-import com.dahuaboke.redisx.slave.zhh.StringParser;
-import com.dahuaboke.redisx.slave.zhh.ZipListParser;
+import com.dahuaboke.redisx.slave.rdb.base.ListPackParser;
+import com.dahuaboke.redisx.slave.rdb.base.StringParser;
 import io.netty.buffer.ByteBuf;
 import io.netty.buffer.Unpooled;
 
@@ -10,22 +10,22 @@ import java.util.List;
 import java.util.Map;
 
 /**
- * @Desc: Redis < 7.x 版本
+ * @Desc: Redis >= 7.x版本
  * @Author：zhh
  * @Date：2024/5/21 9:57
  */
-public class HashZipListParser {
+public class HashListPackParser {
     StringParser string = new StringParser();
-    ZipListParser zipList = new ZipListParser();
+    ListPackParser listPack = new ListPackParser();
 
-    public Map<byte[],byte[]> parseHashZipList(ByteBuf byteBuf){
+    public Map<byte[],byte[]> parseHashListPack(ByteBuf byteBuf){
         Map<byte[],byte[]> map = new HashMap<>();
         byte[] bytes = string.parseString(byteBuf);
         // 创建一个ByteBuf
         ByteBuf buf = Unpooled.buffer();
         // 将byte数组写入ByteBuf
         buf.writeBytes(bytes);
-        List<byte[]> list = zipList.parseZipList(buf);
+        List<byte[]> list = listPack.parseListPack(buf);
         for (int i = 0; i < list.size(); i += 2) {
             if(i + 1 < list.size()){
                 byte[] key = list.get(i);
