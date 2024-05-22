@@ -2,7 +2,7 @@ package com.dahuaboke.redisx.slave.handler;
 
 import com.dahuaboke.redisx.Constant;
 import com.dahuaboke.redisx.command.slave.RdbCommand;
-import com.dahuaboke.redisx.slave.rdb.RdbParser;
+import com.dahuaboke.redisx.slave.rdb.RdbParserBak;
 import io.netty.buffer.ByteBuf;
 import io.netty.channel.ChannelHandlerContext;
 import io.netty.channel.ChannelInboundHandlerAdapter;
@@ -23,7 +23,7 @@ public class RdbByteStreamDecoder extends ChannelInboundHandlerAdapter {
     @Override
     public void channelRead(ChannelHandlerContext ctx, Object msg) throws Exception {
         if (msg instanceof RdbCommand) {
-            RdbParser rdbParser = new RdbParser();
+            RdbParserBak rdbParser = new RdbParserBak();
             RdbCommand rdb = (RdbCommand) msg;
             logger.info("Now processing the RDB stream");
             ByteBuf in = rdb.getIn();

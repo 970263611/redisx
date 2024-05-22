@@ -9,8 +9,8 @@ import java.util.List;
  * @Author：zhh
  * @Date：2024/5/17 14:26
  */
-public class ListPackParser {
-    public List<byte[]> parseListPack(ByteBuf byteBuf) {
+public class ListPackParser implements Parser{
+    public List<byte[]> parse(ByteBuf byteBuf) {
         List<byte[]> list = new LinkedList();
         //tot-bytes总字节长度
         int size = byteBuf.readIntLE();

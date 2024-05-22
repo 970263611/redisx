@@ -9,5 +9,5 @@ import io.netty.buffer.ByteBuf;
  */
 public interface Parser<T> {
 
-    T parse(ByteBuf byteBuf) throws Exception;
+    T parse(ByteBuf byteBuf);
 }

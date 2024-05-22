@@ -1,5 +1,6 @@
 package com.dahuaboke.redisx.slave.rdb.hash;
 
+import com.dahuaboke.redisx.slave.rdb.base.Parser;
 import com.dahuaboke.redisx.slave.rdb.base.StringParser;
 import com.dahuaboke.redisx.slave.rdb.base.ZipListParser;
 import io.netty.buffer.ByteBuf;
@@ -14,18 +15,18 @@ import java.util.Map;
  * @Author：zhh
  * @Date：2024/5/21 9:57
  */
-public class HashZipListParser {
+public class HashZipListParser implements Parser {
     StringParser string = new StringParser();
     ZipListParser zipList = new ZipListParser();
 
-    public Map<byte[],byte[]> parseHashZipList(ByteBuf byteBuf){
+    public Map<byte[],byte[]> parse(ByteBuf byteBuf){
         Map<byte[],byte[]> map = new HashMap<>();
-        byte[] bytes = string.parseString(byteBuf);
+        byte[] bytes = string.parse(byteBuf);
         // 创建一个ByteBuf
         ByteBuf buf = Unpooled.buffer();
         // 将byte数组写入ByteBuf
         buf.writeBytes(bytes);
-        List<byte[]> list = zipList.parseZipList(buf);
+        List<byte[]> list = zipList.parse(buf);
         for (int i = 0; i < list.size(); i += 2) {
             if(i + 1 < list.size()){
                 byte[] key = list.get(i);

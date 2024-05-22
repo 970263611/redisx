@@ -11,9 +11,9 @@ import static com.dahuaboke.redisx.Constant.*;
  * @Author：zhh
  * @Date：2024/5/17 16:08
  */
-public class ZipListParser {
+public class ZipListParser implements Parser{
 
-    public List<byte[]> parseZipList(ByteBuf byteBuf) {
+    public List<byte[]> parse(ByteBuf byteBuf) {
         List<byte[]> list = new LinkedList();
         //总字节长度
         int size = byteBuf.readIntLE();

@@ -9,9 +9,9 @@ import static com.dahuaboke.redisx.Constant.*;
  * @Author：zhh
  * @Date：2024/5/20 13:54
  */
-public class LengthParser {
+public class LengthParser implements Parser{
 
-    public Len parseLength(ByteBuf byteBuf){
+    public Len parse(ByteBuf byteBuf){
         boolean isencoded = false;
         int rawByte = byteBuf.readByte() & 0xFF;
         int type = (rawByte & 0xC0) >> 6;

@@ -10,8 +10,8 @@ import java.util.Set;
  * @Author：zhh
  * @Date：2024/5/20 10:23
  */
-public class IntSetParser {
-    public Set<byte[]> parseIntSet(ByteBuf byteBuf){
+public class IntSetParser implements Parser{
+    public Set<byte[]> parse(ByteBuf byteBuf){
         Set<byte[]> set = new LinkedHashSet<>();
         //编码类型
         int encoding = byteBuf.readIntLE();

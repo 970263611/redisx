@@ -8,7 +8,7 @@ import java.util.List;
  * @Author：cdl
  * @Date：2024/5/21 18：00
  */
-public class RdbFileInfo {
+public class RdbHeader {
 
     private String ver;
 
@@ -112,7 +112,7 @@ public class RdbFileInfo {
 
     @Override
     public String toString() {
-        return "RdbFileInfo{" +
+        return "RdbHeader{" +
                 "ver='" + ver + '\'' +
                 ", redisVer='" + redisVer + '\'' +
                 ", redisBits='" + redisBits + '\'' +

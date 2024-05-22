@@ -1,15 +1,12 @@
 package dahuaboke.redisx;
 
-import com.dahuaboke.redisx.slave.zhh.ListPackParser;
-import com.dahuaboke.redisx.slave.zhh.StringParser;
-import com.dahuaboke.redisx.slave.zhh.ZipListParser;
+import com.dahuaboke.redisx.slave.rdb.base.ListPackParser;
+import com.dahuaboke.redisx.slave.rdb.base.StringParser;
+import com.dahuaboke.redisx.slave.rdb.base.ZipListParser;
 import com.dahuaboke.redisx.slave.rdb.hash.HashListPackParser;
-import com.dahuaboke.redisx.slave.rdb.hash.HashParser;
 import com.dahuaboke.redisx.slave.rdb.hash.HashZipListParser;
-import com.dahuaboke.redisx.slave.rdb.list.ListParser;
 import com.dahuaboke.redisx.slave.rdb.list.ListQuickList2Parser;
 import com.dahuaboke.redisx.slave.rdb.list.ListQuickListParser;
-import com.dahuaboke.redisx.slave.rdb.list.ListZipListParser;
 import com.dahuaboke.redisx.slave.rdb.set.SetIntSetParser;
 import com.dahuaboke.redisx.slave.rdb.set.SetListPackParser;
 import com.dahuaboke.redisx.slave.rdb.set.SetParser;
@@ -92,14 +89,14 @@ public class RdbParserTest {
 
     @Test
     public void testLzfString(){
-        byte[] bytes = stringParser.parseString(byteBuf);
+        byte[] bytes = stringParser.parse(byteBuf);
         String str = new String(bytes, StandardCharsets.UTF_8);
         System.out.println(str);
     }
 
     @Test
     public void testListPack(){
-        List<byte[]> bytes = listPackParser.parseListPack(byteBuf);
+        List<byte[]> bytes = listPackParser.parse(byteBuf);
         bytes.forEach(entry -> {
             String str = new String(entry, StandardCharsets.UTF_8);
             System.out.println(str);
@@ -107,7 +104,7 @@ public class RdbParserTest {
     }
     @Test
     public void testZipList(){
-        List<byte[]> bytes = zipListParser.parseZipList(byteBuf);
+        List<byte[]> bytes = zipListParser.parse(byteBuf);
         bytes.forEach(entry -> {
             String str = new String(entry, StandardCharsets.UTF_8);
             System.out.println(str);
@@ -116,7 +113,7 @@ public class RdbParserTest {
 
     @Test
     public void testQuickList(){
-        List<byte[]> bytes = listQuickListParser.parseQuickList(byteBuf);
+        List<byte[]> bytes = listQuickListParser.parse(byteBuf);
         bytes.forEach(entry -> {
             String str = new String(entry, StandardCharsets.UTF_8);
             System.out.println(str);
@@ -125,7 +122,7 @@ public class RdbParserTest {
 
     @Test
     public void testQuickList2(){
-        List<byte[]> bytes = listQuickList2Parser.parseQuickList2(byteBuf);
+        List<byte[]> bytes = listQuickList2Parser.parse(byteBuf);
         bytes.forEach(entry -> {
             String str = new String(entry, StandardCharsets.UTF_8);
             System.out.println(str);
@@ -133,7 +130,7 @@ public class RdbParserTest {
     }
     @Test
     public void testSet(){
-        Set<byte[]> bytes = setParser.parseSet(byteBuf);
+        Set<byte[]> bytes = setParser.parse(byteBuf);
         bytes.forEach(entry -> {
             String str = new String(entry, StandardCharsets.UTF_8);
             System.out.println(str);
@@ -141,7 +138,7 @@ public class RdbParserTest {
     }
     @Test
     public void testSetIntSet(){
-        Set<byte[]> bytes = setIntSetParser.parseSetIntSet(byteBuf);
+        Set<byte[]> bytes = setIntSetParser.parse(byteBuf);
         bytes.forEach(entry -> {
             String str = new String(entry, StandardCharsets.UTF_8);
             System.out.println(str);
@@ -150,7 +147,7 @@ public class RdbParserTest {
 
     @Test
     public void testSetListPack(){
-        Set<byte[]> bytes = setListPackParser.parseSetListPack(byteBuf);
+        Set<byte[]> bytes = setListPackParser.parse(byteBuf);
         bytes.forEach(entry -> {
             String str = new String(entry, StandardCharsets.UTF_8);
             System.out.println(str);
@@ -158,7 +155,7 @@ public class RdbParserTest {
     }
     @Test
     public void testZSetZipList(){
-        Set<ZSetEntry> zSetEntries = zSetZipListParser.parseZSetZipList(byteBuf);
+        Set<ZSetEntry> zSetEntries = zSetZipListParser.parse(byteBuf);
         zSetEntries.forEach(entry -> {
             double score =entry.getScore();
             String element = new String(entry.getElement(), StandardCharsets.UTF_8);
@@ -167,7 +164,7 @@ public class RdbParserTest {
     }
     @Test
     public void testZSetListPack(){
-        Set<ZSetEntry> zSetEntries = zSetListPackParser.parseZSetListPack(byteBuf);
+        Set<ZSetEntry> zSetEntries = zSetListPackParser.parse(byteBuf);
         zSetEntries.forEach(entry -> {
             double score =entry.getScore();
             String element = new String(entry.getElement(), StandardCharsets.UTF_8);
@@ -177,7 +174,7 @@ public class RdbParserTest {
 
     @Test
     public void testHashZipList(){
-        Map<byte[], byte[]> map = hashZipListParser.parseHashZipList(byteBuf);
+        Map<byte[], byte[]> map = hashZipListParser.parse(byteBuf);
         Set<Map.Entry<byte[], byte[]>> entries = map.entrySet();
         entries.forEach(entry -> {
             String key = new String(entry.getKey(), StandardCharsets.UTF_8);
@@ -188,7 +185,7 @@ public class RdbParserTest {
 
     @Test
     public void testHashListPack(){
-        Map<byte[], byte[]> map = hashListPackParser.parseHashListPack(byteBuf);
+        Map<byte[], byte[]> map = hashListPackParser.parse(byteBuf);
         Set<Map.Entry<byte[], byte[]>> entries = map.entrySet();
         entries.forEach(entry -> {
             String key = new String(entry.getKey(), StandardCharsets.UTF_8);

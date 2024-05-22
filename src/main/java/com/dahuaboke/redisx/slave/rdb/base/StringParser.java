@@ -13,7 +13,7 @@ public class StringParser implements Parser {
 
     LengthParser length = new LengthParser();
     public byte[] parse(ByteBuf byteBuf){
-        Len lenObj = length.parseLength(byteBuf);
+        Len lenObj = length.parse(byteBuf);
         long len = (int) lenObj.len;
         boolean isEncoded = lenObj.encoded;
         //特殊格式编码,整数/压缩字符串
@@ -69,9 +69,9 @@ public class StringParser implements Parser {
 
     private byte[] parseLzfStringObject(ByteBuf byteBuf) {
         //压缩后长度
-        int compressedLen = (int)length.parseLength(byteBuf).len;
+        int compressedLen = (int)length.parse(byteBuf).len;
         //压缩前长度
-        int len = (int)length.parseLength(byteBuf).len;
+        int len = (int)length.parse(byteBuf).len;
         //压缩后字节数组
         byte[] src = new byte[compressedLen];
         byteBuf.readBytes(src);

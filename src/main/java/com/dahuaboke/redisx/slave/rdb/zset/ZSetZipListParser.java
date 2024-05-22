@@ -1,5 +1,6 @@
 package com.dahuaboke.redisx.slave.rdb.zset;
 
+import com.dahuaboke.redisx.slave.rdb.base.Parser;
 import com.dahuaboke.redisx.slave.rdb.base.StringParser;
 import com.dahuaboke.redisx.slave.rdb.base.ZipListParser;
 import io.netty.buffer.ByteBuf;
@@ -16,18 +17,18 @@ import java.util.Set;
  * @Author：zhh
  * @Date：2024/5/20 17:43
  */
-public class ZSetZipListParser {
+public class ZSetZipListParser implements Parser {
     StringParser string = new StringParser();
     ZipListParser zipList = new ZipListParser();
 
-    public Set<ZSetEntry> parseZSetZipList(ByteBuf byteBuf){
+    public Set<ZSetEntry> parse(ByteBuf byteBuf){
         Set<ZSetEntry> zset = new LinkedHashSet<>();
-        byte[] bytes = string.parseString(byteBuf);
+        byte[] bytes = string.parse(byteBuf);
         // 创建一个ByteBuf
         ByteBuf buf = Unpooled.buffer();
         // 将byte数组写入ByteBuf
         buf.writeBytes(bytes);
-        List<byte[]> list = zipList.parseZipList(buf);
+        List<byte[]> list = zipList.parse(buf);
         for (int i = 0; i < list.size(); i += 2) {
             // 检查是否还有足够的元素来形成一对
             if (i + 1 < list.size()) {

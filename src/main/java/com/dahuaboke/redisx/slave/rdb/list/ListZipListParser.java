@@ -1,5 +1,6 @@
 package com.dahuaboke.redisx.slave.rdb.list;
 
+import com.dahuaboke.redisx.slave.rdb.base.Parser;
 import com.dahuaboke.redisx.slave.rdb.base.StringParser;
 import com.dahuaboke.redisx.slave.rdb.base.ZipListParser;
 import io.netty.buffer.ByteBuf;
@@ -12,17 +13,17 @@ import java.util.List;
  * @Author：zhh
  * @Date：2024/5/20 13:42
  */
-public class ListZipListParser {
+public class ListZipListParser implements Parser {
     StringParser string = new StringParser();
     ZipListParser zipList = new ZipListParser();
 
-    public List<byte[]> parseListZipList(ByteBuf byteBuf){
-        byte[] bytes = string.parseString(byteBuf);
+    public List<byte[]> parse(ByteBuf byteBuf){
+        byte[] bytes = string.parse(byteBuf);
         // 创建一个ByteBuf
         ByteBuf buf = Unpooled.buffer();
         // 将byte数组写入ByteBuf
         buf.writeBytes(bytes);
-        List<byte[]> listByte = zipList.parseZipList(buf);
+        List<byte[]> listByte = zipList.parse(buf);
         // 释放ByteBuf的内存
         buf.release();
         return listByte;

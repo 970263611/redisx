@@ -9,9 +9,9 @@ import java.util.Map;
  * @Author：zhh
  * @Date：2024/5/20 9:36
  */
-public class ZipMapParser {
+public class ZipMapParser implements Parser{
 
-    public Map<byte[],byte[]> parseZipMap(ByteBuf byteBuf){
+    public Map<byte[],byte[]> parse(ByteBuf byteBuf){
         HashMap<byte[],byte[]> map = new HashMap<>();
         //不使用zmlen做遍历
         int zmlen = byteBuf.readByte() & 0xFF;
