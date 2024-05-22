@@ -10,25 +10,25 @@ import java.util.List;
  */
 public class RdbHeader {
 
-    private String ver;
+    private String ver;//协议版本
 
-    private String redisVer;
+    private String redisVer;//redis版本
 
-    private String redisBits;
+    private String redisBits;//系统位数
 
-    private String ctime;
+    private String ctime;//文件生成时间
 
-    private String usedMem;
+    private String usedMem;//文件占用内存
 
-    private String replStreamDb;
+    private String replStreamDb;//默认数据库
 
-    private String replId;
+    private String replId;//本次同步40位序号
 
-    private String replOffset;
+    private String replOffset;//偏移量
 
     private String aofBase;
 
-    private List<String> function = new ArrayList<>();
+    private List<String> function = new ArrayList<>();//函数列表
 
     public String getVer() {
         return ver;

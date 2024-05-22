@@ -24,6 +24,9 @@ public class RdbParser {
         this.byteBuf = byteBuf;
     }
 
+    /**
+     * 获取文件描述信息
+     */
     public void parseHeader() {
         //必须已REDIS开头
         if(!RdbConstants.START.equals(byteBuf.readBytes(5).toString(Charset.defaultCharset()))){
@@ -58,6 +61,9 @@ public class RdbParser {
         logger.debug("rdbHeader message : {} " , rdbInfo.getRdbHeader());
     }
 
+    /**
+     * 解析具体数据，每次生产一条
+     */
     public void parseData(){
         rdbInfo.getRdbData().clear();
         while(true) {

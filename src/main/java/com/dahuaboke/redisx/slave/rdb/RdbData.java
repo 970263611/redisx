@@ -2,6 +2,11 @@ package com.dahuaboke.redisx.slave.rdb;
 
 import java.util.Arrays;
 
+/**
+ * @Desc: RDB解析类，差分Header
+ * @Author：cdl
+ * @Date：2024/5/22 14:01
+ */
 public class RdbData {
 
     //当前数据的库号
