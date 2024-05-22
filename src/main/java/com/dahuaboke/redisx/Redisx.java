@@ -9,7 +9,7 @@ public class Redisx {
 
     public static void main(String[] args) {
         List<InetSocketAddress> forwards = new ArrayList() {{
-            add(new InetSocketAddress("127.0.0.1", 6380));
+            add(new InetSocketAddress("127.0.0.1", 6382));
         }};
         List<InetSocketAddress> slaves = new ArrayList() {{
             add(new InetSocketAddress("127.0.0.1", 6381));

@@ -2,6 +2,8 @@ package com.dahuaboke.redisx.slave.handler;
 
 import com.dahuaboke.redisx.Constant;
 import com.dahuaboke.redisx.command.slave.RdbCommand;
+import com.dahuaboke.redisx.slave.SlaveContext;
+import com.dahuaboke.redisx.slave.rdb.CommandParser;
 import com.dahuaboke.redisx.slave.rdb.RdbData;
 import com.dahuaboke.redisx.slave.rdb.RdbParser;
 import io.netty.buffer.ByteBuf;
@@ -20,6 +22,12 @@ public class RdbByteStreamDecoder extends ChannelInboundHandlerAdapter {
 
     private static final Logger logger = LoggerFactory.getLogger(RdbByteStreamDecoder.class);
     private int rdbSize = 0;
+    private CommandParser commandParser = new CommandParser();
+    private SlaveContext slaveContext;
+
+    public RdbByteStreamDecoder(SlaveContext slaveContext) {
+        this.slaveContext = slaveContext;
+    }
 
     @Override
     public void channelRead(ChannelHandlerContext ctx, Object msg) throws Exception {
@@ -92,7 +100,22 @@ public class RdbByteStreamDecoder extends ChannelInboundHandlerAdapter {
             parser.parseData();
             RdbData rdbData = parser.getRdbInfo().getRdbData();
             if (rdbData != null) {
-                System.out.println(rdbData);
+                if (rdbData.getDataNum() == 1) {
+                    long selectDB = rdbData.getSelectDB();
+                    boolean success = slaveContext.publish("select " + selectDB);
+                    if (success) {
+                        logger.debug("Select db success [{}]", selectDB);
+                    } else {
+                        logger.error("Select db failed [{}]", selectDB);
+                    }
+                }
+                String command = commandParser.parser(rdbData);
+                boolean success = slaveContext.publish(command);
+                if (success) {
+                    logger.debug("Success rdb data [{}]", command);
+                } else {
+                    logger.error("Sync rdb data [{}] failed", command);
+                }
             }
         }
     }

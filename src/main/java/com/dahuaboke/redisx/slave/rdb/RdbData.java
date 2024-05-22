@@ -1,5 +1,7 @@
 package com.dahuaboke.redisx.slave.rdb;
 
+import com.dahuaboke.redisx.slave.rdb.zset.ZSetEntry;
+
 import java.util.List;
 import java.util.Map;
 import java.util.Set;
@@ -128,11 +130,22 @@ public class RdbData {
                 valueStr += new String(bytes);
             }
         } else if (value instanceof Set) {
-            for (byte[] bytes : ((Set<byte[]>) value)) {
-                if (valueStr.length() > 0) {
-                    valueStr += ",";
+            for (Object obj : ((Set) value)) {
+                if (obj instanceof byte[]) {
+                    byte[] bytes = (byte[]) obj;
+                    if (valueStr.length() > 0) {
+                        valueStr += ",";
+                    }
+                    valueStr += new String(bytes);
+                } else if (obj instanceof ZSetEntry) {
+                    ZSetEntry zset = (ZSetEntry) obj;
+                    if (valueStr.length() > 0) {
+                        valueStr += ",";
+                    }
+                    valueStr += zset.getScore();
+                    valueStr += ":";
+                    valueStr += new String(zset.getElement());
                 }
-                valueStr += new String(bytes);
             }
         } else if (value instanceof Map) {
             for (Map.Entry<byte[], byte[]> kAbdV : ((Map<byte[], byte[]>) value).entrySet()) {

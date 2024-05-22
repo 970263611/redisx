@@ -58,7 +58,7 @@ public class SlaveClient {
                                 pipeline.addLast(new AckOffsetHandler(slaveContext));
                                 pipeline.addLast(new PreDistributeHandler());
                                 pipeline.addLast(new OffsetCommandDecoder());
-                                pipeline.addLast(new RdbByteStreamDecoder());
+                                pipeline.addLast(new RdbByteStreamDecoder(slaveContext));
                             }
                             pipeline.addLast(new RedisDecoder(true));
                             pipeline.addLast(new RedisBulkStringAggregator());

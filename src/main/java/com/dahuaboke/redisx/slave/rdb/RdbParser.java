@@ -71,6 +71,7 @@ public class RdbParser {
             switch (b) {
                 case RdbConstants.DBSELECT:
                     rdbInfo.getRdbData().setSelectDB(ParserManager.LENGTH.parse(byteBuf).len);
+                    rdbInfo.getRdbData().setDataNum(1);
                     break;
                 case RdbConstants.DBRESIZE:
                     rdbInfo.getRdbData().setDataCount(ParserManager.LENGTH.parse(byteBuf).len);
