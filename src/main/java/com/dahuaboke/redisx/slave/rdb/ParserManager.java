@@ -9,6 +9,7 @@ import com.dahuaboke.redisx.slave.rdb.list.ListParser;
 import com.dahuaboke.redisx.slave.rdb.list.ListQuickList2Parser;
 import com.dahuaboke.redisx.slave.rdb.list.ListQuickListParser;
 import com.dahuaboke.redisx.slave.rdb.list.ListZipListParser;
+import com.dahuaboke.redisx.slave.rdb.module.Module;
 import com.dahuaboke.redisx.slave.rdb.module.Module2Parser;
 import com.dahuaboke.redisx.slave.rdb.module.ModuleParser;
 import com.dahuaboke.redisx.slave.rdb.set.SetIntSetParser;
@@ -63,9 +64,9 @@ public class ParserManager {
 
     public static final Parser<Set<ZSetEntry>> ZSET_2_05 = new ZSetParser();
 
-    public static final Parser<Map<byte[], byte[]>> MODULE_06 = new ModuleParser();
+    public static final Parser<Module> MODULE_06 = new ModuleParser();
 
-    public static final Parser<Map<byte[], byte[]>> MODULE_2_07 = new Module2Parser();
+    public static final Parser<Module> MODULE_2_07 = new Module2Parser();
 
     public static final Parser<Map<byte[], byte[]>> HASH_ZIPMAP_09 = new HashZipMapParser();
 
