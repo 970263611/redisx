@@ -12,6 +12,7 @@ import static com.dahuaboke.redisx.Constant.*;
  * @Date：2024/5/23 16:26
  */
 public class Module2Parser implements Parser {
+
     @Override
     public Module parse(ByteBuf byteBuf) {
         char[] c = new char[9];

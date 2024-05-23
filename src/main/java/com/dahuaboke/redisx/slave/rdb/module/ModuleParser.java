@@ -6,7 +6,7 @@ import io.netty.buffer.ByteBuf;
 
 import java.util.NoSuchElementException;
 
-import static com.dahuaboke.redisx.Constant.*;
+import static com.dahuaboke.redisx.Constant.MODULE_SET;
 
 /**
  * @Desc:
@@ -14,6 +14,7 @@ import static com.dahuaboke.redisx.Constant.*;
  * @Date：2024/5/23 15:46
  */
 public class ModuleParser implements Parser {
+
     @Override
     public Module parse(ByteBuf byteBuf) {
         char[] c = new char[9];
