@@ -1,5 +1,6 @@
 package dahuaboke.redisx;
 
+import com.dahuaboke.redisx.slave.rdb.ParserManager;
 import com.dahuaboke.redisx.slave.rdb.base.ListPackParser;
 import com.dahuaboke.redisx.slave.rdb.base.StringParser;
 import com.dahuaboke.redisx.slave.rdb.base.ZipListParser;
@@ -7,6 +8,9 @@ import com.dahuaboke.redisx.slave.rdb.hash.HashListPackParser;
 import com.dahuaboke.redisx.slave.rdb.hash.HashZipListParser;
 import com.dahuaboke.redisx.slave.rdb.list.ListQuickList2Parser;
 import com.dahuaboke.redisx.slave.rdb.list.ListQuickListParser;
+import com.dahuaboke.redisx.slave.rdb.module.Module;
+import com.dahuaboke.redisx.slave.rdb.module.Module2Parser;
+import com.dahuaboke.redisx.slave.rdb.module.ModuleParser;
 import com.dahuaboke.redisx.slave.rdb.set.SetIntSetParser;
 import com.dahuaboke.redisx.slave.rdb.set.SetListPackParser;
 import com.dahuaboke.redisx.slave.rdb.set.SetParser;
@@ -27,9 +31,9 @@ import java.io.IOException;
 import java.nio.ByteBuffer;
 import java.nio.channels.FileChannel;
 import java.nio.charset.StandardCharsets;
-import java.util.List;
-import java.util.Map;
-import java.util.Set;
+import java.util.*;
+
+import static com.dahuaboke.redisx.Constant.MODULE_SET;
 
 /**
  * @Desc: rdb解析测试类
@@ -66,6 +70,9 @@ public class RdbParserTest {
     StreamListPacksParser streamListPacksParser = new StreamListPacksParser();
     StreamListPacks2Parser streamListPacks2Parser = new StreamListPacks2Parser();
     StreamListPacks3Parser streamListPacks3Parser = new StreamListPacks3Parser();
+
+    //Module
+    Module2Parser module2Parser = new Module2Parser();
 
     ByteBuf byteBuf = null;
     @Before
@@ -217,6 +224,13 @@ public class RdbParserTest {
     public void testStreamListPacksParser3(){
         Stream stream = streamListPacks3Parser.parse(byteBuf);
         System.out.println(stream.toString());
+    }
+
+    @Test
+    public void testVerseByte(){
+
+        module2Parser.parse(byteBuf);
+
     }
 
 }

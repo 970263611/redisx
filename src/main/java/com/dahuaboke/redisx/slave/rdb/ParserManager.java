@@ -9,6 +9,8 @@ import com.dahuaboke.redisx.slave.rdb.list.ListParser;
 import com.dahuaboke.redisx.slave.rdb.list.ListQuickList2Parser;
 import com.dahuaboke.redisx.slave.rdb.list.ListQuickListParser;
 import com.dahuaboke.redisx.slave.rdb.list.ListZipListParser;
+import com.dahuaboke.redisx.slave.rdb.module.Module2Parser;
+import com.dahuaboke.redisx.slave.rdb.module.ModuleParser;
 import com.dahuaboke.redisx.slave.rdb.set.SetIntSetParser;
 import com.dahuaboke.redisx.slave.rdb.set.SetListPackParser;
 import com.dahuaboke.redisx.slave.rdb.set.SetParser;
@@ -61,9 +63,9 @@ public class ParserManager {
 
     public static final Parser<Set<ZSetEntry>> ZSET_2_05 = new ZSetParser();
 
-    //public static final Parser<Map<byte[], byte[]>> MODULE_06 = new ModuleParser();
+    public static final Parser<Map<byte[], byte[]>> MODULE_06 = new ModuleParser();
 
-    //public static final Parser<Map<byte[], byte[]>> MODULE_2_07 = new Module2Parser();
+    public static final Parser<Map<byte[], byte[]>> MODULE_2_07 = new Module2Parser();
 
     public static final Parser<Map<byte[], byte[]>> HASH_ZIPMAP_09 = new HashZipMapParser();
 
@@ -98,8 +100,8 @@ public class ParserManager {
         ParserManager.parserMap.put(0x03 & 0xff, ZSET_03);
         ParserManager.parserMap.put(0x04 & 0xff, HASH_04);
         ParserManager.parserMap.put(0x05 & 0xff, ZSET_2_05);
-        //ParserManager.parserMap.put(0x06 & 0xff,MODULE_06);
-        //ParserManager.parserMap.put(0x07 & 0xff,MODULE_2_07);
+        ParserManager.parserMap.put(0x06 & 0xff,MODULE_06);
+        ParserManager.parserMap.put(0x07 & 0xff,MODULE_2_07);
         ParserManager.parserMap.put(0x09 & 0xff, HASH_ZIPMAP_09);
         ParserManager.parserMap.put(0x0a & 0xff, LIST_ZIPLIST_0A);
         ParserManager.parserMap.put(0x0b & 0xff, SET_INTSET_0B);
