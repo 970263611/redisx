@@ -12,6 +12,7 @@ import com.dahuaboke.redisx.slave.rdb.list.ListZipListParser;
 import com.dahuaboke.redisx.slave.rdb.set.SetIntSetParser;
 import com.dahuaboke.redisx.slave.rdb.set.SetListPackParser;
 import com.dahuaboke.redisx.slave.rdb.set.SetParser;
+import com.dahuaboke.redisx.slave.rdb.stream.Stream;
 import com.dahuaboke.redisx.slave.rdb.stream.StreamListPacks2Parser;
 import com.dahuaboke.redisx.slave.rdb.stream.StreamListPacks3Parser;
 import com.dahuaboke.redisx.slave.rdb.stream.StreamListPacksParser;
@@ -76,7 +77,7 @@ public class ParserManager {
 
     public static final Parser<List<byte[]>> LIST_QUICKLIST_0E = new ListQuickListParser();
 
-    public static final Parser<Map<byte[], byte[]>> STREAM_LISTPACKS_0F = new StreamListPacksParser();
+    public static final Parser<Stream> STREAM_LISTPACKS_0F = new StreamListPacksParser();
 
     public static final Parser<Map<byte[], byte[]>> HASH_LISTPACK_10 = new HashListPackParser();
 
@@ -84,11 +85,11 @@ public class ParserManager {
 
     public static final Parser<List<byte[]>> LIST_QUICKLIST_2_12 = new ListQuickList2Parser();
 
-    public static final Parser<Map<byte[], byte[]>> STREAM_LISTPACKS_2_13 = new StreamListPacks2Parser();
+    public static final Parser<Stream> STREAM_LISTPACKS_2_13 = new StreamListPacks2Parser();
 
     public static final Parser<Set<byte[]>> SET_LISTPACK_14 = new SetListPackParser();
 
-    public static final Parser<Map<byte[], byte[]>> STREAM_LISTPACKS_3_15 = new StreamListPacks3Parser();
+    public static final Parser<Stream> STREAM_LISTPACKS_3_15 = new StreamListPacks3Parser();
 
     static {
         ParserManager.parserMap.put(0x00 & 0xff, STRING_00);
