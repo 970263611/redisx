@@ -29,14 +29,14 @@ public class ModuleParser implements Parser {
         if (moduleParser == null) {
             throw new NoSuchElementException("module parser[" + moduleName + ", " + moduleVersion + "] not register. rdb type: [RDB_TYPE_MODULE]");
         } else {
-            //moduleParse 开始解析,返回自定义Module对象
+            //customModuleParser 开始解析,返回自定义Module对象
             module = moduleParser.parseModule(byteBuf, 1);
         }
         return module;
     }
 
     public CustomModuleParser findModuleParse(String moduleName, int moduleVersion) {
-        //TODO 应该通过配置文件的方式,加载所有的模板,放入hashmap,key是moduleName+moduleVersion,value是ModuleParser
+        //TODO 应该通过配置文件的方式,加载所有的模板,放入hashmap,key是moduleName+moduleVersion,value是CustomModuleParser
         return null;
     }
 }

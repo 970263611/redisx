@@ -39,7 +39,7 @@ public class Module2Parser implements Parser {
                 }
             }
         } else {
-            //moduleParse 开始解析,返回自定义Module对象
+            //customModule2Parser 开始解析,返回自定义Module对象
             module = moduleParser.parseModule(byteBuf, 2);
             long eof = ParserManager.LENGTH.parse(byteBuf).len;
             if (eof != RDB_MODULE_OPCODE_EOF) {
@@ -50,7 +50,7 @@ public class Module2Parser implements Parser {
     }
 
     public CustomModule2Parser findModuleParse(String moduleName, int moduleVersion) {
-        //TODO 应该通过配置文件的方式,加载所有的模板,放入hashmap,key是moduleName+moduleVersion,value是ModuleParser
+        //TODO 应该通过配置文件的方式,加载所有的模板,放入hashmap,key是moduleName+moduleVersion,value是CustomModule2Parser
         return null;
     }
 }
