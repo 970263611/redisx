@@ -10,6 +10,10 @@ import com.dahuaboke.redisx.slave.rdb.list.ListQuickListParser;
 import com.dahuaboke.redisx.slave.rdb.set.SetIntSetParser;
 import com.dahuaboke.redisx.slave.rdb.set.SetListPackParser;
 import com.dahuaboke.redisx.slave.rdb.set.SetParser;
+import com.dahuaboke.redisx.slave.rdb.stream.Stream;
+import com.dahuaboke.redisx.slave.rdb.stream.StreamListPacks2Parser;
+import com.dahuaboke.redisx.slave.rdb.stream.StreamListPacks3Parser;
+import com.dahuaboke.redisx.slave.rdb.stream.StreamListPacksParser;
 import com.dahuaboke.redisx.slave.rdb.zset.ZSetEntry;
 import com.dahuaboke.redisx.slave.rdb.zset.ZSetListPackParser;
 import com.dahuaboke.redisx.slave.rdb.zset.ZSetZipListParser;
@@ -57,6 +61,11 @@ public class RdbParserTest {
     //Hash
     HashZipListParser hashZipListParser = new HashZipListParser();
     HashListPackParser hashListPackParser = new HashListPackParser();
+
+    //Stream
+    StreamListPacksParser streamListPacksParser = new StreamListPacksParser();
+    StreamListPacks2Parser streamListPacks2Parser = new StreamListPacks2Parser();
+    StreamListPacks3Parser streamListPacks3Parser = new StreamListPacks3Parser();
 
     ByteBuf byteBuf = null;
     @Before
@@ -192,6 +201,22 @@ public class RdbParserTest {
             String value = new String(entry.getValue(), StandardCharsets.UTF_8);
             System.out.println(key+":"+value);
         });
+    }
+
+    @Test
+    public void testStreamListPacksParser(){
+        Stream stream = streamListPacksParser.parse(byteBuf);
+        System.out.println(stream.toString());
+    }
+    @Test
+    public void testStreamListPacksParser2(){
+        Stream stream = streamListPacks2Parser.parse(byteBuf);
+        System.out.println(stream.toString());
+    }
+    @Test
+    public void testStreamListPacksParser3(){
+        Stream stream = streamListPacks3Parser.parse(byteBuf);
+        System.out.println(stream.toString());
     }
 
 }
