@@ -28,6 +28,7 @@ public class PreDistributeHandler extends ChannelInboundHandlerAdapter {
     public void channelRead(ChannelHandlerContext ctx, Object msg) throws Exception {
         if (msg instanceof ByteBuf) {
             ByteBuf in = (ByteBuf) msg;
+            int length = in.readableBytes();
             if (in.readableBytes() == 1 && in.getByte(0) == '\n') {
                 //redis 7.X版本会发空字符串后在fullresync
                 in.release();
@@ -38,26 +39,62 @@ public class PreDistributeHandler extends ChannelInboundHandlerAdapter {
                         ctx.fireChannelRead(new RdbCommand(in));
                     }
                 } else {
-                    //兼容7.X的fullresync指令前面会带着\n所以取到了12位
-                    ByteBuf fullResyncC = in.slice(0, 12);
-                    if (fullResyncC.toString(CharsetUtil.UTF_8).trim().startsWith(Constant.FULLRESYNC)) {
-                        logger.debug("Find fullReSync command");
-                        ByteBuf masterAndOffset = in.slice(0, in.readableBytes() - 2);
-                        ctx.channel().attr(Constant.RDB_STREAM_NEXT).set(true);
-                        ctx.fireChannelRead(new OffsetCommand(masterAndOffset.toString(CharsetUtil.UTF_8).trim()));
+                    int indexHead = 0;
+                    while ('\n' == in.getByte(indexHead)) {
+                        //因为这里可能存在指令前面带着\n的情况，所以先排除\n的长度干扰
+                        in.readByte();
+                        indexHead++;
+                        //重新给length赋值为当前字节流长度
+                        length--;
+                    }
+                    //判断是不是同步指令
+                    if (ctx.pipeline().get(Constant.INIT_SYNC_HANDLER_NAME) != null) {
+                        ctx.fireChannelRead(in);
                     } else {
-                        ByteBuf continueC = in.slice(0, 10);
-                        if (continueC.toString(CharsetUtil.UTF_8).trim().startsWith(Constant.CONTINUE)) {
-                            if (in.readableBytes() > 11) {
-                                logger.debug("Find continue command and will reset offset");
-                                ByteBuf continueAndOffset = in.slice(0, in.readableBytes() - 2);
-                                ctx.fireChannelRead(new OffsetCommand(continueAndOffset.toString(CharsetUtil.UTF_8).trim()));
-                            } else {
+                        /**
+                         * 3种场景
+                         * +FULLRESYNC 40位id offset
+                         * +CONTINUE
+                         * +CONTINUE offset
+                         */
+                        if (length == 9) {
+                            //continue
+                            String isContinue = in.slice(indexHead, 9).toString(CharsetUtil.UTF_8);
+                            if (Constant.CONTINUE.equals(isContinue)) {
                                 logger.debug("Find continue command do nothing");
                                 in.release();
-                                return;
                             }
-                        } else {
+                        } else if (length > 9) {
+                            String isContinue = in.slice(indexHead, 9).toString(CharsetUtil.UTF_8);
+                            int index = 0;
+                            while (in.isReadable()) {
+                                byte b = in.readByte();
+                                if ('\n' == b) {
+                                    break;
+                                }
+                                if ('\r' != b) {
+                                    index++;
+                                }
+                            }
+                            if (Constant.CONTINUE.equals(isContinue)) {
+                                //continue offset
+                                String continueAndOffset = in.slice(indexHead, index).toString(CharsetUtil.UTF_8);
+                                logger.debug("Find continue command and will reset offset");
+                                ctx.fireChannelRead(new OffsetCommand(continueAndOffset));
+                                in.release();
+                            } else {
+                                //fullresync
+                                String isFullResync = in.slice(indexHead, 11).toString(CharsetUtil.UTF_8);
+                                if (Constant.FULLRESYNC.equals(isFullResync)) {
+                                    logger.debug("Find fullReSync command");
+                                    String fullResync = in.slice(indexHead, index).toString(CharsetUtil.UTF_8);
+                                    ctx.fireChannelRead(new OffsetCommand(fullResync));
+                                    ctx.channel().attr(Constant.RDB_STREAM_NEXT).set(true);
+                                    in.release();
+                                }
+                            }
+                        }
+                        if (in.isReadable()) {
                             ctx.fireChannelRead(in);
                         }
                     }

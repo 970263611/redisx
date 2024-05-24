@@ -8,6 +8,6 @@ import io.netty.buffer.ByteBuf;
  * @Date：2024/5/23 16:30
  */
 public interface CustomModule2Parser {
-    
+
     Module parseModule(ByteBuf byteBuf, int moduleVersion);
 }

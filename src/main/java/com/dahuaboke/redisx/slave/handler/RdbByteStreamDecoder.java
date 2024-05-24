@@ -7,11 +7,15 @@ import com.dahuaboke.redisx.slave.rdb.CommandParser;
 import com.dahuaboke.redisx.slave.rdb.RdbData;
 import com.dahuaboke.redisx.slave.rdb.RdbParser;
 import io.netty.buffer.ByteBuf;
+import io.netty.buffer.ByteBufAllocator;
+import io.netty.buffer.Unpooled;
 import io.netty.channel.ChannelHandlerContext;
 import io.netty.channel.ChannelInboundHandlerAdapter;
 import io.netty.util.CharsetUtil;
 import org.slf4j.Logger;
 import org.slf4j.LoggerFactory;
+
+import java.util.List;
 
 /**
  * 2024/5/6 11:09
@@ -21,7 +25,9 @@ import org.slf4j.LoggerFactory;
 public class RdbByteStreamDecoder extends ChannelInboundHandlerAdapter {
 
     private static final Logger logger = LoggerFactory.getLogger(RdbByteStreamDecoder.class);
-    private int rdbSize = 0;
+    private String eofEnd = null;
+    private boolean rdbEnd = false;
+    private ByteBuf tempRdb = ByteBufAllocator.DEFAULT.buffer();
     private CommandParser commandParser = new CommandParser();
     private SlaveContext slaveContext;
 
@@ -32,60 +38,59 @@ public class RdbByteStreamDecoder extends ChannelInboundHandlerAdapter {
     @Override
     public void channelRead(ChannelHandlerContext ctx, Object msg) throws Exception {
         if (msg instanceof RdbCommand) {
-            RdbCommand rdb = (RdbCommand) msg;
+            RdbCommand command = (RdbCommand) msg;
             logger.info("Now processing the RDB stream");
-            ByteBuf in = rdb.getIn();
-            try {
-                //设置标记索引，防止多次暂存，后面利用浅拷贝
+            ByteBuf rdb = command.getIn();
+            int length = rdb.readableBytes();
+            if ('$' == rdb.getByte(0) && !rdbEnd) {
                 int index = 0;
-                while (in.isReadable()) {
-                    byte b = in.readByte();
-                    if (b == '\n') {
+                while (rdb.isReadable()) {
+                    byte b = rdb.getByte(index);
+                    if (b == '\r') {
                         break;
                     }
                     if (b != '\r') {
                         index++;
                     }
                 }
-                if (index > 0) {
-                    if ('$' == in.getByte(0)) {
-                        ByteBuf tempBuf = in.slice(1, index - 1);
-                        if ("EOF".equals(tempBuf.slice(0, 3).toString(CharsetUtil.UTF_8).trim())) {
-                            //redis 7.X
-                            String eof = tempBuf.readBytes(44).toString(CharsetUtil.UTF_8);
-                            System.out.println(eof);
-                            if (in.isReadable()) {
-                                //证明rdb流是一起过来的
-                                parse(in);
-                                logger.info("The RDB stream has been processed");
-                                ctx.channel().attr(Constant.RDB_STREAM_NEXT).set(false);
-                            }
+                String isEofOrSizeStr = rdb.slice(1, index - 1).toString(CharsetUtil.UTF_8);
+                if (isEofOrSizeStr.startsWith("EOF")) {
+                    //7.X $EOF:40位\r\n
+                    rdb.readBytes(47);
+                    eofEnd = isEofOrSizeStr.split(":")[1];
+                    if (length > 40) {
+                        String end = rdb.slice(length - 40, 40).toString(CharsetUtil.UTF_8);
+                        if (eofEnd.equals(end)) {
+                            rdbEnd = true;
                         } else {
-                            String rdbSizeCommand = tempBuf.toString(CharsetUtil.UTF_8);
-                            rdbSize = Integer.parseInt(rdbSizeCommand);
-                            if (in.readableBytes() == rdbSize) {
-                                //index + 2 跳过\r\n
-                                ByteBuf rdbStream = in.slice(index + 2, rdbSize);
-                                parse(rdbStream);
-                                logger.info("The RDB stream has been processed");
-                                ctx.channel().attr(Constant.RDB_STREAM_NEXT).set(false);
-                            }
+                            tempRdb = Unpooled.copiedBuffer(tempRdb, rdb);
                         }
-                        //else 流是分开的，需要等下一次处理
-                    } else if ('R' == in.getByte(0)) {
-                        ByteBuf rdbStream = in.slice(0, rdbSize);
-                        parse(rdbStream);
-                        logger.info("The RDB stream has been processed");
-                        ctx.channel().attr(Constant.RDB_STREAM_NEXT).set(false);
                     } else {
-                        //无法识别流
-                        logger.error("Unknown RDB stream format");
-                        ctx.channel().attr(Constant.RDB_STREAM_NEXT).set(false);
+                        tempRdb = Unpooled.copiedBuffer(tempRdb, rdb);
+                    }
+                } else {
+                    //$xxx\r\n
+                    rdb.readBytes(isEofOrSizeStr.length() + 3);
+                    if (rdb.readableBytes() == Integer.parseInt(isEofOrSizeStr)) {
+                        rdbEnd = true;
+                        tempRdb = Unpooled.copiedBuffer(tempRdb, rdb);
                     }
                 }
-                //else 空指令跳过
-            } finally {
-                in.release();
+            } else if (!rdbEnd) {
+                if (length > 40) {
+                    String end = rdb.slice(length - 40, 40).toString(CharsetUtil.UTF_8);
+                    if (eofEnd.equals(end)) {
+                        rdbEnd = true;
+                    }
+                }
+                tempRdb = Unpooled.copiedBuffer(tempRdb, rdb);
+            }
+            if (rdbEnd) {
+                rdbEnd = false;
+                ctx.channel().attr(Constant.RDB_STREAM_NEXT).set(false);
+                parse(tempRdb);
+                tempRdb = ByteBufAllocator.DEFAULT.buffer();
+                logger.info("The RDB stream has been processed");
             }
         } else {
             ctx.fireChannelRead(msg);
@@ -109,12 +114,14 @@ public class RdbByteStreamDecoder extends ChannelInboundHandlerAdapter {
                         logger.error("Select db failed [{}]", selectDB);
                     }
                 }
-                String command = commandParser.parser(rdbData);
-                boolean success = slaveContext.publish(command);
-                if (success) {
-                    logger.debug("Success rdb data [{}]", command);
-                } else {
-                    logger.error("Sync rdb data [{}] failed", command);
+                List<String> commands = commandParser.parser(rdbData);
+                for (String command : commands) {
+                    boolean success = slaveContext.publish(command);
+                    if (success) {
+                        logger.debug("Success rdb data [{}]", command);
+                    } else {
+                        logger.error("Sync rdb data [{}] failed", command);
+                    }
                 }
             }
         }

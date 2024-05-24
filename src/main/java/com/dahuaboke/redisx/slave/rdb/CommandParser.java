@@ -5,10 +5,7 @@ import io.netty.buffer.ByteBuf;
 import org.slf4j.Logger;
 import org.slf4j.LoggerFactory;
 
-import java.util.HashMap;
-import java.util.List;
-import java.util.Map;
-import java.util.Set;
+import java.util.*;
 
 /**
  * 2024/5/22 15:40
@@ -57,9 +54,9 @@ public class CommandParser {
         return null;
     }
 
-    public String parser(RdbData rdbData) {
+    public List<String> parser(RdbData rdbData) {
+        List result = new LinkedList();
         StringBuilder sb = new StringBuilder();
-        int size = 0;
         int rdbType = rdbData.getRdbType();
         Type type = typeMap.get(rdbType);
         switch (type) {
@@ -134,15 +131,25 @@ public class CommandParser {
             default:
                 throw new IllegalArgumentException("Rdb type error");
         }
+        result.add(new String(sb));
         long expireTime = rdbData.getExpireTime();
         long lastTime = System.currentTimeMillis() - expireTime;
-        if (expireTime != -1 && (lastTime) > 0) {
+        ExpiredType expiredType = rdbData.getExpiredType();
+        if (ExpiredType.NONE != expiredType) {
+            sb = new StringBuilder();
             sb.append("expire ");
             sb.append(new String(rdbData.getKey()));
             sb.append(" ");
-            sb.append(lastTime);
+            if (ExpiredType.SECOND == expiredType) {
+                sb.append(lastTime);
+            } else if (ExpiredType.MS == expiredType) {
+                sb.append(lastTime / 1000);
+            } else {
+                throw new IllegalArgumentException("Rdb type error");
+            }
+            result.add(new String(sb));
         }
-        return new String(sb);
+        return result;
     }
 
 //    public String parser(RdbData rdbData) {
