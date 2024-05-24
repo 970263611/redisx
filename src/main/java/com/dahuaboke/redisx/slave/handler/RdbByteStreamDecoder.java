@@ -89,6 +89,7 @@ public class RdbByteStreamDecoder extends ChannelInboundHandlerAdapter {
                 rdbEnd = false;
                 ctx.channel().attr(Constant.RDB_STREAM_NEXT).set(false);
                 parse(tempRdb);
+                tempRdb.release();
                 tempRdb = ByteBufAllocator.DEFAULT.buffer();
                 logger.info("The RDB stream has been processed");
             }
