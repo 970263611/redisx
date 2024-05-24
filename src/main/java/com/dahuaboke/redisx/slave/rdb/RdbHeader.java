@@ -28,7 +28,7 @@ public class RdbHeader {
 
     private String aofBase;
 
-    private List<String> function = new ArrayList<>();//函数列表
+    private List<byte[]> function = new ArrayList<>();//函数列表
 
     public String getVer() {
         return ver;
@@ -102,17 +102,17 @@ public class RdbHeader {
         this.aofBase = aofBase;
     }
 
-    public List<String> getFunction() {
+    public List<byte[]> getFunction() {
         return function;
     }
 
-    public void setFunction(List<String> function) {
+    public void setFunction(List<byte[]> function) {
         this.function = function;
     }
 
     @Override
     public String toString() {
-        return "RdbHeader{" +
+        StringBuilder sb = new StringBuilder( "RdbHeader{" +
                 "ver='" + ver + '\'' +
                 ", redisVer='" + redisVer + '\'' +
                 ", redisBits='" + redisBits + '\'' +
@@ -121,8 +121,15 @@ public class RdbHeader {
                 ", replStreamDb='" + replStreamDb + '\'' +
                 ", replId='" + replId + '\'' +
                 ", replOffset='" + replOffset + '\'' +
-                ", aofBase='" + aofBase + '\'' +
-                ", function=" + function +
-                '}';
+                ", aofBase='" + aofBase + '\'' );
+        if(function.size() > 0) {
+            sb.append(",function=[");
+            for (byte[] bytes : function) {
+                sb.append("{ ").append(new String(bytes)).append(" }");
+            }
+            sb.append("]");
+        }
+        sb.append(" }");
+        return sb.toString();
     }
 }

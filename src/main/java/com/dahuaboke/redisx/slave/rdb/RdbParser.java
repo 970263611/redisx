@@ -4,10 +4,11 @@ import io.netty.buffer.ByteBuf;
 import org.slf4j.Logger;
 import org.slf4j.LoggerFactory;
 
+import java.io.IOException;
 import java.nio.charset.Charset;
 
 /**
- * @Desc: RDB解析类，差分Header
+ * @Desc: RDB解析类
  * @Author：cdl
  * @Date：2024/5/20 14:01
  */
@@ -33,7 +34,7 @@ public class RdbParser {
             return;
         }
         //后面四位是版本
-        rdbInfo.getRdbHeader().setVer(byteBuf.readBytes(4).toString(Charset.defaultCharset()));
+        rdbHeader().setVer(byteBuf.readBytes(4).toString(Charset.defaultCharset()));
         boolean flag = true;
         while (flag) {
             int b = byteBuf.getByte(byteBuf.readerIndex()) & 0xff;
@@ -58,39 +59,49 @@ public class RdbParser {
                     break;
             }
         }
-        logger.debug("rdbHeader message : {} ", rdbInfo.getRdbHeader());
+        logger.debug("rdbHeader message : {} ", rdbHeader());
     }
 
     /**
      * 解析具体数据，每次生产一条
      */
     public void parseData() {
-        rdbInfo.getRdbData().clear();
+        clear();
         while (true) {
             int b = byteBuf.readByte() & 0xff;
             switch (b) {
                 case RdbConstants.DBSELECT:
-                    rdbInfo.getRdbData().setSelectDB(ParserManager.LENGTH.parse(byteBuf).len);
-                    rdbInfo.getRdbData().setDataNum(1);
+                    rdbData().setSelectDB(ParserManager.LENGTH.parse(byteBuf).len);
+                    rdbData().setDataNum(1);
                     break;
                 case RdbConstants.DBRESIZE:
-                    rdbInfo.getRdbData().setDataCount(ParserManager.LENGTH.parse(byteBuf).len);
-                    rdbInfo.getRdbData().setTtlCount(ParserManager.LENGTH.parse(byteBuf).len);
+                    rdbData().setDataCount(ParserManager.LENGTH.parse(byteBuf).len);
+                    rdbData().setTtlCount(ParserManager.LENGTH.parse(byteBuf).len);
                     break;
                 case RdbConstants.EXPIRED_FC:
-                    rdbInfo.getRdbData().setExpireTime(byteBuf.readLongLE());
+                    rdbData().setExpiredType(ExpiredType.MS);
+                    rdbData().setExpireTime(byteBuf.readLongLE());
                     break;
                 case RdbConstants.EXPIRED_FD:
-                    rdbInfo.getRdbData().setExpireTime(byteBuf.readIntLE());
+                    rdbData().setExpiredType(ExpiredType.SECOND);
+                    rdbData().setExpireTime(byteBuf.readIntLE());
+                    break;
+                case RdbConstants.RDB_OPCODE_IDLE:
+                    rdbData().setEvictType(EvictType.LRU);
+                    rdbData().setEvictValue(ParserManager.LENGTH.parse(byteBuf).len);
+                    break;
+                case RdbConstants.RDB_OPCODE_FREQ:
+                    rdbData().setEvictType(EvictType.LFU);
+                    rdbData().setEvictValue((long) (byteBuf.readByte() & 0xff));
                     break;
                 case RdbConstants.EOF:
                     rdbInfo.setEnd(true);
                     rdbInfo.setRdbData(null);
                     return;
                 default:
-                    rdbInfo.getRdbData().setRdbType(b);
-                    rdbInfo.getRdbData().setKey(ParserManager.STRING_00.parse(byteBuf));
-                    rdbInfo.getRdbData().setValue(ParserManager.getParser(b).parse(byteBuf));
+                    rdbData().setRdbType(b);
+                    rdbData().setKey(ParserManager.STRING_00.parse(byteBuf));
+                    rdbData().setValue(ParserManager.getParser(b).parse(byteBuf));
                     return;
             }
         }
@@ -101,28 +112,28 @@ public class RdbParser {
         String value = new String(ParserManager.STRING_00.parse(byteBuf));
         switch (key) {
             case "redis-ver":
-                rdbInfo.getRdbHeader().setRedisVer(value);
+                rdbHeader().setRedisVer(value);
                 return;
             case "redis-bits":
-                rdbInfo.getRdbHeader().setRedisBits(value);
+                rdbHeader().setRedisBits(value);
                 return;
             case "ctime":
-                rdbInfo.getRdbHeader().setCtime(value);
+                rdbHeader().setCtime(value);
                 return;
             case "used-mem":
-                rdbInfo.getRdbHeader().setUsedMem(value);
+                rdbHeader().setUsedMem(value);
                 return;
             case "repl-stream-db":
-                rdbInfo.getRdbHeader().setReplStreamDb(value);
+                rdbHeader().setReplStreamDb(value);
                 return;
             case "repl-id":
-                rdbInfo.getRdbHeader().setReplId(value);
+                rdbHeader().setReplId(value);
                 return;
             case "repl-offset":
-                rdbInfo.getRdbHeader().setReplOffset(value);
+                rdbHeader().setReplOffset(value);
                 return;
             case "aof-base":
-                rdbInfo.getRdbHeader().setAofBase(value);
+                rdbHeader().setAofBase(value);
                 return;
             default:
                 return;
@@ -130,12 +141,12 @@ public class RdbParser {
     }
 
     private void moduleParse() {
-        //rdbHeader.set();
+        ParserManager.SKIP.rdbLoadLen(byteBuf);
+        ParserManager.SKIP.rdbLoadCheckModuleValue(byteBuf);
     }
 
     private void functionParse() {
-        String value = new String(ParserManager.STRING_00.parse(byteBuf));
-        rdbInfo.getRdbHeader().getFunction().add(value);
+        rdbHeader().getFunction().add(ParserManager.STRING_00.parse(byteBuf));
     }
 
     private void readOneByte() {
@@ -144,5 +155,24 @@ public class RdbParser {
 
     public RdbInfo getRdbInfo() {
         return rdbInfo;
+    }
+
+    private RdbData rdbData(){
+        return rdbInfo.getRdbData();
+    }
+
+    private RdbHeader rdbHeader(){
+        return rdbInfo.getRdbHeader();
+    }
+
+    private void clear() {
+        rdbData().setExpiredType(ExpiredType.NONE);
+        rdbData().setExpireTime(-1);
+        rdbData().setDataNum(rdbData().getDataNum() + 1);
+        rdbData().setRdbType(-1);
+        rdbData().setKey(null);
+        rdbData().setValue(null);
+        rdbData().setEvictType(EvictType.NONE);
+        rdbData().setEvictValue(-1l);
     }
 }

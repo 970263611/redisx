@@ -42,6 +42,8 @@ public class ParserManager {
 
     private static Map<Integer, Parser> parserMap = new HashMap<>();
 
+    public static final SkipRdbParser SKIP = new SkipRdbParser();
+
     public static final Parser<LengthParser.Len> LENGTH = new LengthParser();
 
     public static final Parser<List<byte[]>> LISTPACK = new ListPackParser();

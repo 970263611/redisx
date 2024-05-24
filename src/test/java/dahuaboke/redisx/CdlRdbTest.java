@@ -1,5 +1,6 @@
 package dahuaboke.redisx;
 
+import com.dahuaboke.redisx.slave.rdb.RdbData;
 import com.dahuaboke.redisx.slave.rdb.RdbParser;
 import io.netty.buffer.ByteBuf;
 import io.netty.buffer.ByteBufAllocator;
@@ -20,15 +21,27 @@ public class CdlRdbTest {
         int length = inputStream.available();
         ByteBuf byteBuf = ByteBufAllocator.DEFAULT.buffer();
         byteBuf.writeBytes(inputStream, length);
+//        RdbParser parser = new RdbParser(byteBuf);
+//        parser.parseHeader();
+//        System.out.println(parser.getRdbInfo().getRdbHeader());
+//        while (!parser.getRdbInfo().isEnd()) {
+//            parser.parseData();
+//            System.out.println("==============================");
+//            System.out.println(parser.getRdbInfo().getRdbData());
+//        }
+//        System.out.println("end");
+        parse(byteBuf);
+    }
+
+    private void parse(ByteBuf byteBuf) {
         RdbParser parser = new RdbParser(byteBuf);
         parser.parseHeader();
         System.out.println(parser.getRdbInfo().getRdbHeader());
         while (!parser.getRdbInfo().isEnd()) {
             parser.parseData();
-            System.out.println("==============================");
-            System.out.println(parser.getRdbInfo().getRdbData());
+            RdbData rdbData = parser.getRdbInfo().getRdbData();
+            System.out.println(rdbData);
         }
-        System.out.println("end");
     }
 
 }

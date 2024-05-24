@@ -25,8 +25,14 @@ public class RdbData {
     //当前数据是当前库的第几个数据库
     private long dataNum;
 
+    private ExpiredType expiredType;
+
     //有效时间，时间戳
     private long expireTime;
+
+    private EvictType evictType;
+
+    private Long evictValue;
 
     //当前数据类型
     private int rdbType;
@@ -37,13 +43,6 @@ public class RdbData {
     //value
     private Object value;
 
-    public void clear() {
-        this.expireTime = -1;
-        this.dataNum++;
-        this.rdbType = 0;
-        this.key = null;
-        this.value = null;
-    }
 
     public long getSelectDB() {
         return selectDB;
@@ -107,6 +106,30 @@ public class RdbData {
 
     public void setValue(Object value) {
         this.value = value;
+    }
+
+    public ExpiredType getExpiredType() {
+        return expiredType;
+    }
+
+    public void setExpiredType(ExpiredType expiredType) {
+        this.expiredType = expiredType;
+    }
+
+    public EvictType getEvictType() {
+        return evictType;
+    }
+
+    public void setEvictType(EvictType evictType) {
+        this.evictType = evictType;
+    }
+
+    public Long getEvictValue() {
+        return evictValue;
+    }
+
+    public void setEvictValue(Long evictValue) {
+        this.evictValue = evictValue;
     }
 
     @Override
