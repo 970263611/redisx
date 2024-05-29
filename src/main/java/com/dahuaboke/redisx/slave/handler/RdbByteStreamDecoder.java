@@ -50,7 +50,7 @@ public class RdbByteStreamDecoder extends ChannelInboundHandlerAdapter {
         if (msg instanceof RdbCommand) {
             ByteBuf rdb = ((RdbCommand) msg).getIn();
             logger.info("Now processing the RDB stream");
-            logger.info(ByteBufUtil.prettyHexDump(rdb));
+            //logger.info(ByteBufUtil.prettyHexDump(rdb));
 
             if (RdbType.START == rdbType && '$' == rdb.getByte(0)) {
                 rdb.readByte();//除去$
@@ -71,19 +71,17 @@ public class RdbByteStreamDecoder extends ChannelInboundHandlerAdapter {
             }
 
             if(RdbType.TYPE_LENGTH == rdbType){
-                if(rdb.readableBytes() >= length){
+                tempRdb = Unpooled.copiedBuffer(tempRdb, rdb);
+                if(tempRdb.readableBytes() >= length){
                     length = -1;
                     rdbType = RdbType.END;
-                }else {
-                    length-= rdb.readableBytes();
                 }
-                tempRdb = Unpooled.copiedBuffer(tempRdb, rdb);
             } else if (RdbType.TYPE_EOF == rdbType){
-                if(ByteBufUtil.equals(eofEnd,rdb.slice(rdb.writerIndex() - eofEnd.readableBytes(),eofEnd.readableBytes()))){
+                tempRdb = Unpooled.copiedBuffer(tempRdb, rdb);
+                if(ByteBufUtil.equals(eofEnd,tempRdb.slice(tempRdb.writerIndex() - eofEnd.readableBytes(),eofEnd.readableBytes()))){
                     eofEnd = null;
                     rdbType = RdbType.END;
                 }
-                tempRdb = Unpooled.copiedBuffer(tempRdb, rdb);
             }
 
             if (RdbType.END == rdbType) {

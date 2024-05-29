@@ -52,11 +52,13 @@ public class RdbParser {
                     break;
                 case RdbConstants.DBSELECT:
                     byteBuf.resetReaderIndex();
-                case RdbConstants.EOF:
-                default:
-                    rdbInfo.setEnd(true);
                     flag = false;
                     break;
+                case RdbConstants.EOF:
+                    rdbInfo.setEnd(true);
+                    rdbInfo.setRdbData(null);
+                default:
+                    flag = false;
             }
         }
         logger.debug("rdbHeader message : {} ", rdbHeader());
