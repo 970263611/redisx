@@ -4,6 +4,7 @@ import com.dahuaboke.redisx.slave.rdb.RdbData;
 import com.dahuaboke.redisx.slave.rdb.RdbParser;
 import io.netty.buffer.ByteBuf;
 import io.netty.buffer.ByteBufAllocator;
+import io.netty.buffer.Unpooled;
 import org.junit.Test;
 
 import java.io.File;
@@ -42,6 +43,13 @@ public class CdlRdbTest {
             RdbData rdbData = parser.getRdbInfo().getRdbData();
             System.out.println(rdbData);
         }
+    }
+
+
+    @Test
+    public void aaa(){
+        int a = 1 << 30;
+        System.out.println(Integer.toBinaryString(a));
     }
 
 }

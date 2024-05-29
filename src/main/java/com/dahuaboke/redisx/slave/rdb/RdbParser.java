@@ -37,24 +37,24 @@ public class RdbParser {
         rdbHeader().setVer(byteBuf.readBytes(4).toString(Charset.defaultCharset()));
         boolean flag = true;
         while (flag) {
-            int b = byteBuf.getByte(byteBuf.readerIndex()) & 0xff;
+            byteBuf.markReaderIndex();
+            int b = byteBuf.readByte() & 0xff;
             switch (b) {
                 //各类信息解析
                 case RdbConstants.AUX:
-                    readOneByte();
                     auxParse();
                     break;
                 case RdbConstants.MODULE_AUX:
-                    readOneByte();
                     moduleParse();
                     break;
                 case RdbConstants.FUNCTION:
-                    readOneByte();
                     functionParse();
                     break;
                 case RdbConstants.DBSELECT:
+                    byteBuf.resetReaderIndex();
                 case RdbConstants.EOF:
                 default:
+                    rdbInfo.setEnd(true);
                     flag = false;
                     break;
             }

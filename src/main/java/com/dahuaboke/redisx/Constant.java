@@ -1,5 +1,7 @@
 package com.dahuaboke.redisx;
 
+import io.netty.buffer.ByteBuf;
+import io.netty.buffer.Unpooled;
 import io.netty.util.AttributeKey;
 
 /**
@@ -173,5 +175,8 @@ public class Constant {
     public static final byte MINUS = '-';
     public static final byte COLON = ':';
     public static final byte HASHTAG = '#'; // since redis 7.0 TS timestamp
+
+    //redis数据分割符号 \r \n
+    public static final ByteBuf SEPARAPOR = Unpooled.copiedBuffer(new byte[]{0x0d,0x0a});
 
 }
