@@ -4,11 +4,14 @@ import com.dahuaboke.redisx.Constant;
 import com.dahuaboke.redisx.command.slave.OffsetCommand;
 import com.dahuaboke.redisx.command.slave.RdbCommand;
 import io.netty.buffer.ByteBuf;
+import io.netty.buffer.ByteBufUtil;
 import io.netty.channel.ChannelHandlerContext;
 import io.netty.channel.ChannelInboundHandlerAdapter;
 import io.netty.util.CharsetUtil;
 import org.slf4j.Logger;
 import org.slf4j.LoggerFactory;
+
+import java.nio.charset.StandardCharsets;
 
 /**
  * 2024/5/8 12:52
@@ -28,78 +31,48 @@ public class PreDistributeHandler extends ChannelInboundHandlerAdapter {
     public void channelRead(ChannelHandlerContext ctx, Object msg) throws Exception {
         if (msg instanceof ByteBuf) {
             ByteBuf in = (ByteBuf) msg;
-            int length = in.readableBytes();
-            if (in.readableBytes() == 1 && in.getByte(0) == '\n') {
-                //redis 7.X版本会发空字符串后在fullresync
-                in.release();
-            } else {
-                if (ctx.channel().attr(Constant.RDB_STREAM_NEXT).get()) {
-                    if (in.isReadable()) {
-                        logger.debug("Receive rdb byteStream length [{}]", in.readableBytes());
-                        ctx.fireChannelRead(new RdbCommand(in));
-                    }
-                } else {
-                    int indexHead = 0;
-                    while ('\n' == in.getByte(indexHead)) {
-                        //因为这里可能存在指令前面带着\n的情况，所以先排除\n的长度干扰
-                        in.readByte();
-                        indexHead++;
-                        //重新给length赋值为当前字节流长度
-                        length--;
-                    }
-                    //判断是不是同步指令
-                    if (ctx.pipeline().get(Constant.INIT_SYNC_HANDLER_NAME) != null) {
-                        ctx.fireChannelRead(in);
-                    } else {
-                        /**
-                         * 3种场景
-                         * +FULLRESYNC 40位id offset
-                         * +CONTINUE
-                         * +CONTINUE offset
-                         */
-                        if (length == 9) {
-                            //continue
-                            String isContinue = in.slice(indexHead, 9).toString(CharsetUtil.UTF_8);
-                            if (Constant.CONTINUE.equals(isContinue)) {
-                                logger.debug("Find continue command do nothing");
-                                in.release();
-                            }
-                        } else if (length > 9) {
-                            String isContinue = in.slice(indexHead, 9).toString(CharsetUtil.UTF_8);
-                            int index = 0;
-                            while (in.isReadable()) {
-                                byte b = in.readByte();
-                                if ('\n' == b) {
-                                    break;
-                                }
-                                if ('\r' != b) {
-                                    index++;
-                                }
-                            }
-                            if (Constant.CONTINUE.equals(isContinue)) {
-                                //continue offset
-                                String continueAndOffset = in.slice(indexHead, index).toString(CharsetUtil.UTF_8);
-                                logger.debug("Find continue command and will reset offset");
-                                ctx.fireChannelRead(new OffsetCommand(continueAndOffset));
-                                in.release();
-                            } else {
-                                //fullresync
-                                String isFullResync = in.slice(indexHead, 11).toString(CharsetUtil.UTF_8);
-                                if (Constant.FULLRESYNC.equals(isFullResync)) {
-                                    logger.debug("Find fullReSync command");
-                                    String fullResync = in.slice(indexHead, index).toString(CharsetUtil.UTF_8);
-                                    ctx.fireChannelRead(new OffsetCommand(fullResync));
-                                    ctx.channel().attr(Constant.RDB_STREAM_NEXT).set(true);
-                                    in.release();
-                                }
-                            }
-                        }
-                        if (in.isReadable()) {
+            logger.debug(ByteBufUtil.prettyHexDump(in).toString());
+
+            if (ctx.channel().attr(Constant.RDB_STREAM_NEXT).get()) {//rdb数据文件同步流程
+                logger.debug("Receive rdb byteStream length [{}]", in.readableBytes());
+                ctx.fireChannelRead(new RdbCommand(in));
+            } else if (ctx.pipeline().get(Constant.INIT_SYNC_HANDLER_NAME) != null){//与redis建立连接命令流程
+                ctx.fireChannelRead(in);
+            } else{//redis指令流程
+                switch (in.getByte(0)){
+                    case Constant.PLUS:// + 开头
+                        logger.info("redis success message [{}]!",in.toString(CharsetUtil.UTF_8));
+                        String headStr = in.readBytes(ByteBufUtil.indexOf(Constant.SEPARAPOR,in)).toString(StandardCharsets.UTF_8);
+                        if(Constant.CONTINUE.equals(headStr)){
+                            logger.debug("Find continue command do nothing");
+                            in.release();
+                        } else if (headStr.startsWith(Constant.CONTINUE)) {
+                            logger.debug("Find continue command and will reset offset");
+                            ctx.fireChannelRead(new OffsetCommand(headStr));
+                            in.release();
+                        } else if (headStr.startsWith(Constant.FULLRESYNC)){
+                            logger.debug("Find fullReSync command");
+                            ctx.fireChannelRead(new OffsetCommand(headStr));
+                            ctx.channel().attr(Constant.RDB_STREAM_NEXT).set(true);
+                            in.release();
+                        } else{
                             ctx.fireChannelRead(in);
                         }
-                    }
+                        break;
+                    case Constant.MINUS:// - 开头,错误信息
+                        logger.error("redis error message [{}]!",in.toString(CharsetUtil.UTF_8));
+                        in.release();
+                        break;
+                    case Constant.STAR:// * 开头，命令信息
+                    case Constant.DOLLAR:
+                        ctx.fireChannelRead(in);
+                        break;
+                    default://其他种类开头
+                        logger.info("redis other message [{}]!",in.toString(CharsetUtil.UTF_8));
+                        in.release();
                 }
             }
         }
     }
+
 }
