@@ -179,4 +179,6 @@ public class Constant {
     //redis数据分割符号 \r \n
     public static final ByteBuf SEPARAPOR = Unpooled.copiedBuffer(new byte[]{0x0d,0x0a});
 
+    public static final String STR_SPACE = " ";
+
 }

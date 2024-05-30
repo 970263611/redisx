@@ -1,10 +1,11 @@
 package com.dahuaboke.redisx.slave.rdb;
 
 import io.netty.buffer.ByteBuf;
+import io.netty.buffer.ByteBufUtil;
+import io.netty.buffer.Unpooled;
 import org.slf4j.Logger;
 import org.slf4j.LoggerFactory;
 
-import java.io.IOException;
 import java.nio.charset.Charset;
 
 /**
@@ -58,6 +59,20 @@ public class RdbParser {
                     rdbInfo.setEnd(true);
                     rdbInfo.setRdbData(null);
                 default:
+                    int index = ByteBufUtil.indexOf(Unpooled.copiedBuffer(new byte[]{(byte) 0xfb}),byteBuf);
+                    if(index != -1){
+                        if(index >= byteBuf.readerIndex()){
+                            byteBuf.readBytes(index - byteBuf.readerIndex());
+                            continue;
+                        }
+                    }
+                    index = ByteBufUtil.indexOf(Unpooled.copiedBuffer(new byte[]{(byte) 0xff}),byteBuf);
+                    if(index != -1){
+                        if(index >= byteBuf.readerIndex()){
+                            byteBuf.readBytes(index - byteBuf.readerIndex());
+                            continue;
+                        }
+                    }
                     flag = false;
             }
         }

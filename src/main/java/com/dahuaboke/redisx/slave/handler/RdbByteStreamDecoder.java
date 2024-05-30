@@ -50,7 +50,6 @@ public class RdbByteStreamDecoder extends ChannelInboundHandlerAdapter {
         if (msg instanceof RdbCommand) {
             ByteBuf rdb = ((RdbCommand) msg).getIn();
             logger.info("Now processing the RDB stream");
-            //logger.info(ByteBufUtil.prettyHexDump(rdb));
 
             if (RdbType.START == rdbType && '$' == rdb.getByte(0)) {
                 rdb.readByte();//除去$
@@ -66,32 +65,30 @@ public class RdbByteStreamDecoder extends ChannelInboundHandlerAdapter {
                 }
             }
 
-            if(rdb.readableBytes() == 0){
-                return;
-            }
-
-            if(RdbType.TYPE_LENGTH == rdbType){
-                tempRdb = Unpooled.copiedBuffer(tempRdb, rdb);
-                if(tempRdb.readableBytes() >= length){
-                    length = -1;
-                    rdbType = RdbType.END;
+            if(rdb.readableBytes() != 0){
+                if(RdbType.TYPE_LENGTH == rdbType){
+                    tempRdb = Unpooled.copiedBuffer(tempRdb, rdb);
+                    if(tempRdb.readableBytes() >= length){
+                        length = -1;
+                        rdbType = RdbType.END;
+                    }
+                } else if (RdbType.TYPE_EOF == rdbType){
+                    tempRdb = Unpooled.copiedBuffer(tempRdb, rdb);
+                    if(ByteBufUtil.equals(eofEnd,tempRdb.slice(tempRdb.writerIndex() - eofEnd.readableBytes(),eofEnd.readableBytes()))){
+                        eofEnd = null;
+                        rdbType = RdbType.END;
+                    }
                 }
-            } else if (RdbType.TYPE_EOF == rdbType){
-                tempRdb = Unpooled.copiedBuffer(tempRdb, rdb);
-                if(ByteBufUtil.equals(eofEnd,tempRdb.slice(tempRdb.writerIndex() - eofEnd.readableBytes(),eofEnd.readableBytes()))){
-                    eofEnd = null;
-                    rdbType = RdbType.END;
-                }
-            }
 
-            if (RdbType.END == rdbType) {
-                //TODO 应该设置成START吗
-                rdbType = RdbType.START;
-                ctx.channel().attr(Constant.RDB_STREAM_NEXT).set(false);
-                parse(tempRdb);
-                tempRdb.release();
-                tempRdb = ByteBufAllocator.DEFAULT.buffer();
-                logger.info("The RDB stream has been processed");
+                if (RdbType.END == rdbType) {
+                    //TODO 应该设置成START吗
+                    rdbType = RdbType.START;
+                    ctx.channel().attr(Constant.RDB_STREAM_NEXT).set(false);
+                    parse(tempRdb);
+                    tempRdb.release();
+                    tempRdb = ByteBufAllocator.DEFAULT.buffer();
+                    logger.info("The RDB stream has been processed");
+                }
             }
         } else {
             ctx.fireChannelRead(msg);

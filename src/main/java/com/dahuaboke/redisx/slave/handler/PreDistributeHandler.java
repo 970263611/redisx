@@ -33,11 +33,11 @@ public class PreDistributeHandler extends ChannelInboundHandlerAdapter {
             ByteBuf in = (ByteBuf) msg;
             logger.debug(ByteBufUtil.prettyHexDump(in).toString());
 
-            if (ctx.channel().attr(Constant.RDB_STREAM_NEXT).get()) {//rdb数据文件同步流程
+            if (ctx.pipeline().get(Constant.INIT_SYNC_HANDLER_NAME) != null) {
+                ctx.fireChannelRead(in);
+            } else if (ctx.channel().attr(Constant.RDB_STREAM_NEXT).get()){
                 logger.debug("Receive rdb byteStream length [{}]", in.readableBytes());
                 ctx.fireChannelRead(new RdbCommand(in));
-            } else if (ctx.pipeline().get(Constant.INIT_SYNC_HANDLER_NAME) != null){//与redis建立连接命令流程
-                ctx.fireChannelRead(in);
             } else{//redis指令流程
                 switch (in.getByte(0)){
                     case Constant.PLUS:// + 开头

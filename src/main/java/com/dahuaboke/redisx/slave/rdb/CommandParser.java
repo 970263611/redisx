@@ -1,5 +1,6 @@
 package com.dahuaboke.redisx.slave.rdb;
 
+import com.dahuaboke.redisx.Constant;
 import com.dahuaboke.redisx.slave.rdb.zset.ZSetEntry;
 import io.netty.buffer.ByteBuf;
 import org.slf4j.Logger;
@@ -61,43 +62,44 @@ public class CommandParser {
         Type type = typeMap.get(rdbType);
         switch (type) {
             case STRING:
-                sb.append("set");
+                sb.append("SET");
                 break;
             case LIST:
-                sb.append("lpush");
+                sb.append("LPUSH");
                 break;
             case SET:
-                sb.append("sadd");
+                sb.append("SADD");
                 break;
             case ZSET:
-                sb.append("zadd");
+                sb.append("ZADD");
                 break;
             case HASH:
-                sb.append("hset");
+                sb.append("HSET");
                 break;
             case MOUDULE:
+                sb.append("XADD");
                 break;
             case STREAM:
                 break;
             default:
                 throw new IllegalArgumentException("Rdb type error");
         }
-        sb.append(" ").append(new String(rdbData.getKey()));
+        sb.append(Constant.STR_SPACE).append(new String(rdbData.getKey()));
         switch (type) {
             case STRING:
                 byte[] string = (byte[]) rdbData.getValue();
-                sb.append(" ").append(new String(string));
+                sb.append(Constant.STR_SPACE).append(new String(string));
                 break;
             case LIST:
                 List<byte[]> list = (List<byte[]>) rdbData.getValue();
                 for (byte[] bytes : list) {
-                    sb.append(" ").append(new String(bytes));
+                    sb.append(Constant.STR_SPACE).append(new String(bytes));
                 }
                 break;
             case SET:
                 Set<byte[]> set = (Set<byte[]>) rdbData.getValue();
                 for (byte[] bytes : set) {
-                    sb.append(" ").append(new String(bytes));
+                    sb.append(Constant.STR_SPACE).append(new String(bytes));
                 }
                 break;
             case ZSET:
@@ -105,16 +107,16 @@ public class CommandParser {
                 for (ZSetEntry zSetEntry : zset) {
                     String score = String.valueOf(zSetEntry.getScore());
                     byte[] element = zSetEntry.getElement();
-                    sb.append(" ").append(score);
-                    sb.append(" ").append(new String(element));
+                    sb.append(Constant.STR_SPACE).append(score);
+                    sb.append(Constant.STR_SPACE).append(new String(element));
                 }
                 break;
             case HASH:
                 for (Map.Entry<byte[], byte[]> kAbdV : ((Map<byte[], byte[]>) rdbData.getValue()).entrySet()) {
                     byte[] key1 = kAbdV.getKey();
                     byte[] value1 = kAbdV.getValue();
-                    sb.append(" ").append(new String(key1));
-                    sb.append(" ").append(new String(value1));
+                    sb.append(Constant.STR_SPACE).append(new String(key1));
+                    sb.append(Constant.STR_SPACE).append(new String(value1));
                 }
                 break;
             case MOUDULE:
@@ -131,11 +133,11 @@ public class CommandParser {
         if (ExpiredType.NONE != expiredType) {
             sb = new StringBuilder();
             sb.append("expire");
-            sb.append(" ").append(new String(rdbData.getKey()));
+            sb.append(Constant.STR_SPACE).append(new String(rdbData.getKey()));
             if (ExpiredType.SECOND == expiredType) {
-                sb.append(" ").append(lastTime);
+                sb.append(Constant.STR_SPACE).append(lastTime);
             } else if (ExpiredType.MS == expiredType) {
-                sb.append(" ").append(lastTime / 1000);
+                sb.append(Constant.STR_SPACE).append(lastTime / 1000);
             } else {
                 throw new IllegalArgumentException("Rdb type error");
             }
