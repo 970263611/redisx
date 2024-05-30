@@ -76,7 +76,6 @@ public class RdbParser {
                     flag = false;
             }
         }
-        logger.debug("rdbHeader message : {} ", rdbHeader());
     }
 
     /**

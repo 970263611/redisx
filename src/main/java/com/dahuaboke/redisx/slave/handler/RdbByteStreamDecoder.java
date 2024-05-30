@@ -99,7 +99,16 @@ public class RdbByteStreamDecoder extends ChannelInboundHandlerAdapter {
     private void parse(ByteBuf byteBuf) {
         RdbParser parser = new RdbParser(byteBuf);
         parser.parseHeader();
-        System.out.println(parser.getRdbInfo().getRdbHeader());
+        logger.debug(parser.getRdbInfo().getRdbHeader().toString());
+        List<String> commands = commandParser.parser(parser.getRdbInfo().getRdbHeader());
+        for (String command : commands) {
+            boolean success = slaveContext.publish(command);
+            if (success) {
+                logger.debug("Success rdb data [{}]", command);
+            } else {
+                logger.error("Sync rdb data [{}] failed", command);
+            }
+        }
         while (!parser.getRdbInfo().isEnd()) {
             parser.parseData();
             RdbData rdbData = parser.getRdbInfo().getRdbData();
@@ -113,7 +122,7 @@ public class RdbByteStreamDecoder extends ChannelInboundHandlerAdapter {
                         logger.error("Select db failed [{}]", selectDB);
                     }
                 }
-                List<String> commands = commandParser.parser(rdbData);
+                commands = commandParser.parser(rdbData);
                 for (String command : commands) {
                     boolean success = slaveContext.publish(command);
                     if (success) {
