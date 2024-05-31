@@ -162,6 +162,7 @@ public class CommandParser {
     }
 
     private void stream(List<String> list, byte[] key, Stream value){
+        String streamName = new String(key);
         if(!value.getEntries().isEmpty()){
             for(Map.Entry<Stream.ID, Stream.Entry> kandv: value.getEntries().entrySet()){
                 if(kandv.getValue().isDeleted()){
@@ -169,7 +170,7 @@ public class CommandParser {
                 }
                 StringBuilder sb = new StringBuilder();
                 sb.append("XADD");
-                sb.append(Constant.STR_SPACE).append(new String(key));
+                sb.append(Constant.STR_SPACE).append(streamName);
                 sb.append(Constant.STR_SPACE).append(kandv.getKey().getMs()).append("-").append(kandv.getKey().getSeq());
                 for(Map.Entry<byte[],byte[]> entry : kandv.getValue().getFields().entrySet()){
                     sb.append(Constant.STR_SPACE).append(new String(entry.getKey()));
@@ -183,14 +184,21 @@ public class CommandParser {
                 Stream.Group group = value.getGroups().get(i);
                 StringBuilder sb = new StringBuilder();
                 sb.append("XGROUP CREATE");
+                sb.append(Constant.STR_SPACE).append(streamName);
                 sb.append(Constant.STR_SPACE).append(new String(group.getName()));
+                sb.append(Constant.STR_SPACE).append(group.getLastId().getMs()).append("-").append(group.getLastId().getSeq());
+                sb.append(Constant.STR_SPACE).append("ENTRIESREAD").append(Constant.STR_SPACE).append(group.getEntriesRead());
+                list.add(sb.toString());
                 if(group.getConsumers() != null && group.getConsumers().size() > 0){
                     for(int m=0;m < group.getConsumers().size();m++){
+                        sb = new StringBuilder();
+                        sb.append("XGROUP CREATECONSUMER");
+                        sb.append(Constant.STR_SPACE).append(streamName);
+                        sb.append(Constant.STR_SPACE).append(new String(group.getName()));
                         sb.append(Constant.STR_SPACE).append(new String(group.getConsumers().get(m).getName()));
+                        list.add(sb.toString());
                     }
                 }
-                sb.append(Constant.STR_SPACE).append(group.getLastId().getMs()).append("-").append(group.getLastId().getMs());
-                list.add(sb.toString());
             }
         }
     }
