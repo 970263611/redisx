@@ -181,4 +181,6 @@ public class Constant {
 
     public static final String STR_SPACE = " ";
 
+    //redis集群槽总数量，用于求余运算
+    public static final int COUNT_SLOT_NUMS = 16384;
 }

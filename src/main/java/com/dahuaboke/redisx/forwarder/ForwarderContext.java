@@ -1,5 +1,6 @@
 package com.dahuaboke.redisx.forwarder;
 
+import com.dahuaboke.redisx.Constant;
 import com.dahuaboke.redisx.Context;
 import com.dahuaboke.redisx.cache.CacheManager;
 import org.slf4j.Logger;
@@ -71,7 +72,7 @@ public class ForwarderContext extends Context {
     @Override
     public boolean isAdapt(boolean forwarderIsCluster, String command) {
         if (forwarderIsCluster && command != null) {
-            int hash = calculateHash(command);
+            int hash = calculateHash(command) % Constant.COUNT_SLOT_NUMS;
             return hash >= slotBegin && hash <= slotEnd;
         } else {
             //哨兵模式或者单节点则只存在一个为ForwarderContext类型的context

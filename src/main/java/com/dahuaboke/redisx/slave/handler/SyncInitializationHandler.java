@@ -93,6 +93,7 @@ public class SyncInitializationHandler extends ChannelInboundHandlerAdapter {
             });
             thread.setName(Constant.PROJECT_NAME + "-SYNC-INIT-" + slaveContext.getMasterHost() + ":" + slaveContext.getMasterPort());
             thread.start();
+            ctx.fireChannelActive();
         }
     }
 
