@@ -23,7 +23,7 @@ public class YaceTest {
     private int threadCount = 10;
 
     //测试时间，秒
-    private int second = 10;
+    private int second = 2;
 
     //每个线程完成总次数
     private Map<String,Integer> countMap = new HashMap<>();
@@ -90,6 +90,7 @@ public class YaceTest {
         }
         countDownLatch.await();
         printCount.interrupt();
+        addAll();
     }
 
     @After

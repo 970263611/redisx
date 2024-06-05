@@ -1,5 +1,6 @@
 package com.dahuaboke.redisx.slave;
 
+import com.dahuaboke.redisx.Constant;
 import com.dahuaboke.redisx.Context;
 import com.dahuaboke.redisx.cache.CacheManager;
 import io.netty.channel.Channel;
@@ -84,7 +85,7 @@ public class SlaveContext extends Context {
     @Override
     public boolean isAdapt(boolean isMasterCluster, String command) {
         if (isMasterCluster && command != null) {
-            int hash = calculateHash(command);
+            int hash = calculateHash(command) % Constant.COUNT_SLOT_NUMS;
             return hash >= slotBegin && hash <= slotEnd;
         } else {
             //哨兵模式或者单节点则只存在一个为ForwarderContext类型的context
