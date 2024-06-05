@@ -9,6 +9,7 @@ import io.netty.buffer.Unpooled;
 import org.junit.Test;
 
 import java.io.*;
+import java.util.UUID;
 
 public class CdlRdbTest {
 
@@ -45,8 +46,7 @@ public class CdlRdbTest {
 
     @Test
     public void aaa(){
-        int a = 1 << 30;
-        System.out.println(Integer.toBinaryString(a));
+        System.out.println(UUID.randomUUID().toString().replace("-",""));
     }
 
 }
