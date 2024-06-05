@@ -8,6 +8,7 @@
         </Console>
     </Appenders>
     <Loggers>
+        <logger name="org.redisson" level="ERROR"/>
         <Root level="debug">
             <AppenderRef ref="Console"/>
         </Root>
