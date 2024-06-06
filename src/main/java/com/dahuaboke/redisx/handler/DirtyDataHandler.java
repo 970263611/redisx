@@ -24,5 +24,7 @@ public class DirtyDataHandler extends ChannelInboundHandlerAdapter {
     public void exceptionCaught(ChannelHandlerContext ctx, Throwable cause)
             throws Exception {
         logger.error("exceptionCaught : ",cause);
+        //TODO 测试代码临时添加
+        System.exit(0);
     }
 }

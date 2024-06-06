@@ -10,21 +10,21 @@ public class Redisx {
     public static void main(String[] args) {
         //目标地址集合
         List<InetSocketAddress> forwards = new ArrayList() {{
-            add(new InetSocketAddress("192.168.20.100", 16101));
-            add(new InetSocketAddress("192.168.20.100", 16102));
-            add(new InetSocketAddress("192.168.20.100", 16103));
-            add(new InetSocketAddress("192.168.20.100", 16104));
-            add(new InetSocketAddress("192.168.20.100", 16105));
-            add(new InetSocketAddress("192.168.20.100", 16106));
+            add(new InetSocketAddress("192.168.20.100", 17101));
+            add(new InetSocketAddress("192.168.20.100", 17102));
+            add(new InetSocketAddress("192.168.20.100", 17103));
+            add(new InetSocketAddress("192.168.20.100", 17104));
+            add(new InetSocketAddress("192.168.20.100", 17105));
+            add(new InetSocketAddress("192.168.20.100", 17106));
         }};
         //源地址集合
         List<InetSocketAddress> slaves = new ArrayList() {{
-            add(new InetSocketAddress("192.168.20.100", 16001));
-            add(new InetSocketAddress("192.168.20.100", 16002));
-            add(new InetSocketAddress("192.168.20.100", 16003));
-            add(new InetSocketAddress("192.168.20.100", 16004));
-            add(new InetSocketAddress("192.168.20.100", 16005));
-            add(new InetSocketAddress("192.168.20.100", 16006));
+            add(new InetSocketAddress("192.168.20.100", 17001));
+            add(new InetSocketAddress("192.168.20.100", 17002));
+            add(new InetSocketAddress("192.168.20.100", 17003));
+            add(new InetSocketAddress("192.168.20.100", 17004));
+            add(new InetSocketAddress("192.168.20.100", 17005));
+            add(new InetSocketAddress("192.168.20.100", 17006));
         }};
         InetSocketAddress console = new InetSocketAddress("127.0.0.1", 9090);
         int consoleTimeout = 5000;

@@ -22,6 +22,8 @@ public class PreDistributeHandler extends ChannelInboundHandlerAdapter {
 
     private static final Logger logger = LoggerFactory.getLogger(PreDistributeHandler.class);
 
+    private boolean lineBreakFlag = true;
+
     @Override
     public void handlerAdded(ChannelHandlerContext ctx) throws Exception {
         ctx.channel().attr(Constant.RDB_STREAM_NEXT).set(false);
@@ -42,10 +44,21 @@ public class PreDistributeHandler extends ChannelInboundHandlerAdapter {
                 logger.debug("Receive rdb byteStream length [{}]", in.readableBytes());
                 ctx.fireChannelRead(new RdbCommand(in));
             } else{//redis指令流程
-                switch (in.getByte(0)){
+                if (lineBreakFlag && in.getByte(0) == '\n') {
+                    //redis 7.X版本会发空字符串后在fullresync
+                    while(in.getByte(in.readerIndex()) == Constant.LINE_BREAK){
+                        in.readByte();
+                        if(in.readerIndex() == in.writerIndex()){
+                            in.release();
+                            return;
+                        }
+                    }
+                }
+                lineBreakFlag = false;
+                switch (in.getByte(in.readerIndex())){
                     case Constant.PLUS:// + 开头
                         logger.info("redis success message [{}]!",in.toString(CharsetUtil.UTF_8));
-                        String headStr = in.readBytes(ByteBufUtil.indexOf(Constant.SEPARAPOR,in)).toString(StandardCharsets.UTF_8);
+                        String headStr = in.readBytes(ByteBufUtil.indexOf(Constant.SEPARAPOR,in)-in.readerIndex()).toString(StandardCharsets.UTF_8);
                         if(Constant.CONTINUE.equals(headStr)){
                             logger.debug("Find continue command do nothing");
                             in.release();

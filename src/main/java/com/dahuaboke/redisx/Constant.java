@@ -175,6 +175,7 @@ public class Constant {
     public static final byte MINUS = '-';
     public static final byte COLON = ':';
     public static final byte HASHTAG = '#'; // since redis 7.0 TS timestamp
+    public static final byte LINE_BREAK = '\n';
 
     //redis数据分割符号 \r \n
     public static final ByteBuf SEPARAPOR = Unpooled.copiedBuffer(new byte[]{0x0d,0x0a});

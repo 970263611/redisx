@@ -51,7 +51,7 @@ public class RdbByteStreamDecoder extends ChannelInboundHandlerAdapter {
             ByteBuf rdb = ((RdbCommand) msg).getIn();
             logger.info("Now processing the RDB stream :" + rdbType.name());
 
-            if (RdbType.START == rdbType && '$' == rdb.getByte(0)) {
+            if (RdbType.START == rdbType && '$' == rdb.getByte(rdb.readerIndex())) {
                 rdb.readByte();//除去$
                 int index = ByteBufUtil.indexOf(Constant.SEPARAPOR,rdb);
                 String isEofOrSizeStr = rdb.readBytes(index - rdb.readerIndex()).toString(CharsetUtil.UTF_8);
@@ -81,7 +81,6 @@ public class RdbByteStreamDecoder extends ChannelInboundHandlerAdapter {
                 }
 
                 if (RdbType.END == rdbType) {
-                    //TODO 应该设置成START吗
                     rdbType = RdbType.START;
                     ctx.channel().attr(Constant.RDB_STREAM_NEXT).set(false);
                     parse(tempRdb);

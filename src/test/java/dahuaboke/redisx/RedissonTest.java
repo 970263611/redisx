@@ -12,9 +12,9 @@ import org.redisson.config.Config;
 public class RedissonTest {
 
     //配置单点地址，或者集群服务器中任一地址
-    private String forwardsAddress = "redis://192.168.20.100:16001";
+    private String forwardsAddress = "redis://192.168.20.100:17101";
 
-    private String slavesAddress = "redis://192.168.20.100:16101";
+    private String slavesAddress = "redis://192.168.20.100:17001";
 
     //是否集群
     private boolean isCluster = true;
