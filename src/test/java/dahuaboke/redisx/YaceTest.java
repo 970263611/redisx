@@ -27,21 +27,26 @@ public class YaceTest {
     private int threadCount = 10;
 
     //测试时间，秒
-    private int second = 600;
+    private int second = 60;
 
     //是否定时清理
-    private boolean flushFlag = true;
+    private boolean flushFlag = false;
 
     //清理周期，单位 秒
     private int flushSecond = 10;
 
+    //是否要保证生成的key唯一
+    private boolean onlyKey = true;
+
     private RedissonClient redisson;
-    //每个线程完成总次数
-    private Map<String,Long> countMap = new HashMap<>();
+
+    private Map<String,Long> countMap;
 
     private SecureRandom random = SecureRandom.getInstance("SHA1PRNG");
 
     private Set<Thread> threadSet = new HashSet<>();
+
+    SnowflakeIdWorker idWorker = new SnowflakeIdWorker(0, 0);
 
     public YaceTest() throws NoSuchAlgorithmException {
     }
@@ -60,6 +65,11 @@ public class YaceTest {
         threadCount = threadCount < 1 ? 1 : threadCount;
         threadCount = threadCount > 100 ? 100 : threadCount;
         second = second < 1 ? 1 : second;
+        countMap = new HashMap<String,Long>(){{
+            put("num",1l);
+            put("lastCount",0l);
+            put("maxTps",0l);
+        }};
         threadSet.add(new Thread(new Runnable() {
             @Override
             public void run() {
@@ -108,7 +118,7 @@ public class YaceTest {
                 public void run() {
                     try {
                         while (true) {
-                            redisson.getBucket(getStr()).set(getStr());
+                            redisson.getBucket(onlyKey ? String.valueOf(idWorker.nextId()) : getStr()).set(getStr());
                             countMap.put(Thread.currentThread().getName(), ++c);
                             if (System.currentTimeMillis() > endTime) {
                                 countDownLatch.countDown();
@@ -124,6 +134,7 @@ public class YaceTest {
             t.start();
         }
         countDownLatch.await();
+        System.out.println(countMap);
     }
 
     @After
@@ -138,25 +149,20 @@ public class YaceTest {
     private void addAll(){
         long count = 0;
         for(Map.Entry<String,Long> entry : countMap.entrySet()){
-            if(!"lastConut".equals(entry.getKey()) && !"totalCount".equals(entry.getKey())){
+            if(!"lastCount".equals(entry.getKey()) && !"num".equals(entry.getKey()) && !"maxTps".equals(entry.getKey())){
                 count += entry.getValue();
             }
         }
         StringBuilder sb = new StringBuilder();
-        if(countMap.get("totalCount") == null){
-            countMap.put("totalCount",1l);
-        }else{
-            countMap.put("totalCount",countMap.get("totalCount") + 1);
-        }
-        sb.append(countMap.get("totalCount")).append("  ");
-        sb.append("插入数据次数=").append(count).append(",").append("tps=");
-        if(countMap.get("lastCount") == null){
-            sb.append(count);
-        }else{
-            sb.append(count - countMap.get("lastCount"));
-        }
-        countMap.put("lastCount",count);
+        sb.append(countMap.get("num")).append("  ");
+        sb.append("执行次数=").append(count);
+        sb.append(",").append("tps=").append(count - countMap.get("lastCount"));
+        sb.append(",").append("峰值tps=").append(countMap.get("maxTps"));
         System.out.println(sb.toString());
+        countMap.put("maxTps",Math.max(countMap.get("maxTps"),count - countMap.get("lastCount")));
+        countMap.put("num",countMap.get("num") + 1);
+        countMap.put("lastCount",count);
+
     }
 
     /**

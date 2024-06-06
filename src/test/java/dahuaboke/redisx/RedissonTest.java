@@ -55,10 +55,8 @@ public class RedissonTest {
     @Test
     public void keycount(){
         RKeys key1 = forwardClient.getKeys();
-        //keys.flushdb();
         System.out.println(key1.count());
         RKeys key2 = slavesClient.getKeys();
-        //keys.flushdb();
         System.out.println(key2.count());
     }
 
