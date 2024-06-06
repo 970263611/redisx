@@ -19,4 +19,10 @@ public class DirtyDataHandler extends ChannelInboundHandlerAdapter {
         logger.error("Find dirty data,unknown handler it [{}]", msg);
         return;
     }
+
+    @Override
+    public void exceptionCaught(ChannelHandlerContext ctx, Throwable cause)
+            throws Exception {
+        logger.error("exceptionCaught : ",cause);
+    }
 }
