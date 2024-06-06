@@ -4,31 +4,43 @@ import org.junit.After;
 import org.junit.Before;
 import org.junit.Test;
 import org.redisson.Redisson;
+import org.redisson.api.RKeys;
 import org.redisson.api.RedissonClient;
 import org.redisson.client.codec.StringCodec;
 import org.redisson.config.Config;
 
 import java.security.NoSuchAlgorithmException;
 import java.security.SecureRandom;
-import java.util.HashMap;
-import java.util.Map;
-import java.util.UUID;
+import java.util.*;
 import java.util.concurrent.CountDownLatch;
 
 public class YaceTest {
 
-    private RedissonClient redisson;
+    //配置单点地址，或者集群服务器中任一地址
+    private String address = "redis://192.168.20.100:16001";
+
+    //是否集群
+    private boolean isCluster = true;
 
     //并发数
     private int threadCount = 10;
 
     //测试时间，秒
-    private int second = 2;
+    private int second = 600;
 
+    //是否定时清理
+    private boolean flushFlag=true;
+
+    //清理周期，单位 秒
+    private int flushSecond = 10;
+
+    private RedissonClient redisson;
     //每个线程完成总次数
-    private Map<String,Integer> countMap = new HashMap<>();
+    private Map<String,Long> countMap = new HashMap<>();
 
     private SecureRandom random = SecureRandom.getInstance("SHA1PRNG");
+
+    private Set<Thread> threadSet = new HashSet<>();
 
     public YaceTest() throws NoSuchAlgorithmException {
     }
@@ -37,27 +49,20 @@ public class YaceTest {
     public void init(){
         Config config = new Config();
         config.setCodec(new StringCodec());
-        config.setThreads(threadCount * 2);
-        config.useClusterServers()
-                //此处配置集群中任意1个节点的地址
-                .addNodeAddress("redis://192.168.20.100:16001");
+        config.setThreads(threadCount + 1);
+        if(isCluster) {
+            config.useClusterServers().addNodeAddress(address);
+        }else{
+            config.useSingleServer().setAddress(address);
+        }
         this.redisson = Redisson.create(config);
         threadCount = threadCount < 1 ? 1 : threadCount;
         threadCount = threadCount > 100 ? 100 : threadCount;
         second = second < 1 ? 1 : second;
-    }
-
-    @Test
-    public void addData() throws InterruptedException {
-        long endTime = System.currentTimeMillis() + second * 1000;
-        CountDownLatch countDownLatch = new CountDownLatch(threadCount);
-        Thread printCount = new Thread(new Runnable() {
+        threadSet.add(new Thread(new Runnable() {
             @Override
             public void run() {
                 while (true){
-                    if(Thread.currentThread().isInterrupted()){
-                        break;
-                    }
                     try {
                         Thread.sleep(1000);
                     } catch (InterruptedException e) {
@@ -66,11 +71,38 @@ public class YaceTest {
                     addAll();
                 }
             }
+        }));
+        if(flushFlag){
+            flushSecond = flushSecond < 1 ? 1 : flushSecond;
+            threadSet.add(new Thread(new Runnable() {
+                @Override
+                public void run() {
+                    while(true){
+                        try {
+                            Thread.sleep(flushSecond * 1000);
+                        } catch (InterruptedException e) {
+                            return;
+                        }
+                        RKeys rKeys = redisson.getKeys();
+                        rKeys.flushdb();
+                        System.out.println("进行了 数据清理操作");
+                    }
+                }
+            }));
+        }
+        threadSet.forEach(t -> {
+            t.setDaemon(true);
+            t.start();
         });
-        printCount.start();
+    }
+
+    @Test
+    public void addData() throws InterruptedException {
+        long endTime = System.currentTimeMillis() + second * 1000;
+        CountDownLatch countDownLatch = new CountDownLatch(threadCount);
         for (int i = 0;i < threadCount;i++) {
-            new Thread(new Runnable() {
-                int c = 0;
+            Thread t = new Thread(new Runnable() {
+                long c = 0;
                 @Override
                 public void run() {
                     try {
@@ -86,24 +118,38 @@ public class YaceTest {
                         throw new RuntimeException(e);
                     }
                 }
-            }).start();
+            });
+            t.setDaemon(true);
+            t.start();
         }
         countDownLatch.await();
-        printCount.interrupt();
-        addAll();
     }
 
     @After
     public void destory(){
+        threadSet.forEach(t -> {
+            t.interrupt();
+        });
+        addAll();
         redisson.shutdown();
     }
 
     private void addAll(){
-        int count = 0;
-        for(Map.Entry<String,Integer> entry : countMap.entrySet()){
-            count += entry.getValue();
+        long count = 0;
+        for(Map.Entry<String,Long> entry : countMap.entrySet()){
+            if(!"lastConut".equals(entry.getKey())){
+                count += entry.getValue();
+            }
         }
-        System.out.println("完成总次数 : " + count);
+        StringBuilder sb = new StringBuilder();
+        sb.append("插入数据次数=").append(count).append(",").append("tps=");
+        if(countMap.get("lastCount") == null){
+            sb.append(count);
+        }else{
+            sb.append(count - countMap.get("lastCount"));
+        }
+        countMap.put("lastCount",count);
+        System.out.println(sb.toString());
     }
 
     /**
