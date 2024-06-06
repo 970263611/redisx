@@ -31,7 +31,10 @@ public class PreDistributeHandler extends ChannelInboundHandlerAdapter {
     public void channelRead(ChannelHandlerContext ctx, Object msg) throws Exception {
         if (msg instanceof ByteBuf) {
             ByteBuf in = (ByteBuf) msg;
-            logger.info(ByteBufUtil.prettyHexDump(in).toString());
+            StringBuilder sb = new StringBuilder();
+            sb.append("\r\n").append("<redis massage> = ").append(in).append("\r\n");
+            sb.append(ByteBufUtil.prettyHexDump(in).toString());
+            logger.info(sb.toString());
 
             if (ctx.pipeline().get(Constant.INIT_SYNC_HANDLER_NAME) != null) {
                 ctx.fireChannelRead(in);
@@ -65,11 +68,8 @@ public class PreDistributeHandler extends ChannelInboundHandlerAdapter {
                         break;
                     case Constant.STAR:// * 开头，命令信息
                     case Constant.DOLLAR:
-                        ctx.fireChannelRead(in);
-                        break;
                     default://其他种类开头
-                        logger.info("redis other message [{}]!",in.toString(CharsetUtil.UTF_8));
-                        in.release();
+                        ctx.fireChannelRead(in);
                 }
             }
         }
