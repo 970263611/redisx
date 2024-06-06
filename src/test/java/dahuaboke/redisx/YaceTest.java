@@ -9,6 +9,7 @@ import org.redisson.api.RedissonClient;
 import org.redisson.client.codec.StringCodec;
 import org.redisson.config.Config;
 
+
 import java.security.NoSuchAlgorithmException;
 import java.security.SecureRandom;
 import java.util.*;
@@ -29,7 +30,7 @@ public class YaceTest {
     private int second = 600;
 
     //是否定时清理
-    private boolean flushFlag=true;
+    private boolean flushFlag = true;
 
     //清理周期，单位 秒
     private int flushSecond = 10;
@@ -137,11 +138,17 @@ public class YaceTest {
     private void addAll(){
         long count = 0;
         for(Map.Entry<String,Long> entry : countMap.entrySet()){
-            if(!"lastConut".equals(entry.getKey())){
+            if(!"lastConut".equals(entry.getKey()) && !"totalCount".equals(entry.getKey())){
                 count += entry.getValue();
             }
         }
         StringBuilder sb = new StringBuilder();
+        if(countMap.get("totalCount") == null){
+            countMap.put("totalCount",1l);
+        }else{
+            countMap.put("totalCount",countMap.get("totalCount") + 1);
+        }
+        sb.append(countMap.get("totalCount")).append("  ");
         sb.append("插入数据次数=").append(count).append(",").append("tps=");
         if(countMap.get("lastCount") == null){
             sb.append(count);
