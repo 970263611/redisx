@@ -36,7 +36,7 @@ public class PreDistributeHandler extends ChannelInboundHandlerAdapter {
             StringBuilder sb = new StringBuilder();
             sb.append("\r\n").append("<redis massage> = ").append(in).append("\r\n");
             sb.append(ByteBufUtil.prettyHexDump(in).toString());
-            logger.info(sb.toString());
+            logger.debug(sb.toString());
 
             if (ctx.pipeline().get(Constant.INIT_SYNC_HANDLER_NAME) != null) {
                 ctx.fireChannelRead(in);
@@ -57,7 +57,6 @@ public class PreDistributeHandler extends ChannelInboundHandlerAdapter {
                 lineBreakFlag = false;
                 switch (in.getByte(in.readerIndex())){
                     case Constant.PLUS:// + 开头
-                        logger.info("redis success message [{}]!",in.toString(CharsetUtil.UTF_8));
                         String headStr = in.readBytes(ByteBufUtil.indexOf(Constant.SEPARAPOR,in)-in.readerIndex()).toString(StandardCharsets.UTF_8);
                         if(Constant.CONTINUE.equals(headStr)){
                             logger.debug("Find continue command do nothing");
