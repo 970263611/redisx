@@ -1,7 +1,8 @@
 package com.dahuaboke.redisx.from.rdb;
 
+import com.dahuaboke.redisx.Constant;
+import com.dahuaboke.redisx.from.rdb.stream.Stream;
 import com.dahuaboke.redisx.from.rdb.zset.ZSetEntry;
-import io.netty.buffer.ByteBuf;
 import org.slf4j.Logger;
 import org.slf4j.LoggerFactory;
 
@@ -50,100 +51,52 @@ public class CommandParser {
         FUNCTION;
     }
 
-    public ByteBuf parser(RdbHeader rdbHeader) {
-        return null;
+    public List<String> parser(RdbHeader rdbHeader) {
+        List<String> result = new LinkedList();
+        if (rdbHeader.getFunction() != null && rdbHeader.getFunction().size() > 0) {
+            function(result, rdbHeader.getFunction());
+        }
+        return result;
     }
 
     public List<String> parser(RdbData rdbData) {
-        List result = new LinkedList();
-        StringBuilder sb = new StringBuilder();
-        int rdbType = rdbData.getRdbType();
-        Type type = typeMap.get(rdbType);
-        switch (type) {
+        List<String> result = new LinkedList();
+        switch (typeMap.get(rdbData.getRdbType())) {
             case STRING:
-                sb.append("set ");
+                string(result, rdbData.getKey(), (byte[]) rdbData.getValue());
                 break;
             case LIST:
-                sb.append("lpush ");
+                list(result, rdbData.getKey(), (List<byte[]>) rdbData.getValue());
                 break;
             case SET:
-                sb.append("sadd ");
+                set(result, rdbData.getKey(), (Set<byte[]>) rdbData.getValue());
                 break;
             case ZSET:
-                sb.append("zadd ");
+                zet(result, rdbData.getKey(), (Set<ZSetEntry>) rdbData.getValue());
                 break;
             case HASH:
-                sb.append("hmset ");
+                hash(result, rdbData.getKey(), (Map<byte[], byte[]>) rdbData.getValue());
                 break;
             case MOUDULE:
+                moudule(result, rdbData.getKey(), rdbData.getValue());
                 break;
             case STREAM:
+                stream(result, rdbData.getKey(), (Stream) rdbData.getValue());
                 break;
             default:
                 throw new IllegalArgumentException("Rdb type error");
         }
-        sb.append(new String(rdbData.getKey()));
-        sb.append(" ");
-        switch (type) {
-            case STRING:
-                byte[] string = (byte[]) rdbData.getValue();
-                sb.append(new String(string));
-                break;
-            case LIST:
-                List<byte[]> list = (List<byte[]>) rdbData.getValue();
-                for (byte[] bytes : list) {
-                    sb.append(new String(bytes));
-                    sb.append(" ");
-                }
-                break;
-            case SET:
-                Set<byte[]> set = (Set<byte[]>) rdbData.getValue();
-                for (byte[] bytes : set) {
-                    sb.append(new String(bytes));
-                    sb.append(" ");
-                }
-                break;
-            case ZSET:
-                Set<ZSetEntry> zset = (Set<ZSetEntry>) rdbData.getValue();
-                for (ZSetEntry zSetEntry : zset) {
-                    String score = String.valueOf(zSetEntry.getScore());
-                    byte[] element = zSetEntry.getElement();
-                    sb.append(score);
-                    sb.append(" ");
-                    sb.append(new String(element));
-                    sb.append(" ");
-                }
-                break;
-            case HASH:
-                for (Map.Entry<byte[], byte[]> kAbdV : ((Map<byte[], byte[]>) rdbData.getValue()).entrySet()) {
-                    byte[] key1 = kAbdV.getKey();
-                    byte[] value1 = kAbdV.getValue();
-                    sb.append(new String(key1));
-                    sb.append(" ");
-                    sb.append(new String(value1));
-                    sb.append(" ");
-                }
-                break;
-            case MOUDULE:
-                break;
-            case STREAM:
-                break;
-            default:
-                throw new IllegalArgumentException("Rdb type error");
-        }
-        result.add(new String(sb));
         long expireTime = rdbData.getExpireTime();
         long lastTime = System.currentTimeMillis() - expireTime;
         ExpiredType expiredType = rdbData.getExpiredType();
         if (ExpiredType.NONE != expiredType) {
-            sb = new StringBuilder();
-            sb.append("expire ");
-            sb.append(new String(rdbData.getKey()));
-            sb.append(" ");
+            StringBuilder sb = new StringBuilder();
+            sb.append("expire");
+            sb.append(Constant.STR_SPACE).append(new String(rdbData.getKey()));
             if (ExpiredType.SECOND == expiredType) {
-                sb.append(lastTime);
+                sb.append(Constant.STR_SPACE).append(lastTime);
             } else if (ExpiredType.MS == expiredType) {
-                sb.append(lastTime / 1000);
+                sb.append(Constant.STR_SPACE).append(lastTime / 1000);
             } else {
                 throw new IllegalArgumentException("Rdb type error");
             }
@@ -152,159 +105,115 @@ public class CommandParser {
         return result;
     }
 
-//    public String parser(RdbData rdbData) {
-//        ByteBuf byteBuf = ByteBufAllocator.DEFAULT.buffer();
-//        int size = 0;
-//        int rdbType = rdbData.getRdbType();
-//        Type type = typeMap.get(rdbType);
-//        switch (type) {
-//            case STRING:
-//                byteBuf.writeBytes("$3".getBytes());
-//                byteBuf.writeBytes(new byte[]{'\r', '\n'});
-//                byteBuf.writeBytes("set".getBytes());
-//                byteBuf.writeBytes(new byte[]{'\r', '\n'});
-//                break;
-//            case LIST:
-//                byteBuf.writeBytes("$5".getBytes());
-//                byteBuf.writeBytes(new byte[]{'\r', '\n'});
-//                byteBuf.writeBytes("lpush".getBytes());
-//                byteBuf.writeBytes(new byte[]{'\r', '\n'});
-//                break;
-//            case SET:
-//                byteBuf.writeBytes("$4".getBytes());
-//                byteBuf.writeBytes(new byte[]{'\r', '\n'});
-//                byteBuf.writeBytes("sadd".getBytes());
-//                byteBuf.writeBytes(new byte[]{'\r', '\n'});
-//                break;
-//            case ZSET:
-//                byteBuf.writeBytes("$4".getBytes());
-//                byteBuf.writeBytes(new byte[]{'\r', '\n'});
-//                byteBuf.writeBytes("zadd".getBytes());
-//                byteBuf.writeBytes(new byte[]{'\r', '\n'});
-//                break;
-//            case HASH:
-//                byteBuf.writeBytes("$5".getBytes());
-//                byteBuf.writeBytes(new byte[]{'\r', '\n'});
-//                byteBuf.writeBytes("hmset".getBytes());
-//                byteBuf.writeBytes(new byte[]{'\r', '\n'});
-//                break;
-//            case MOUDULE:
-//                break;
-//            case STREAM:
-//                break;
-//            default:
-//                throw new IllegalArgumentException("Rdb type error");
-//        }
-//        byte[] key = rdbData.getKey();
-//        byteBuf.writeByte('$');
-//        size++;
-//        byteBuf.writeBytes(String.valueOf(key.length).getBytes());
-//        byteBuf.writeBytes(key);
-//        byteBuf.writeBytes(new byte[]{'\r', '\n'});
-//        switch (type) {
-//            case STRING:
-//                byte[] string = (byte[]) rdbData.getValue();
-//                byteBuf.writeByte('$');
-//                size++;
-//                byteBuf.writeBytes(String.valueOf(string.length).getBytes());
-//                byteBuf.writeBytes(new byte[]{'\r', '\n'});
-//                byteBuf.writeBytes(string);
-//                byteBuf.writeBytes(new byte[]{'\r', '\n'});
-//                break;
-//            case LIST:
-//                List<byte[]> list = (List<byte[]>) rdbData.getValue();
-//                for (byte[] bytes : list) {
-//                    byteBuf.writeByte('$');
-//                    size++;
-//                    byteBuf.writeBytes(String.valueOf(bytes.length).getBytes());
-//                    byteBuf.writeBytes(new byte[]{'\r', '\n'});
-//                    byteBuf.writeBytes(bytes);
-//                    byteBuf.writeBytes(new byte[]{'\r', '\n'});
-//                }
-//                break;
-//            case SET:
-//                Set<byte[]> set = (Set<byte[]>) rdbData.getValue();
-//                for (byte[] bytes : set) {
-//                    byteBuf.writeByte('$');
-//                    size++;
-//                    byteBuf.writeBytes(String.valueOf(bytes.length).getBytes());
-//                    byteBuf.writeBytes(new byte[]{'\r', '\n'});
-//                    byteBuf.writeBytes(bytes);
-//                    byteBuf.writeBytes(new byte[]{'\r', '\n'});
-//                }
-//                break;
-//            case ZSET:
-//                Set<ZSetEntry> zset = (Set<ZSetEntry>) rdbData.getValue();
-//                for (ZSetEntry zSetEntry : zset) {
-//                    String score = String.valueOf(zSetEntry.getScore());
-//                    byte[] element = zSetEntry.getElement();
-//                    byteBuf.writeByte('$');
-//                    size++;
-//                    byteBuf.writeBytes(String.valueOf(score.length()).getBytes());
-//                    byteBuf.writeBytes(new byte[]{'\r', '\n'});
-//                    byteBuf.writeBytes(score.getBytes());
-//                    byteBuf.writeBytes(new byte[]{'\r', '\n'});
-//                    byteBuf.writeByte('$');
-//                    size++;
-//                    byteBuf.writeBytes(String.valueOf(element.length).getBytes());
-//                    byteBuf.writeBytes(new byte[]{'\r', '\n'});
-//                    byteBuf.writeBytes(element);
-//                    byteBuf.writeBytes(new byte[]{'\r', '\n'});
-//                }
-//                break;
-//            case HASH:
-//                for (Map.Entry<byte[], byte[]> kAbdV : ((Map<byte[], byte[]>) rdbData.getValue()).entrySet()) {
-//                    byte[] key1 = kAbdV.getKey();
-//                    byte[] value1 = kAbdV.getValue();
-//                    byteBuf.writeByte('$');
-//                    size++;
-//                    byteBuf.writeBytes(String.valueOf(key1.length).getBytes());
-//                    byteBuf.writeBytes(new byte[]{'\r', '\n'});
-//                    byteBuf.writeBytes(key1);
-//                    byteBuf.writeBytes(new byte[]{'\r', '\n'});
-//                    byteBuf.writeByte('$');
-//                    size++;
-//                    byteBuf.writeBytes(String.valueOf(value1.length).getBytes());
-//                    byteBuf.writeBytes(new byte[]{'\r', '\n'});
-//                    byteBuf.writeBytes(value1);
-//                    byteBuf.writeBytes(new byte[]{'\r', '\n'});
-//                }
-//                break;
-//            case MOUDULE:
-//                break;
-//            case STREAM:
-//                break;
-//            default:
-//                throw new IllegalArgumentException("Rdb type error");
-//        }
-//        ByteBuf head = ByteBufAllocator.DEFAULT.buffer();
-//        head.writeByte('*');
-//        head.writeBytes(String.valueOf(size).getBytes());
-//        head.writeBytes(new byte[]{'\r', '\n'});
-//        ByteBuf total = Unpooled.copiedBuffer(head, byteBuf);
-//        long expireTime = rdbData.getExpireTime();
-//        long lastTime = System.currentTimeMillis() - expireTime;
-//        byte[] lastTimeBytes = String.valueOf(lastTime).getBytes();
-//        if (expireTime != -1 && (lastTime) > 0) {
-//            total.writeBytes(new byte[]{'*', '3'});
-//            total.writeBytes(new byte[]{'\r', '\n'});
-//            byte[] expireBytes = "expire".getBytes();
-//            total.writeByte('$');
-//            total.writeBytes(String.valueOf(expireBytes.length).getBytes());
-//            total.writeBytes(new byte[]{'\r', '\n'});
-//            total.writeBytes(expireBytes);
-//            total.writeBytes(new byte[]{'\r', '\n'});
-//            total.writeByte('$');
-//            total.writeBytes(String.valueOf(key.length).getBytes());
-//            total.writeBytes(new byte[]{'\r', '\n'});
-//            total.writeBytes(key);
-//            total.writeBytes(new byte[]{'\r', '\n'});
-//            total.writeByte('$');
-//            total.writeBytes(String.valueOf(lastTimeBytes.length).getBytes());
-//            total.writeBytes(new byte[]{'\r', '\n'});
-//            total.writeBytes(lastTimeBytes);
-//            total.writeBytes(new byte[]{'\r', '\n'});
-//        }
-//        return total.toString(Charset.defaultCharset());
-//    }
+    private void string(List<String> list, byte[] key, byte[] value) {
+        StringBuilder sb = new StringBuilder();
+        sb.append("SET");
+        sb.append(Constant.STR_SPACE).append(new String(key));
+        sb.append(Constant.STR_SPACE).append(new String(value));
+        list.add(sb.toString());
+    }
+
+    private void list(List<String> list, byte[] key, List<byte[]> value) {
+        StringBuilder sb = new StringBuilder();
+        sb.append("LPUSH");
+        sb.append(Constant.STR_SPACE).append(new String(key));
+        for (byte[] bytes : value) {
+            sb.append(Constant.STR_SPACE).append(new String(bytes));
+        }
+        list.add(sb.toString());
+    }
+
+    private void set(List<String> list, byte[] key, Set<byte[]> value) {
+        StringBuilder sb = new StringBuilder();
+        sb.append("SADD");
+        sb.append(Constant.STR_SPACE).append(new String(key));
+        for (byte[] bytes : value) {
+            sb.append(Constant.STR_SPACE).append(new String(bytes));
+        }
+        list.add(sb.toString());
+    }
+
+    private void zet(List<String> list, byte[] key, Set<ZSetEntry> value) {
+        StringBuilder sb = new StringBuilder();
+        sb.append("ZADD");
+        sb.append(Constant.STR_SPACE).append(new String(key));
+        for (ZSetEntry zSetEntry : value) {
+            String score = String.valueOf(zSetEntry.getScore());
+            byte[] element = zSetEntry.getElement();
+            sb.append(Constant.STR_SPACE).append(score);
+            sb.append(Constant.STR_SPACE).append(new String(element));
+        }
+        list.add(sb.toString());
+    }
+
+    private void hash(List<String> list, byte[] key, Map<byte[], byte[]> value) {
+        StringBuilder sb = new StringBuilder();
+        sb.append("HSET");
+        sb.append(Constant.STR_SPACE).append(new String(key));
+        for (Map.Entry<byte[], byte[]> kAbdV : value.entrySet()) {
+            byte[] key1 = kAbdV.getKey();
+            byte[] value1 = kAbdV.getValue();
+            sb.append(Constant.STR_SPACE).append(new String(key1));
+            sb.append(Constant.STR_SPACE).append(new String(value1));
+        }
+        list.add(sb.toString());
+    }
+
+    private void stream(List<String> list, byte[] key, Stream value) {
+        String streamName = new String(key);
+        if (!value.getEntries().isEmpty()) {
+            for (Map.Entry<Stream.ID, Stream.Entry> kandv : value.getEntries().entrySet()) {
+                if (kandv.getValue().isDeleted()) {
+                    continue;
+                }
+                StringBuilder sb = new StringBuilder();
+                sb.append("XADD");
+                sb.append(Constant.STR_SPACE).append(streamName);
+                sb.append(Constant.STR_SPACE).append(kandv.getKey().getMs()).append("-").append(kandv.getKey().getSeq());
+                for (Map.Entry<byte[], byte[]> entry : kandv.getValue().getFields().entrySet()) {
+                    sb.append(Constant.STR_SPACE).append(new String(entry.getKey()));
+                    sb.append(Constant.STR_SPACE).append(new String(entry.getValue()));
+                }
+                list.add(sb.toString());
+            }
+        }
+        if (!value.getGroups().isEmpty()) {
+            for (int i = 0; i < value.getGroups().size(); i++) {
+                Stream.Group group = value.getGroups().get(i);
+                StringBuilder sb = new StringBuilder();
+                sb.append("XGROUP CREATE");
+                sb.append(Constant.STR_SPACE).append(streamName);
+                sb.append(Constant.STR_SPACE).append(new String(group.getName()));
+                sb.append(Constant.STR_SPACE).append(group.getLastId().getMs()).append("-").append(group.getLastId().getSeq());
+                sb.append(Constant.STR_SPACE).append("ENTRIESREAD").append(Constant.STR_SPACE).append(group.getEntriesRead());
+                list.add(sb.toString());
+                if (group.getConsumers() != null && group.getConsumers().size() > 0) {
+                    for (int m = 0; m < group.getConsumers().size(); m++) {
+                        sb = new StringBuilder();
+                        sb.append("XGROUP CREATECONSUMER");
+                        sb.append(Constant.STR_SPACE).append(streamName);
+                        sb.append(Constant.STR_SPACE).append(new String(group.getName()));
+                        sb.append(Constant.STR_SPACE).append(new String(group.getConsumers().get(m).getName()));
+                        list.add(sb.toString());
+                    }
+                }
+            }
+        }
+    }
+
+    private void moudule(List<String> list, byte[] key, Object data) {
+
+    }
+
+    private void function(List<String> list, List<byte[]> value) {
+        if (value != null && value.size() > 0) {
+            value.forEach(v -> {
+                StringBuilder sb = new StringBuilder();
+                sb.append("FUNCTION LOAD");
+                sb.append(Constant.STR_SPACE).append(new String(v));
+                list.add(sb.toString());
+            });
+        }
+    }
+
 }

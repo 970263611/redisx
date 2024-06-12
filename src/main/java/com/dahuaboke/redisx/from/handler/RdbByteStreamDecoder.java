@@ -8,6 +8,7 @@ import com.dahuaboke.redisx.from.rdb.RdbData;
 import com.dahuaboke.redisx.from.rdb.RdbParser;
 import io.netty.buffer.ByteBuf;
 import io.netty.buffer.ByteBufAllocator;
+import io.netty.buffer.ByteBufUtil;
 import io.netty.buffer.Unpooled;
 import io.netty.channel.ChannelHandlerContext;
 import io.netty.channel.ChannelInboundHandlerAdapter;
@@ -25,11 +26,20 @@ import java.util.List;
 public class RdbByteStreamDecoder extends ChannelInboundHandlerAdapter {
 
     private static final Logger logger = LoggerFactory.getLogger(RdbByteStreamDecoder.class);
-    private String eofEnd = null;
-    private boolean rdbEnd = false;
+
+    private RdbType rdbType = RdbType.START;
+    private int length = -1;
+    private ByteBuf eofEnd = null;
     private ByteBuf tempRdb = ByteBufAllocator.DEFAULT.buffer();
     private CommandParser commandParser = new CommandParser();
     private FromContext fromContext;
+
+    private enum RdbType {
+        START,
+        TYPE_EOF,
+        TYPE_LENGTH,
+        END;
+    }
 
     public RdbByteStreamDecoder(FromContext fromContext) {
         this.fromContext = fromContext;
@@ -38,69 +48,66 @@ public class RdbByteStreamDecoder extends ChannelInboundHandlerAdapter {
     @Override
     public void channelRead(ChannelHandlerContext ctx, Object msg) throws Exception {
         if (msg instanceof RdbCommand) {
-            RdbCommand command = (RdbCommand) msg;
-            logger.info("Now processing the RDB stream");
-            ByteBuf rdb = command.getIn();
-            int length = rdb.readableBytes();
-            if ('$' == rdb.getByte(0) && !rdbEnd) {
-                int index = 0;
-                while (rdb.isReadable()) {
-                    byte b = rdb.getByte(index);
-                    if (b == '\r') {
-                        break;
-                    }
-                    if (b != '\r') {
-                        index++;
-                    }
+            ByteBuf rdb = ((RdbCommand) msg).getIn();
+            logger.info("Now processing the RDB stream :" + rdbType.name());
+
+            if (RdbType.START == rdbType && '$' == rdb.getByte(rdb.readerIndex())) {
+                rdb.readByte();//除去$
+                int index = ByteBufUtil.indexOf(Constant.SEPARAPOR, rdb);
+                String isEofOrSizeStr = rdb.readBytes(index - rdb.readerIndex()).toString(CharsetUtil.UTF_8);
+                rdb.readBytes(Constant.SEPARAPOR.readableBytes());
+                if (isEofOrSizeStr.startsWith("EOF")) {//EOF类型看收尾
+                    eofEnd = Unpooled.copiedBuffer(isEofOrSizeStr.substring(4, isEofOrSizeStr.length()).getBytes());
+                    rdbType = RdbType.TYPE_EOF;
+                } else {//LENGTH类型数长度
+                    length = Integer.parseInt(isEofOrSizeStr);
+                    rdbType = RdbType.TYPE_LENGTH;
                 }
-                String isEofOrSizeStr = rdb.slice(1, index - 1).toString(CharsetUtil.UTF_8);
-                if (isEofOrSizeStr.startsWith("EOF")) {
-                    //7.X $EOF:40位\r\n
-                    rdb.readBytes(47);
-                    eofEnd = isEofOrSizeStr.split(":")[1];
-                    if (length > 40) {
-                        String end = rdb.slice(length - 40, 40).toString(CharsetUtil.UTF_8);
-                        if (eofEnd.equals(end)) {
-                            rdbEnd = true;
-                        } else {
-                            tempRdb = Unpooled.copiedBuffer(tempRdb, rdb);
-                        }
-                    } else {
-                        tempRdb = Unpooled.copiedBuffer(tempRdb, rdb);
-                    }
-                } else {
-                    //$xxx\r\n
-                    rdb.readBytes(isEofOrSizeStr.length() + 3);
-                    if (rdb.readableBytes() == Integer.parseInt(isEofOrSizeStr)) {
-                        rdbEnd = true;
-                        tempRdb = Unpooled.copiedBuffer(tempRdb, rdb);
-                    }
-                }
-            } else if (!rdbEnd) {
-                if (length > 40) {
-                    String end = rdb.slice(length - 40, 40).toString(CharsetUtil.UTF_8);
-                    if (eofEnd.equals(end)) {
-                        rdbEnd = true;
-                    }
-                }
-                tempRdb = Unpooled.copiedBuffer(tempRdb, rdb);
             }
-            if (rdbEnd) {
-                rdbEnd = false;
-                ctx.channel().attr(Constant.RDB_STREAM_NEXT).set(false);
-                parse(tempRdb);
-                tempRdb = ByteBufAllocator.DEFAULT.buffer();
-                logger.info("The RDB stream has been processed");
+
+            if (rdb.readableBytes() != 0) {
+                if (RdbType.TYPE_LENGTH == rdbType) {
+                    tempRdb.writeBytes(rdb);
+                    if (tempRdb.readableBytes() >= length) {
+                        length = -1;
+                        rdbType = RdbType.END;
+                    }
+                } else if (RdbType.TYPE_EOF == rdbType) {
+                    tempRdb.writeBytes(rdb);
+                    if (ByteBufUtil.equals(eofEnd, tempRdb.slice(tempRdb.writerIndex() - eofEnd.readableBytes(), eofEnd.readableBytes()))) {
+                        eofEnd = null;
+                        rdbType = RdbType.END;
+                    }
+                }
+
+                if (RdbType.END == rdbType) {
+                    rdbType = RdbType.START;
+                    ctx.channel().attr(Constant.RDB_STREAM_NEXT).set(false);
+                    parse(tempRdb);
+                    tempRdb.release();
+                    logger.info("The RDB stream has been processed");
+                }
             }
+            rdb.release();
         } else {
             ctx.fireChannelRead(msg);
         }
+
     }
 
     private void parse(ByteBuf byteBuf) {
         RdbParser parser = new RdbParser(byteBuf);
         parser.parseHeader();
-        System.out.println(parser.getRdbInfo().getRdbHeader());
+        logger.debug(parser.getRdbInfo().getRdbHeader().toString());
+        List<String> commands = commandParser.parser(parser.getRdbInfo().getRdbHeader());
+        for (String command : commands) {
+            boolean success = fromContext.publish(command);
+            if (success) {
+                logger.debug("Success rdb data [{}]", command);
+            } else {
+                logger.error("Sync rdb data [{}] failed", command);
+            }
+        }
         while (!parser.getRdbInfo().isEnd()) {
             parser.parseData();
             RdbData rdbData = parser.getRdbInfo().getRdbData();
@@ -114,7 +121,7 @@ public class RdbByteStreamDecoder extends ChannelInboundHandlerAdapter {
                         logger.error("Select db failed [{}]", selectDB);
                     }
                 }
-                List<String> commands = commandParser.parser(rdbData);
+                commands = commandParser.parser(rdbData);
                 for (String command : commands) {
                     boolean success = fromContext.publish(command);
                     if (success) {

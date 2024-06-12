@@ -46,6 +46,11 @@
             <version>4.13.1</version>
             <scope>test</scope>
         </dependency>
-		
+        <dependency>
+            <groupId>org.redisson</groupId>
+            <artifactId>redisson</artifactId>
+            <version>3.13.4</version>
+            <scope>test</scope>
+        </dependency>
     </dependencies>
 </project>

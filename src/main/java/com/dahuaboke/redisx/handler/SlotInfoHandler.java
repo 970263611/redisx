@@ -38,9 +38,10 @@ public class SlotInfoHandler extends RedisChannelInboundHandler {
 
     @Override
     public void channelRead1(ChannelHandlerContext ctx, String msg) throws Exception {
-        Pattern pattern = Pattern.compile(Constant.SLOT_REX);
+        Pattern pattern = Pattern.compile(Constant.SLOT_REX,Pattern.DOTALL);
         if (msg != null && pattern.matcher(msg).matches()) {
-            String[] arr = msg.split("\r\n");
+            msg = msg.replace("\r","");
+            String[] arr = msg.split("\n");
             if (arr.length != 0) {
                 Arrays.stream(arr).forEach(s -> {
                     SlotInfo slotInfo = new SlotInfo(s);

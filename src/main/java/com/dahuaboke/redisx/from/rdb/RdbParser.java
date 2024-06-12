@@ -1,6 +1,8 @@
 package com.dahuaboke.redisx.from.rdb;
 
 import io.netty.buffer.ByteBuf;
+import io.netty.buffer.ByteBufUtil;
+import io.netty.buffer.Unpooled;
 import org.slf4j.Logger;
 import org.slf4j.LoggerFactory;
 
@@ -36,29 +38,44 @@ public class RdbParser {
         rdbHeader().setVer(byteBuf.readBytes(4).toString(Charset.defaultCharset()));
         boolean flag = true;
         while (flag) {
-            int b = byteBuf.getByte(byteBuf.readerIndex()) & 0xff;
+            byteBuf.markReaderIndex();
+            int b = byteBuf.readByte() & 0xff;
             switch (b) {
                 //各类信息解析
                 case RdbConstants.AUX:
-                    readOneByte();
                     auxParse();
                     break;
                 case RdbConstants.MODULE_AUX:
-                    readOneByte();
                     moduleParse();
                     break;
                 case RdbConstants.FUNCTION:
-                    readOneByte();
                     functionParse();
                     break;
                 case RdbConstants.DBSELECT:
-                case RdbConstants.EOF:
-                default:
+                    byteBuf.resetReaderIndex();
                     flag = false;
                     break;
+                case RdbConstants.EOF:
+                    rdbInfo.setEnd(true);
+                    rdbInfo.setRdbData(null);
+                default:
+                    int index = ByteBufUtil.indexOf(Unpooled.copiedBuffer(new byte[]{(byte) 0xfb}),byteBuf);
+                    if(index != -1){
+                        if(index >= byteBuf.readerIndex()){
+                            byteBuf.readBytes(index - byteBuf.readerIndex());
+                            continue;
+                        }
+                    }
+                    index = ByteBufUtil.indexOf(Unpooled.copiedBuffer(new byte[]{(byte) 0xff}),byteBuf);
+                    if(index != -1){
+                        if(index >= byteBuf.readerIndex()){
+                            byteBuf.readBytes(index - byteBuf.readerIndex());
+                            continue;
+                        }
+                    }
+                    flag = false;
             }
         }
-        logger.debug("rdbHeader message : {} ", rdbHeader());
     }
 
     /**
