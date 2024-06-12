@@ -3,6 +3,7 @@ package com.dahuaboke.redisx.to;
 import com.dahuaboke.redisx.handler.CommandEncoder;
 import com.dahuaboke.redisx.handler.DirtyDataHandler;
 import com.dahuaboke.redisx.handler.SlotInfoHandler;
+import com.dahuaboke.redisx.to.handler.DRHandler;
 import com.dahuaboke.redisx.to.handler.SyncCommandListener;
 import io.netty.bootstrap.Bootstrap;
 import io.netty.channel.*;
@@ -57,6 +58,7 @@ public class ToClient {
                             if (toContext.isToIsCluster()) {
                                 pipeline.addLast(new SlotInfoHandler(toContext));
                             }
+                            pipeline.addLast(new DRHandler(toContext));
                             pipeline.addLast(new SyncCommandListener(toContext));
                             pipeline.addLast(new DirtyDataHandler());
                         }

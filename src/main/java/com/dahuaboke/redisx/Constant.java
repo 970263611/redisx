@@ -11,6 +11,8 @@ import io.netty.util.AttributeKey;
  */
 public class Constant {
 
+    public static final String DR_KEY = "REDISX-AUTHOR:DAHUA&CHANGDONGLIANG&ZHANGHUIHAO&ZHANGSHUHAN";
+
     public static final String PROJECT_NAME = "Redis-x";
 
     public static final String PING_COMMAND = "PING";
@@ -178,7 +180,7 @@ public class Constant {
     public static final byte LINE_BREAK = '\n';
 
     //redis数据分割符号 \r \n
-    public static final ByteBuf SEPARAPOR = Unpooled.copiedBuffer(new byte[]{0x0d,0x0a});
+    public static final ByteBuf SEPARAPOR = Unpooled.copiedBuffer(new byte[]{0x0d, 0x0a});
 
     public static final String STR_SPACE = " ";
 

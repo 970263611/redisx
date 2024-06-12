@@ -40,8 +40,8 @@ public class FromClient {
      * 启动方法
      */
     public void start() {
-        String masterHost = fromContext.getMasterHost();
-        int masterPort = fromContext.getMasterPort();
+        String masterHost = fromContext.getHost();
+        int masterPort = fromContext.getPort();
         try {
             Bootstrap bootstrap = new Bootstrap();
             bootstrap.group(group)
@@ -99,8 +99,8 @@ public class FromClient {
     public void destroy() {
         fromContext.setClose(true);
         if (channel != null) {
-            String masterHost = fromContext.getMasterHost();
-            int masterPort = fromContext.getMasterPort();
+            String masterHost = fromContext.getHost();
+            int masterPort = fromContext.getPort();
             channel.close();
             logger.info("Close from [{}:{}]", masterHost, masterPort);
         }

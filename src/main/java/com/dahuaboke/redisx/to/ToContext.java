@@ -6,6 +6,7 @@ import com.dahuaboke.redisx.cache.CacheManager;
 import org.slf4j.Logger;
 import org.slf4j.LoggerFactory;
 
+import java.util.UUID;
 import java.util.concurrent.LinkedBlockingDeque;
 import java.util.concurrent.TimeUnit;
 
@@ -17,7 +18,7 @@ import java.util.concurrent.TimeUnit;
 public class ToContext extends Context {
 
     private static final Logger logger = LoggerFactory.getLogger(ToContext.class);
-
+    private String id;
     private CacheManager cacheManager;
     private String host;
     private int port;
@@ -27,6 +28,7 @@ public class ToContext extends Context {
     private ToClient toClient;
 
     public ToContext(CacheManager cacheManager, String host, int port, boolean toIsCluster, boolean isConsole) {
+        this.id = UUID.randomUUID().toString();
         this.cacheManager = cacheManager;
         this.host = host;
         this.port = port;
@@ -35,6 +37,10 @@ public class ToContext extends Context {
         if (isConsole) {
             replyQueue = new LinkedBlockingDeque();
         }
+    }
+
+    public String getId() {
+        return id;
     }
 
     public String getHost() {
