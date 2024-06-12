@@ -39,7 +39,7 @@ public class AckOffsetHandler extends ChannelDuplexHandler {
                         channel.attr(Constant.OFFSET).set(-1L);
                     }
                     channel.writeAndFlush(Constant.ACK_COMMAND_PREFIX + offset);
-                    logger.debug("Ack offset [{}]", offset);
+                    logger.trace("Ack offset [{}]", offset);
                 }
                 try {
                     Thread.sleep(1000);

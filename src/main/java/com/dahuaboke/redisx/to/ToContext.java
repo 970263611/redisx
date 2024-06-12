@@ -1,5 +1,6 @@
 package com.dahuaboke.redisx.to;
 
+import com.dahuaboke.redisx.Constant;
 import com.dahuaboke.redisx.Context;
 import com.dahuaboke.redisx.cache.CacheManager;
 import org.slf4j.Logger;
@@ -71,7 +72,7 @@ public class ToContext extends Context {
     @Override
     public boolean isAdapt(boolean toIsCluster, String command) {
         if (toIsCluster && command != null) {
-            int hash = calculateHash(command);
+            int hash = calculateHash(command) % Constant.COUNT_SLOT_NUMS;
             return hash >= slotBegin && hash <= slotEnd;
         } else {
             //哨兵模式或者单节点则只存在一个为ToContext类型的context

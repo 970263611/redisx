@@ -34,7 +34,8 @@ public class PreDistributeHandler extends ChannelInboundHandlerAdapter {
         if (msg instanceof ByteBuf) {
             ByteBuf in = (ByteBuf) msg;
             StringBuilder sb = new StringBuilder();
-            sb.append("\r\n").append("<redis massage> = ").append(in).append("\r\n");
+            sb.append("\r\n<").append(Thread.currentThread().getName()).append(">")
+                    .append("<redis massage> = ").append(in).append("\r\n");
             sb.append(ByteBufUtil.prettyHexDump(in).toString());
             logger.debug(sb.toString());
 
@@ -44,6 +45,7 @@ public class PreDistributeHandler extends ChannelInboundHandlerAdapter {
                 logger.debug("Receive rdb byteStream length [{}]", in.readableBytes());
                 ctx.fireChannelRead(new RdbCommand(in));
             } else{//redis指令流程
+                //redis 7.X版本会发空字符串后在fullresync
                 if (lineBreakFlag && in.getByte(0) == '\n') {
                     //redis 7.X版本会发空字符串后在fullresync
                     while(in.getByte(in.readerIndex()) == Constant.LINE_BREAK){
@@ -55,28 +57,28 @@ public class PreDistributeHandler extends ChannelInboundHandlerAdapter {
                     }
                 }
                 lineBreakFlag = false;
-                switch (in.getByte(in.readerIndex())){
+                switch (in.getByte(in.readerIndex())) {
                     case Constant.PLUS:// + 开头
-                        String headStr = in.readBytes(ByteBufUtil.indexOf(Constant.SEPARAPOR,in)-in.readerIndex()).toString(StandardCharsets.UTF_8);
-                        if(Constant.CONTINUE.equals(headStr)){
+                        String headStr = in.readBytes(ByteBufUtil.indexOf(Constant.SEPARAPOR, in) - in.readerIndex()).toString(StandardCharsets.UTF_8);
+                        if (Constant.CONTINUE.equals(headStr)) {
                             logger.debug("Find continue command do nothing");
                             in.release();
                         } else if (headStr.startsWith(Constant.CONTINUE)) {
                             logger.debug("Find continue command and will reset offset");
                             ctx.fireChannelRead(new OffsetCommand(headStr));
                             in.release();
-                        } else if (headStr.startsWith(Constant.FULLRESYNC)){
+                        } else if (headStr.startsWith(Constant.FULLRESYNC)) {
                             logger.debug("Find fullReSync command");
                             ctx.fireChannelRead(new OffsetCommand(headStr));
                             ctx.channel().attr(Constant.RDB_STREAM_NEXT).set(true);
                             in.release();
-                        } else{
+                        } else {
                             ctx.fireChannelRead(in);
                         }
                         break;
                     case Constant.MINUS:// - 开头,错误信息
                         in.release();
-                        logger.error("redis error message [{}]!",in.toString(CharsetUtil.UTF_8));
+                        logger.error("redis error message [{}]!", in.toString(CharsetUtil.UTF_8));
                         break;
                     case Constant.STAR:// * 开头，命令信息
                     case Constant.DOLLAR:
@@ -84,6 +86,7 @@ public class PreDistributeHandler extends ChannelInboundHandlerAdapter {
                         ctx.fireChannelRead(in);
                 }
             }
+
         }
     }
 
