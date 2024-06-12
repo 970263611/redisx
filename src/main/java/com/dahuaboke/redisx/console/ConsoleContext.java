@@ -1,8 +1,8 @@
 package com.dahuaboke.redisx.console;
 
 import com.dahuaboke.redisx.Context;
-import com.dahuaboke.redisx.forwarder.ForwarderContext;
-import com.dahuaboke.redisx.slave.SlaveContext;
+import com.dahuaboke.redisx.from.FromContext;
+import com.dahuaboke.redisx.to.ToContext;
 import org.slf4j.Logger;
 import org.slf4j.LoggerFactory;
 
@@ -20,25 +20,25 @@ public class ConsoleContext extends Context {
     private String host;
     private int port;
     private int timeout;
-    private boolean forwarderIsCluster;
-    private boolean masterIsCluster;
-    private List<ForwarderContext> forwarderContexts = new ArrayList();
-    private List<SlaveContext> slaveContexts = new ArrayList();
+    private boolean toIsCluster;
+    private boolean fromIsCluster;
+    private List<ToContext> toContexts = new ArrayList();
+    private List<FromContext> fromContexts = new ArrayList();
 
-    public ConsoleContext(String host, int port, int timeout, boolean forwarderIsCluster, boolean masterIsCluster) {
+    public ConsoleContext(String host, int port, int timeout, boolean toIsCluster, boolean fromIsCluster) {
         this.host = host;
         this.port = port;
         this.timeout = timeout;
-        this.forwarderIsCluster = forwarderIsCluster;
-        this.masterIsCluster = masterIsCluster;
+        this.toIsCluster = toIsCluster;
+        this.fromIsCluster = fromIsCluster;
     }
 
-    public void setForwarderContext(ForwarderContext forwarderContext) {
-        forwarderContexts.add(forwarderContext);
+    public void setToContext(ToContext toContext) {
+        toContexts.add(toContext);
     }
 
-    public void setSlaveContext(SlaveContext slaveContext) {
-        slaveContexts.add(slaveContext);
+    public void setFromContext(FromContext fromContext) {
+        fromContexts.add(fromContext);
     }
 
     public String getHost() {
@@ -51,24 +51,24 @@ public class ConsoleContext extends Context {
 
     public String sendCommand(String command, String type) {
         if ("left".equalsIgnoreCase(type)) {
-            int slaveSize = slaveContexts.size();
-            if (slaveSize > 1) {
-                logger.warn("Master size should 1,but {}", slaveSize);
+            int fromSize = fromContexts.size();
+            if (fromSize > 1) {
+                logger.warn("Master size should 1,but {}", fromSize);
             }
-            for (SlaveContext slaveContext : slaveContexts) {
-                if (slaveContext.isAdapt(masterIsCluster, command)) {
-                    return slaveContext.sendCommand(command, timeout);
+            for (FromContext fromContext : fromContexts) {
+                if (fromContext.isAdapt(fromIsCluster, command)) {
+                    return fromContext.sendCommand(command, timeout);
                 }
             }
             return null;
         } else if ("right".equalsIgnoreCase(type)) {
-            int forwarderSize = forwarderContexts.size();
-            if (forwarderSize > 1) {
-                logger.warn("Forwarder size should 1,but {}", forwarderSize);
+            int toSize = toContexts.size();
+            if (toSize > 1) {
+                logger.warn("To size should 1,but {}", toSize);
             }
-            for (ForwarderContext forwarderContext : forwarderContexts) {
-                if (forwarderContext.isAdapt(forwarderIsCluster, command)) {
-                    return forwarderContext.sendCommand(command, timeout);
+            for (ToContext toContext : toContexts) {
+                if (toContext.isAdapt(toIsCluster, command)) {
+                    return toContext.sendCommand(command, timeout);
                 }
             }
             return null;

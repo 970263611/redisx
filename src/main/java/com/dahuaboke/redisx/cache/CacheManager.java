@@ -19,12 +19,12 @@ public final class CacheManager {
 
     private static final Logger logger = LoggerFactory.getLogger(CacheManager.class);
     private Map<Context, BlockingQueue<CommandReference>> cache = new HashMap();
-    private boolean forwarderIsCluster;
-    private boolean masterIsCluster;
+    private boolean toIsCluster;
+    private boolean fromIsCluster;
 
-    public CacheManager(boolean forwarderIsCluster, boolean masterIsCluster) {
-        this.forwarderIsCluster = forwarderIsCluster;
-        this.masterIsCluster = masterIsCluster;
+    public CacheManager(boolean toIsCluster, boolean fromIsCluster) {
+        this.toIsCluster = toIsCluster;
+        this.fromIsCluster = fromIsCluster;
     }
 
     public void register(Context context) {
@@ -47,7 +47,7 @@ public final class CacheManager {
         for (Map.Entry<Context, BlockingQueue<CommandReference>> entry : cache.entrySet()) {
             Context k = entry.getKey();
             BlockingQueue<CommandReference> v = entry.getValue();
-            if (k.isAdapt(forwarderIsCluster, command)) {
+            if (k.isAdapt(toIsCluster, command)) {
                 return v.offer(commandReference);
             }
         }

@@ -1,7 +1,7 @@
 package dahuaboke.redisx;
 
-import com.dahuaboke.redisx.slave.rdb.RdbData;
-import com.dahuaboke.redisx.slave.rdb.RdbParser;
+import com.dahuaboke.redisx.from.rdb.RdbData;
+import com.dahuaboke.redisx.from.rdb.RdbParser;
 import io.netty.buffer.ByteBuf;
 import io.netty.buffer.ByteBufAllocator;
 import org.junit.Test;

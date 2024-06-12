@@ -2,10 +2,8 @@ package com.dahuaboke.redisx.handler;
 
 import com.dahuaboke.redisx.Constant;
 import com.dahuaboke.redisx.Context;
-import com.dahuaboke.redisx.forwarder.ForwarderContext;
-import com.dahuaboke.redisx.handler.CommandEncoder;
-import com.dahuaboke.redisx.handler.RedisChannelInboundHandler;
-import com.dahuaboke.redisx.slave.SlaveContext;
+import com.dahuaboke.redisx.to.ToContext;
+import com.dahuaboke.redisx.from.FromContext;
 import io.netty.channel.Channel;
 import io.netty.channel.ChannelHandlerContext;
 import org.slf4j.Logger;
@@ -46,22 +44,22 @@ public class SlotInfoHandler extends RedisChannelInboundHandler {
             if (arr.length != 0) {
                 Arrays.stream(arr).forEach(s -> {
                     SlotInfo slotInfo = new SlotInfo(s);
-                    if (context instanceof SlaveContext) {
-                        SlaveContext slaveContext = (SlaveContext) context;
-                        if (slaveContext.getMasterHost().equals(slotInfo.getIp()) &&
-                                slaveContext.getMasterPort() == slotInfo.getPort()) {
-                            slaveContext.setSlotInfo(slotInfo);
-                            slaveContext.setSlotBegin(slotInfo.getSlotStart());
-                            slaveContext.setSlotEnd(slotInfo.getSlotEnd());
+                    if (context instanceof FromContext) {
+                        FromContext fromContext = (FromContext) context;
+                        if (fromContext.getMasterHost().equals(slotInfo.getIp()) &&
+                                fromContext.getMasterPort() == slotInfo.getPort()) {
+                            fromContext.setSlotInfo(slotInfo);
+                            fromContext.setSlotBegin(slotInfo.getSlotStart());
+                            fromContext.setSlotEnd(slotInfo.getSlotEnd());
                             ctx.pipeline().remove(this);
                         }
-                    } else if (context instanceof ForwarderContext) {
-                        ForwarderContext forwarderContext = (ForwarderContext) context;
-                        if (forwarderContext.getForwardHost().equals(slotInfo.getIp()) &&
-                                forwarderContext.getForwardPort() == slotInfo.getPort()) {
-                            forwarderContext.setSlotInfo(slotInfo);
-                            forwarderContext.setSlotBegin(slotInfo.getSlotStart());
-                            forwarderContext.setSlotEnd(slotInfo.getSlotEnd());
+                    } else if (context instanceof ToContext) {
+                        ToContext toContext = (ToContext) context;
+                        if (toContext.getHost().equals(slotInfo.getIp()) &&
+                                toContext.getPort() == slotInfo.getPort()) {
+                            toContext.setSlotInfo(slotInfo);
+                            toContext.setSlotBegin(slotInfo.getSlotStart());
+                            toContext.setSlotEnd(slotInfo.getSlotEnd());
                             ctx.pipeline().remove(this);
                         }
                     }

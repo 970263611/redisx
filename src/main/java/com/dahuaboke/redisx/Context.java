@@ -3,12 +3,12 @@ package com.dahuaboke.redisx;
 import com.dahuaboke.redisx.cache.CacheManager;
 import com.dahuaboke.redisx.console.ConsoleContext;
 import com.dahuaboke.redisx.console.ConsoleServer;
-import com.dahuaboke.redisx.forwarder.ForwarderClient;
-import com.dahuaboke.redisx.forwarder.ForwarderContext;
+import com.dahuaboke.redisx.from.FromClient;
+import com.dahuaboke.redisx.from.FromContext;
 import com.dahuaboke.redisx.handler.SlotInfoHandler;
-import com.dahuaboke.redisx.slave.SlaveClient;
-import com.dahuaboke.redisx.slave.SlaveContext;
 import com.dahuaboke.redisx.thread.RedisxThreadFactory;
+import com.dahuaboke.redisx.to.ToClient;
+import com.dahuaboke.redisx.to.ToContext;
 import com.dahuaboke.redisx.utils.CRC16;
 import io.netty.util.concurrent.ThreadPerTaskExecutor;
 import org.slf4j.Logger;
@@ -37,8 +37,8 @@ public class Context {
     private static ScheduledExecutorService pool = Executors.newScheduledThreadPool(1,
             new RedisxThreadFactory(Constant.PROJECT_NAME + "-Monitor"));
     private CacheManager cacheManager;
-    private boolean forwarderIsCluster;
-    private boolean masterIsCluster;
+    private boolean toIsCluster;
+    private boolean fromIsCluster;
     protected BlockingDeque<String> replyQueue;
     protected SlotInfoHandler.SlotInfo slotInfo;
     protected boolean isClose = false;
@@ -47,26 +47,26 @@ public class Context {
     public Context() {
     }
 
-    public Context(boolean forwarderIsCluster, boolean masterIsCluster) {
-        cacheManager = new CacheManager(forwarderIsCluster, masterIsCluster);
-        this.forwarderIsCluster = forwarderIsCluster;
-        this.masterIsCluster = masterIsCluster;
+    public Context(boolean toIsCluster, boolean fromIsCluster) {
+        cacheManager = new CacheManager(toIsCluster, fromIsCluster);
+        this.toIsCluster = toIsCluster;
+        this.fromIsCluster = fromIsCluster;
     }
 
-    public void start(List<InetSocketAddress> forwarderNodeAddresses, List<InetSocketAddress> slaveNodeAddresses, InetSocketAddress consoleAddress, int consoleTimeout) {
-        forwarderNodeAddresses.forEach(address -> {
+    public void start(List<InetSocketAddress> toNodeAddresses, List<InetSocketAddress> fromNodeAddresses, InetSocketAddress consoleAddress, int consoleTimeout) {
+        toNodeAddresses.forEach(address -> {
             String host = address.getHostName();
             int port = address.getPort();
-            new ForwarderNode("Sync", cacheManager, host, port, forwarderIsCluster, false).start();
+            new ToNode("Sync", cacheManager, host, port, toIsCluster, false).start();
         });
-        slaveNodeAddresses.forEach(address -> {
+        fromNodeAddresses.forEach(address -> {
             String host = address.getHostName();
             int port = address.getPort();
-            new SlaveNode("Sync", cacheManager, host, port, false, masterIsCluster).start();
+            new FromNode("Sync", cacheManager, host, port, false, fromIsCluster).start();
         });
         String consoleHost = consoleAddress.getHostName();
         int consolePort = consoleAddress.getPort();
-        new ConsoleNode(consoleHost, consolePort, consoleTimeout, forwarderNodeAddresses, slaveNodeAddresses).start();
+        new ConsoleNode(consoleHost, consolePort, consoleTimeout, toNodeAddresses, fromNodeAddresses).start();
     }
 
     public boolean isAdapt(boolean isCluster, String command) {
@@ -151,30 +151,30 @@ public class Context {
         abstract Context getContext();
     }
 
-    private class ForwarderNode extends Node {
+    private class ToNode extends Node {
         private CacheManager cacheManager;
-        private String forwardHost;
-        private int forwardPort;
-        private ForwarderContext forwarderContext;
+        private String host;
+        private int port;
+        private ToContext toContext;
 
-        public ForwarderNode(String threadNamePrefix, CacheManager cacheManager, String forwardHost, int forwardPort, boolean forwarderIsCluster, boolean isConsole) {
-            this.name = Constant.PROJECT_NAME + "-" + threadNamePrefix + "-ForwardNode-" + forwardHost + "-" + forwardPort;
+        public ToNode(String threadNamePrefix, CacheManager cacheManager, String host, int port, boolean toIsCluster, boolean isConsole) {
+            this.name = Constant.PROJECT_NAME + "-" + threadNamePrefix + "-ToNode-" + host + "-" + port;
             this.setName(name);
             this.cacheManager = cacheManager;
-            this.forwardHost = forwardHost;
-            this.forwardPort = forwardPort;
+            this.host = host;
+            this.port = port;
             //放在构造方法而不是run，因为兼容console模式，需要收集console，否则可能收集到null
-            this.forwarderContext = new ForwarderContext(cacheManager, forwardHost, forwardPort, forwarderIsCluster, isConsole);
+            this.toContext = new ToContext(cacheManager, host, port, toIsCluster, isConsole);
         }
 
         @Override
         public void run() {
             register2Monitor(this);
-            cacheManager.register(this.forwarderContext);
-            ForwarderClient forwarderClient = new ForwarderClient(this.forwarderContext,
-                    getExecutor("ForwarderEventLoop-" + forwardHost + ":" + forwardPort));
-            this.forwarderContext.setForwarderClient(forwarderClient);
-            forwarderClient.start();
+            cacheManager.register(this.toContext);
+            ToClient toClient = new ToClient(this.toContext,
+                    getExecutor("ToEventLoop-" + host + ":" + port));
+            this.toContext.setClient(toClient);
+            toClient.start();
         }
 
         @Override
@@ -184,30 +184,30 @@ public class Context {
 
         @Override
         public Context getContext() {
-            return forwarderContext;
+            return toContext;
         }
     }
 
-    private class SlaveNode extends Node {
-        private String masterHost;
-        private int masterPort;
-        private SlaveContext slaveContext;
+    private class FromNode extends Node {
+        private String host;
+        private int port;
+        private FromContext fromContext;
 
-        public SlaveNode(String threadNamePrefix, CacheManager cacheManager, String masterHost, int masterPort, boolean isConsole, boolean masterIsCluster) {
-            this.name = Constant.PROJECT_NAME + "-" + threadNamePrefix + "-SlaveNode - " + masterHost + " - " + masterPort;
+        public FromNode(String threadNamePrefix, CacheManager cacheManager, String host, int port, boolean isConsole, boolean masterIsCluster) {
+            this.name = Constant.PROJECT_NAME + "-" + threadNamePrefix + "-FromNode - " + host + " - " + port;
             this.setName(name);
-            this.masterHost = masterHost;
-            this.masterPort = masterPort;
+            this.host = host;
+            this.port = port;
             //放在构造方法而不是run，因为兼容console模式，需要收集console，否则可能收集到null
-            this.slaveContext = new SlaveContext(cacheManager, masterHost, masterPort, isConsole, masterIsCluster);
+            this.fromContext = new FromContext(cacheManager, host, port, isConsole, masterIsCluster);
         }
 
         @Override
         public void run() {
             register2Monitor(this);
-            SlaveClient slaveClient = new SlaveClient(this.slaveContext, getExecutor("SlaveEventLoop-" + masterHost + ":" + masterPort));
-            this.slaveContext.setSlaveClient(slaveClient);
-            slaveClient.start();
+            FromClient fromClient = new FromClient(this.fromContext, getExecutor("FromEventLoop-" + host + ":" + port));
+            this.fromContext.setFromClient(fromClient);
+            fromClient.start();
         }
 
         @Override
@@ -217,7 +217,7 @@ public class Context {
 
         @Override
         public Context getContext() {
-            return slaveContext;
+            return fromContext;
         }
     }
 
@@ -225,36 +225,36 @@ public class Context {
         private String host;
         private int port;
         private int timeout;
-        private List<InetSocketAddress> forwarderNodeAddresses;
-        private List<InetSocketAddress> slaveNodeAddresses;
+        private List<InetSocketAddress> toNodeAddresses;
+        private List<InetSocketAddress> fromNodeAddresses;
         private ConsoleContext consoleContext;
 
-        public ConsoleNode(String host, int port, int timeout, List<InetSocketAddress> forwarderNodeAddresses, List<InetSocketAddress> slaveNodeAddresses) {
+        public ConsoleNode(String host, int port, int timeout, List<InetSocketAddress> toNodeAddresses, List<InetSocketAddress> fromNodeAddresses) {
             this.name = "Console[" + host + ":" + port + "]";
             this.host = host;
             this.port = port;
             this.timeout = timeout;
-            this.forwarderNodeAddresses = forwarderNodeAddresses;
-            this.slaveNodeAddresses = slaveNodeAddresses;
-            consoleContext = new ConsoleContext(this.host, this.port, this.timeout, forwarderIsCluster, masterIsCluster);
+            this.toNodeAddresses = toNodeAddresses;
+            this.fromNodeAddresses = fromNodeAddresses;
+            consoleContext = new ConsoleContext(this.host, this.port, this.timeout, toIsCluster, fromIsCluster);
         }
 
         @Override
         public void run() {
             register2Monitor(this);
-            forwarderNodeAddresses.forEach(address -> {
+            toNodeAddresses.forEach(address -> {
                 String host = address.getHostName();
                 int port = address.getPort();
-                ForwarderNode forwarderNode = new ForwarderNode("Console", cacheManager, host, port, forwarderIsCluster, true);
-                consoleContext.setForwarderContext((ForwarderContext) forwarderNode.getContext());
-                forwarderNode.start();
+                ToNode toNode = new ToNode("Console", cacheManager, host, port, toIsCluster, true);
+                consoleContext.setToContext((ToContext) toNode.getContext());
+                toNode.start();
             });
-            slaveNodeAddresses.forEach(address -> {
+            fromNodeAddresses.forEach(address -> {
                 String host = address.getHostName();
                 int port = address.getPort();
-                SlaveNode slaveNode = new SlaveNode("Console", cacheManager, host, port, true, masterIsCluster);
-                consoleContext.setSlaveContext((SlaveContext) slaveNode.getContext());
-                slaveNode.start();
+                FromNode fromNode = new FromNode("Console", cacheManager, host, port, true, fromIsCluster);
+                consoleContext.setFromContext((FromContext) fromNode.getContext());
+                fromNode.start();
             });
             ConsoleServer consoleServer = new ConsoleServer(consoleContext, getExecutor("Console-Boss"), getExecutor("Console-Worker"));
             consoleServer.start();
