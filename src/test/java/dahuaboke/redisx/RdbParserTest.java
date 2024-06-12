@@ -1,23 +1,26 @@
 package dahuaboke.redisx;
 
-import com.dahuaboke.redisx.from.rdb.base.ListPackParser;
-import com.dahuaboke.redisx.from.rdb.base.StringParser;
-import com.dahuaboke.redisx.from.rdb.base.ZipListParser;
-import com.dahuaboke.redisx.from.rdb.hash.HashListPackParser;
-import com.dahuaboke.redisx.from.rdb.hash.HashZipListParser;
-import com.dahuaboke.redisx.from.rdb.list.ListQuickList2Parser;
-import com.dahuaboke.redisx.from.rdb.list.ListQuickListParser;
-import com.dahuaboke.redisx.from.rdb.module.Module2Parser;
-import com.dahuaboke.redisx.from.rdb.set.SetIntSetParser;
-import com.dahuaboke.redisx.from.rdb.set.SetListPackParser;
-import com.dahuaboke.redisx.from.rdb.set.SetParser;
-import com.dahuaboke.redisx.from.rdb.stream.Stream;
-import com.dahuaboke.redisx.from.rdb.stream.StreamListPacks2Parser;
-import com.dahuaboke.redisx.from.rdb.stream.StreamListPacks3Parser;
-import com.dahuaboke.redisx.from.rdb.stream.StreamListPacksParser;
-import com.dahuaboke.redisx.from.rdb.zset.ZSetEntry;
-import com.dahuaboke.redisx.from.rdb.zset.ZSetListPackParser;
-import com.dahuaboke.redisx.from.rdb.zset.ZSetZipListParser;
+import com.dahuaboke.redisx.slave.rdb.ParserManager;
+import com.dahuaboke.redisx.slave.rdb.base.ListPackParser;
+import com.dahuaboke.redisx.slave.rdb.base.StringParser;
+import com.dahuaboke.redisx.slave.rdb.base.ZipListParser;
+import com.dahuaboke.redisx.slave.rdb.hash.HashListPackParser;
+import com.dahuaboke.redisx.slave.rdb.hash.HashZipListParser;
+import com.dahuaboke.redisx.slave.rdb.list.ListQuickList2Parser;
+import com.dahuaboke.redisx.slave.rdb.list.ListQuickListParser;
+import com.dahuaboke.redisx.slave.rdb.module.Module;
+import com.dahuaboke.redisx.slave.rdb.module.Module2Parser;
+import com.dahuaboke.redisx.slave.rdb.module.ModuleParser;
+import com.dahuaboke.redisx.slave.rdb.set.SetIntSetParser;
+import com.dahuaboke.redisx.slave.rdb.set.SetListPackParser;
+import com.dahuaboke.redisx.slave.rdb.set.SetParser;
+import com.dahuaboke.redisx.slave.rdb.stream.Stream;
+import com.dahuaboke.redisx.slave.rdb.stream.StreamListPacks2Parser;
+import com.dahuaboke.redisx.slave.rdb.stream.StreamListPacks3Parser;
+import com.dahuaboke.redisx.slave.rdb.stream.StreamListPacksParser;
+import com.dahuaboke.redisx.slave.rdb.zset.ZSetEntry;
+import com.dahuaboke.redisx.slave.rdb.zset.ZSetListPackParser;
+import com.dahuaboke.redisx.slave.rdb.zset.ZSetZipListParser;
 import io.netty.buffer.ByteBuf;
 import io.netty.buffer.Unpooled;
 import org.junit.Before;
@@ -29,6 +32,8 @@ import java.nio.ByteBuffer;
 import java.nio.channels.FileChannel;
 import java.nio.charset.StandardCharsets;
 import java.util.*;
+
+import static com.dahuaboke.redisx.Constant.MODULE_SET;
 
 /**
  * @Desc: rdb解析测试类

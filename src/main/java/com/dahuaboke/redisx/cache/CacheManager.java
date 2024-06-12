@@ -32,6 +32,10 @@ public final class CacheManager {
         cache.put(context, queue);
     }
 
+    public void remove(Context context){
+        cache.remove(context);
+    }
+
     /**
      * 非web模式走这个方法，因为只有web需要回调传递
      *

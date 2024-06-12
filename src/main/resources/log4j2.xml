@@ -6,10 +6,20 @@
             <!-- 默认打印格式 -->
             <PatternLayout pattern="%d{HH:mm:ss.SSS} [%t] %-5level %logger{36} - %msg%n"/>
         </Console>
+        <RollingFile name="RollingFileError" fileName="logs/error.log"
+                     filePattern="logs/$${date:yyyy-MM}/error-%d{yyyy-MM-dd}-%i.log">
+            <PatternLayout pattern="[%d{yyyy-MM-dd HH:mm:ss:SSS}] [%p] - %l - %m%n"/>
+            <Policies>
+                <TimeBasedTriggeringPolicy/>
+                <SizeBasedTriggeringPolicy size="100 MB"/>
+            </Policies>
+            <ThresholdFilter level="error" onMatch="ACCEPT" onMismatch="DENY"/>
+        </RollingFile>
     </Appenders>
     <Loggers>
         <Root level="debug">
             <AppenderRef ref="Console"/>
+            <AppenderRef ref="RollingFileError"/>
         </Root>
     </Loggers>
 </Configuration>

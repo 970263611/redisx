@@ -102,6 +102,7 @@ public class Context {
 
     public void setClose(boolean close) {
         isClose = close;
+        cacheManager.remove(this);
     }
 
     private abstract class Node extends Thread {
