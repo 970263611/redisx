@@ -46,17 +46,19 @@ public class DRHandler extends RedisChannelInboundHandler {
 
     @Override
     public void channelRead1(ChannelHandlerContext ctx, String reply) throws Exception {
-        String[] split = reply.split("\\|");
-        if (split.length != 3) {
-            preemptMasterCompulsory();
-        } else {
-            if (!Constant.PROJECT_NAME.equals(split[0])) {
+        if (reply.startsWith(Constant.PROJECT_NAME)) {
+            String[] split = reply.split("\\|");
+            if (split.length != 3) {
                 preemptMasterCompulsory();
             } else {
-                if (toContext.getId().equals(split[1])) { //主节点是自己
-                    toContext.isMaster(true);
-                } else { //主节点非自己
-                    toContext.isMaster(false);
+                if (!Constant.PROJECT_NAME.equals(split[0])) {
+                    preemptMasterCompulsory();
+                } else {
+                    if (toContext.getId().equals(split[1])) { //主节点是自己
+                        toContext.isMaster(true);
+                    } else { //主节点非自己
+                        toContext.isMaster(false);
+                    }
                 }
             }
         }
