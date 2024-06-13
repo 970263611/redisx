@@ -88,16 +88,21 @@ public class ToContext extends Context {
 
     @Override
     public String sendCommand(String command, int timeout) {
-        if (replyQueue == null) {
-            throw new IllegalStateException("By console mode replyQueue need init");
-        } else {
-            replyQueue.clear();
-            toClient.sendCommand(command);
-            try {
-                return replyQueue.poll(timeout, TimeUnit.MILLISECONDS);
-            } catch (InterruptedException e) {
-                return null;
+        if (isConsole) {
+            if (replyQueue == null) {
+                throw new IllegalStateException("By console mode replyQueue need init");
+            } else {
+                replyQueue.clear();
+                toClient.sendCommand(command);
+                try {
+                    return replyQueue.poll(timeout, TimeUnit.MILLISECONDS);
+                } catch (InterruptedException e) {
+                    return null;
+                }
             }
+        } else {
+            toClient.sendCommand(command);
+            return null;
         }
     }
 
@@ -119,5 +124,10 @@ public class ToContext extends Context {
 
     public void close() {
         this.toClient.destroy();
+        cacheManager.remove(this);
+    }
+
+    public void isMaster(boolean isMaster) {
+        cacheManager.setIsMaster(isMaster);
     }
 }

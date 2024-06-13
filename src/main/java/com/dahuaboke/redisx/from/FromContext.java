@@ -133,5 +133,6 @@ public class FromContext extends Context {
 
     public void close() {
         this.fromClient.destroy();
+        cacheManager.remove(this);
     }
 }

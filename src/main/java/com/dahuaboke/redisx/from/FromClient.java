@@ -82,7 +82,7 @@ public class FromClient {
         } catch (InterruptedException e) {
             logger.error("Connect to [{}:{}] exception", masterHost, masterPort, e);
         } finally {
-            destroy();
+            fromContext.close();
             group.shutdownGracefully();
         }
     }

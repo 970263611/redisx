@@ -71,7 +71,7 @@ public class ToClient {
         } catch (InterruptedException e) {
             logger.error("Connect to {{}:{}] exception", host, port, e);
         } finally {
-            destroy();
+            toContext.close();
             group.shutdownGracefully();
         }
     }

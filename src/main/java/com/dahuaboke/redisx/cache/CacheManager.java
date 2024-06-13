@@ -4,11 +4,14 @@ import com.dahuaboke.redisx.Context;
 import org.slf4j.Logger;
 import org.slf4j.LoggerFactory;
 
+import java.util.ArrayList;
 import java.util.HashMap;
+import java.util.List;
 import java.util.Map;
 import java.util.concurrent.BlockingQueue;
 import java.util.concurrent.LinkedBlockingQueue;
 import java.util.concurrent.TimeUnit;
+import java.util.concurrent.atomic.AtomicBoolean;
 
 /**
  * 2024/5/13 10:45
@@ -18,21 +21,45 @@ import java.util.concurrent.TimeUnit;
 public final class CacheManager {
 
     private static final Logger logger = LoggerFactory.getLogger(CacheManager.class);
+    private List<Context> contexts = new ArrayList();
     private Map<Context, BlockingQueue<CommandReference>> cache = new HashMap();
     private boolean toIsCluster;
     private boolean fromIsCluster;
+    private AtomicBoolean isMaster = new AtomicBoolean(false);
+    private AtomicBoolean fromStarted = new AtomicBoolean(false);
 
     public CacheManager(boolean toIsCluster, boolean fromIsCluster) {
         this.toIsCluster = toIsCluster;
         this.fromIsCluster = fromIsCluster;
     }
 
+    /**
+     * 注册from to组的所有context
+     *
+     * @param context
+     */
     public void register(Context context) {
+        contexts.add(context);
+    }
+
+    /**
+     * 获取from to组的所有context
+     */
+    public List<Context> getAllContexts() {
+        return contexts;
+    }
+
+    /**
+     * 注册to的context，用于接收消息
+     *
+     * @param context
+     */
+    public void registerTo(Context context) {
         BlockingQueue<CommandReference> queue = new LinkedBlockingQueue();
         cache.put(context, queue);
     }
 
-    public void remove(Context context){
+    public void remove(Context context) {
         cache.remove(context);
     }
 
@@ -56,6 +83,22 @@ public final class CacheManager {
             }
         }
         return false;
+    }
+
+    public boolean isMaster() {
+        return isMaster.get();
+    }
+
+    public void setIsMaster(boolean isMaster) {
+        this.isMaster.set(isMaster);
+    }
+
+    public boolean fromIsStarted() {
+        return fromStarted.get();
+    }
+
+    public void setFromIsStarted(boolean isMaster) {
+        this.fromStarted.set(isMaster);
     }
 
     public CommandReference listen(Context context) {

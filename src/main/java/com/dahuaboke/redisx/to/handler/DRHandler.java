@@ -32,13 +32,7 @@ public class DRHandler extends RedisChannelInboundHandler {
     public void channelActive(ChannelHandlerContext ctx) throws Exception {
         Thread drThread = new Thread(() -> {
             while (!toContext.isClose()) {
-                StringBuilder sb = new StringBuilder();
-                sb.append(Constant.PROJECT_NAME);
-                sb.append("|");
-                sb.append(toContext.getId());
-                sb.append("|");
-                sb.append(System.currentTimeMillis());
-                toContext.sendCommand(lua + sb, 10000);
+                preemptMaster();
                 try {
                     Thread.sleep(1000);
                 } catch (InterruptedException e) {
@@ -52,11 +46,37 @@ public class DRHandler extends RedisChannelInboundHandler {
 
     @Override
     public void channelRead1(ChannelHandlerContext ctx, String reply) throws Exception {
-        if (reply.startsWith(Constant.PROJECT_NAME)) {
-            String[] split = reply.split("\\|");
-            for (String s: split) {
-                System.out.println(s);
+        String[] split = reply.split("\\|");
+        if (split.length != 3) {
+            preemptMasterCompulsory();
+        } else {
+            if (!Constant.PROJECT_NAME.equals(split[0])) {
+                preemptMasterCompulsory();
+            } else {
+                if (toContext.getId().equals(split[1])) { //主节点是自己
+                    toContext.isMaster(true);
+                } else { //主节点非自己
+                    toContext.isMaster(false);
+                }
             }
         }
+    }
+
+    private void preemptMaster() {
+        toContext.sendCommand(lua + preemptMasterCommand(), 10000);
+    }
+
+    private void preemptMasterCompulsory() {
+        toContext.sendCommand("set " + Constant.DR_KEY + " " + preemptMasterCommand(), 10000);
+    }
+
+    private String preemptMasterCommand() {
+        StringBuilder sb = new StringBuilder();
+        sb.append(Constant.PROJECT_NAME);
+        sb.append("|");
+        sb.append(toContext.getId());
+        sb.append("|");
+        sb.append(System.currentTimeMillis());
+        return new String(sb);
     }
 }
