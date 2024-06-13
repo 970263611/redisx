@@ -48,7 +48,7 @@ public class AckOffsetHandler extends ChannelDuplexHandler {
                 }
             }
         });
-        heartBeatThread.setName(Constant.PROJECT_NAME + "-AckThread-" + fromContext.getMasterHost() + ":" + fromContext.getMasterPort());
+        heartBeatThread.setName(Constant.PROJECT_NAME + "-AckThread-" + fromContext.getHost() + ":" + fromContext.getPort());
         heartBeatThread.start();
     }
 

@@ -34,6 +34,7 @@ public class SlotInfoHandler extends RedisChannelInboundHandler {
             //不需要去pipeline的底部，所以直接ctx.write
             ctx.writeAndFlush(Constant.GET_SLOT_COMMAND);
         }
+        ctx.fireChannelActive();
     }
 
     @Override

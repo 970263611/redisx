@@ -15,7 +15,7 @@ import org.slf4j.LoggerFactory;
 public class DRHandler extends RedisChannelInboundHandler {
 
     private static final Logger logger = LoggerFactory.getLogger(DRHandler.class);
-    private static final String lua = "EVAL \"local v = redis.call('GET',KEYS[1]);\n" +
+    private static final String lua = Constant.PROJECT_NAME + "EVAL \"local v = redis.call('GET',KEYS[1]);\n" +
             "    if v then\n" +
             "        return v;\n" +
             "    else\n" +
