@@ -43,6 +43,7 @@ public class Controller {
     }
 
     public void start(List<InetSocketAddress> toNodeAddresses, List<InetSocketAddress> fromNodeAddresses, InetSocketAddress consoleAddress, int consoleTimeout) {
+        logger.info("Application global id is {}", cacheManager.getId());
         monitorPool.scheduleAtFixedRate(() -> {
             AtomicInteger alive = new AtomicInteger();
             nodes.forEach((k, v) -> {
