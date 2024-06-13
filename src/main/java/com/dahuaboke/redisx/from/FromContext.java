@@ -8,7 +8,6 @@ import org.slf4j.Logger;
 import org.slf4j.LoggerFactory;
 
 import java.net.InetSocketAddress;
-import java.util.UUID;
 import java.util.concurrent.LinkedBlockingDeque;
 import java.util.concurrent.TimeUnit;
 
@@ -20,7 +19,6 @@ import java.util.concurrent.TimeUnit;
 public class FromContext extends Context {
 
     private static final Logger logger = LoggerFactory.getLogger(FromContext.class);
-    private String id;
     private CacheManager cacheManager;
     private String host;
     private int port;
@@ -34,7 +32,6 @@ public class FromContext extends Context {
     private boolean fromIsCluster;
 
     public FromContext(CacheManager cacheManager, String host, int port, boolean isConsole, boolean fromIsCluster) {
-        this.id = UUID.randomUUID().toString();
         this.cacheManager = cacheManager;
         this.host = host;
         this.port = port;
@@ -47,7 +44,7 @@ public class FromContext extends Context {
 
 
     public String getId() {
-        return id;
+        return cacheManager.getId();
     }
 
     public String getHost() {

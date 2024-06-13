@@ -4,10 +4,7 @@ import com.dahuaboke.redisx.Context;
 import org.slf4j.Logger;
 import org.slf4j.LoggerFactory;
 
-import java.util.ArrayList;
-import java.util.HashMap;
-import java.util.List;
-import java.util.Map;
+import java.util.*;
 import java.util.concurrent.BlockingQueue;
 import java.util.concurrent.LinkedBlockingQueue;
 import java.util.concurrent.TimeUnit;
@@ -27,10 +24,18 @@ public final class CacheManager {
     private boolean fromIsCluster;
     private AtomicBoolean isMaster = new AtomicBoolean(false);
     private AtomicBoolean fromStarted = new AtomicBoolean(false);
+    private String id = UUID.randomUUID().toString();
 
     public CacheManager(boolean toIsCluster, boolean fromIsCluster) {
         this.toIsCluster = toIsCluster;
         this.fromIsCluster = fromIsCluster;
+    }
+
+    /**
+     * 服务唯一id
+     */
+    public String getId() {
+        return id;
     }
 
     /**
