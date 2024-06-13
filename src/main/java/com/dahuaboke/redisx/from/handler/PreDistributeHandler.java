@@ -22,6 +22,8 @@ public class PreDistributeHandler extends ChannelInboundHandlerAdapter {
 
     private static final Logger logger = LoggerFactory.getLogger(PreDistributeHandler.class);
 
+    private boolean lineBreakFlag = true;
+
     @Override
     public void handlerAdded(ChannelHandlerContext ctx) throws Exception {
         ctx.channel().attr(Constant.RDB_STREAM_NEXT).set(false);
@@ -32,48 +34,50 @@ public class PreDistributeHandler extends ChannelInboundHandlerAdapter {
         if (msg instanceof ByteBuf) {
             ByteBuf in = (ByteBuf) msg;
             StringBuilder sb = new StringBuilder();
-            sb.append("\r\n")
-                    .append("<").append(Thread.currentThread().getName()).append(">")
+            sb.append("\r\n<").append(Thread.currentThread().getName()).append(">")
                     .append("<redis massage> = ").append(in).append("\r\n");
             sb.append(ByteBufUtil.prettyHexDump(in).toString());
-            logger.trace(sb.toString());
+            logger.debug(sb.toString());
 
             if (ctx.pipeline().get(Constant.INIT_SYNC_HANDLER_NAME) != null) {
                 ctx.fireChannelRead(in);
             } else if (ctx.channel().attr(Constant.RDB_STREAM_NEXT).get()){
                 logger.debug("Receive rdb byteStream length [{}]", in.readableBytes());
                 ctx.fireChannelRead(new RdbCommand(in));
-            } else{
+            } else {
                 //redis 7.X版本会发空字符串后在fullresync
-                while(in.getByte(in.readerIndex()) == Constant.LINE_BREAK){
-                    in.readByte();
-                    if(in.readerIndex() == in.writerIndex()){
-                        in.release();
-                        return;
+                if (lineBreakFlag && in.getByte(0) == Constant.LINE_BREAK) {
+                    while (in.getByte(in.readerIndex()) == Constant.LINE_BREAK) {
+                        in.readByte();
+                        if (in.readerIndex() == in.writerIndex()) {
+                            in.release();
+                            return;
+                        }
                     }
                 }
-                if(in.getByte(in.readerIndex()) == Constant.PLUS){
+                lineBreakFlag = false;
+                if (in.getByte(in.readerIndex()) == Constant.PLUS) {
                     String headStr = in.readBytes(ByteBufUtil.indexOf(Constant.SEPARAPOR, in) - in.readerIndex()).toString(StandardCharsets.UTF_8);
-                    in.readBytes(Constant.SEPARAPOR.readableBytes());
                     if (Constant.CONTINUE.equals(headStr)) {
                         logger.debug("Find continue command do nothing");
+                        in.release();
                     } else if (headStr.startsWith(Constant.CONTINUE)) {
                         logger.debug("Find continue command and will reset offset");
                         ctx.fireChannelRead(new OffsetCommand(headStr));
+                        in.release();
                     } else if (headStr.startsWith(Constant.FULLRESYNC)) {
                         logger.debug("Find fullReSync command");
                         ctx.fireChannelRead(new OffsetCommand(headStr));
                         ctx.channel().attr(Constant.RDB_STREAM_NEXT).set(true);
-                    }else{
+                        in.release();
+                    } else {
                         in.readerIndex(0);
                         ctx.fireChannelRead(in);
                     }
-                }else{
-                    in.readerIndex(0);
+                } else {
                     ctx.fireChannelRead(in);
                 }
             }
-
         }
     }
 
