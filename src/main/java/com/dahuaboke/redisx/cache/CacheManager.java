@@ -25,7 +25,7 @@ public final class CacheManager {
     private AtomicBoolean isMaster = new AtomicBoolean(false);
     private AtomicBoolean fromStarted = new AtomicBoolean(false);
     private String id = UUID.randomUUID().toString();
-    private long offset;
+    private long offset = -1;
 
     public CacheManager(boolean toIsCluster, boolean fromIsCluster) {
         this.toIsCluster = toIsCluster;

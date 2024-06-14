@@ -135,4 +135,8 @@ public class FromContext extends Context {
     public void setOffset(long offset) {
         cacheManager.setOffset(offset);
     }
+
+    public long getOffset() {
+        return cacheManager.getOffset();
+    }
 }

@@ -33,7 +33,6 @@ public class SyncInitializationHandler extends ChannelInboundHandlerAdapter {
         SENT_ADDRESS,
         SENT_CAPA,
         SENT_PSYNC;
-
     }
 
     @Override
@@ -72,7 +71,7 @@ public class SyncInitializationHandler extends ChannelInboundHandlerAdapter {
                             if (Constant.OK_COMMAND.equalsIgnoreCase(reply) && state == SENT_CAPA) {
                                 clearReply(ctx);
                                 state = SENT_PSYNC;
-                                channel.writeAndFlush(Constant.CONFIG_ALL_PSYNC_COMMAND);
+                                channel.writeAndFlush(Constant.CONFIG_ALL_PSYNC_COMMAND + fromContext.getOffset());
                                 logger.debug("Sent psync ? -1 command");
                             }
                             if (state == SENT_PSYNC) {

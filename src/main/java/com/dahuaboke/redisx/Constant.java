@@ -45,7 +45,7 @@ public class Constant {
 
     public static final String CONFIG_CAPA_COMMAND = "REPLCONF capa eof capa psync2";
 
-    public static final String CONFIG_ALL_PSYNC_COMMAND = "PSYNC ? -1";
+    public static final String CONFIG_ALL_PSYNC_COMMAND = "PSYNC ? ";
 
     public static final String CONSOLE_URI_PREFIX = "/console";
 
