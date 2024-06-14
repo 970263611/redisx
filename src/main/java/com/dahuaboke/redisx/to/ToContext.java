@@ -6,6 +6,8 @@ import com.dahuaboke.redisx.cache.CacheManager;
 import org.slf4j.Logger;
 import org.slf4j.LoggerFactory;
 
+import java.util.ArrayList;
+import java.util.List;
 import java.util.concurrent.LinkedBlockingDeque;
 import java.util.concurrent.TimeUnit;
 
@@ -17,6 +19,13 @@ import java.util.concurrent.TimeUnit;
 public class ToContext extends Context {
 
     private static final Logger logger = LoggerFactory.getLogger(ToContext.class);
+    private static final String lua = "local v = redis.call('GET',KEYS[1]);\n" +
+            "    if v then\n" +
+            "        return v;\n" +
+            "    else\n" +
+            "        local result = redis.call('SET',KEYS[1],ARGV[1]);\n" +
+            "        return result;\n" +
+            "    end";
     private CacheManager cacheManager;
     private String host;
     private int port;
@@ -134,5 +143,32 @@ public class ToContext extends Context {
 
     public void setOffset(long offset) {
         cacheManager.setOffset(offset);
+    }
+
+    public void preemptMaster() {
+        List<String> commands = new ArrayList() {{
+            add("EVAL");
+            add(lua);
+            add("1");
+            add(Constant.DR_KEY);
+            add(preemptMasterCommand());
+        }};
+        this.sendCommand(commands, 1000);
+    }
+
+    public void preemptMasterCompulsory() {
+        this.sendCommand("set " + Constant.DR_KEY + " " + preemptMasterCommand(), 1000);
+    }
+
+    private String preemptMasterCommand() {
+        StringBuilder sb = new StringBuilder();
+        sb.append(Constant.PROJECT_NAME);
+        sb.append("|");
+        sb.append(this.getId());
+        sb.append("|");
+        sb.append(this.getOffset());
+        sb.append("|");
+        sb.append(System.currentTimeMillis());
+        return new String(sb);
     }
 }

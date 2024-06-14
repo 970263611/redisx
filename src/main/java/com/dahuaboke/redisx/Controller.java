@@ -13,6 +13,8 @@ import org.slf4j.Logger;
 import org.slf4j.LoggerFactory;
 
 import java.net.InetSocketAddress;
+import java.util.ArrayList;
+import java.util.LinkedList;
 import java.util.List;
 import java.util.concurrent.Executor;
 import java.util.concurrent.Executors;
@@ -50,6 +52,15 @@ public class Controller {
             cacheManager.register(toNode.getContext());
         });
         controllerPool.scheduleAtFixedRate(() -> {
+            List<Context> allContexts = cacheManager.getAllContexts();
+            for (Context cont : allContexts) {
+                if (cont instanceof ToContext) {
+                    ToContext toContext = (ToContext) cont;
+                    if (toContext.isAdapt(true, Constant.DR_KEY)) {
+                        toContext.preemptMaster();
+                    }
+                }
+            }
             boolean isMaster = cacheManager.isMaster();
             boolean fromIsStarted = cacheManager.fromIsStarted();
             if (isMaster && !fromIsStarted) { //抢占到主节点，from未启动
@@ -64,7 +75,6 @@ public class Controller {
             } else if (isMaster && fromIsStarted) { //抢占到主节点，from已经启动
                 //do nothing
             } else if (!isMaster && fromIsStarted) { //未抢占到主节点，from已经启动
-                List<Context> allContexts = cacheManager.getAllContexts();
                 for (Context cont : allContexts) {
                     if (cont instanceof FromContext) {
                         FromContext fromContext = (FromContext) cont;
@@ -212,5 +222,4 @@ public class Controller {
             return consoleContext;
         }
     }
-
 }

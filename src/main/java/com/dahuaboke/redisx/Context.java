@@ -1,6 +1,5 @@
 package com.dahuaboke.redisx;
 
-import com.dahuaboke.redisx.cache.CacheManager;
 import com.dahuaboke.redisx.handler.SlotInfoHandler;
 import com.dahuaboke.redisx.utils.CRC16;
 import org.slf4j.Logger;
@@ -39,8 +38,7 @@ public class Context {
         if (ary.length > 1) {
             return CRC16.crc16(ary[1].getBytes(StandardCharsets.UTF_8));
         } else {
-            logger.warn("Command split length should > 1");
-            return 0;
+            return CRC16.crc16(command.getBytes(StandardCharsets.UTF_8));
         }
     }
 
