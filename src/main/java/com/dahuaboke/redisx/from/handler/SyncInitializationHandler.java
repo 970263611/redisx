@@ -71,8 +71,9 @@ public class SyncInitializationHandler extends ChannelInboundHandlerAdapter {
                             if (Constant.OK_COMMAND.equalsIgnoreCase(reply) && state == SENT_CAPA) {
                                 clearReply(ctx);
                                 state = SENT_PSYNC;
-                                channel.writeAndFlush(Constant.CONFIG_ALL_PSYNC_COMMAND + fromContext.getOffset());
-                                logger.debug("Sent psync ? -1 command");
+                                long offset = fromContext.getOffset();
+                                channel.writeAndFlush(Constant.CONFIG_ALL_PSYNC_COMMAND + offset);
+                                logger.debug("Sent psync ? " + offset + " command");
                             }
                             if (state == SENT_PSYNC) {
                                 ChannelPipeline pipeline = channel.pipeline();
