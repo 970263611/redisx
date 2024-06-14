@@ -14,21 +14,9 @@ public class OffsetCommand {
 
     public OffsetCommand(String command) {
         String[] s = command.split(" ");
-        if (command.startsWith(Constant.FULLRESYNC)) {
-            masterId = s[1];
-            offset = Long.parseLong(s[2]);
-        } else if (command.startsWith(Constant.CONTINUE)) {
-            if (s.length > 2) {
-                masterId = s[1];
-                offset = Long.parseLong(s[2]);
-            } else {
-                try {
-                    offset = Long.parseLong(s[1]);
-                } catch (NumberFormatException e) {
-                    masterId = s[1];
-                }
-            }
-        }
+        masterId = s[1];
+        //TODO 未找到这个 +1 偏移量的原因，观察发现差1
+        offset = Long.parseLong(s[2]) + 1;
     }
 
     public String getMasterId() {

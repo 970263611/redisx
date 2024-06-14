@@ -58,13 +58,10 @@ public class PreDistributeHandler extends ChannelInboundHandlerAdapter {
                 lineBreakFlag = false;
                 if (in.getByte(in.readerIndex()) == Constant.PLUS) {
                     String headStr = in.readBytes(ByteBufUtil.indexOf(Constant.SEPARAPOR, in) - in.readerIndex()).toString(StandardCharsets.UTF_8);
-                    if (Constant.CONTINUE.equals(headStr)) {
-                        logger.debug("Find continue command do nothing");
-                        in.release();
-                    } else if (headStr.startsWith(Constant.CONTINUE)) {
+                    if (headStr.startsWith(Constant.CONTINUE)) {
                         logger.debug("Find continue command and will reset offset");
-                        ctx.fireChannelRead(new OffsetCommand(headStr));
-                        in.release();
+                        in.readBytes(Constant.SEPARAPOR.readableBytes());
+                        ctx.fireChannelRead(in);
                     } else if (headStr.startsWith(Constant.FULLRESYNC)) {
                         logger.debug("Find fullReSync command");
                         ctx.fireChannelRead(new OffsetCommand(headStr));

@@ -55,7 +55,7 @@ public class AckOffsetHandler extends ChannelDuplexHandler {
 
     @Override
     public void channelRead(ChannelHandlerContext ctx, Object msg) throws Exception {
-        if (msg instanceof ByteBuf) {
+        if (msg instanceof ByteBuf && !ctx.channel().attr(Constant.RDB_STREAM_NEXT).get()) {
             int i = ((ByteBuf) msg).readableBytes();
             logger.debug("Receive command length [{}], before offset [{}]", i, offset);
             offset += i;
