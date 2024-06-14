@@ -6,6 +6,7 @@ import org.slf4j.LoggerFactory;
 
 import java.util.*;
 import java.util.concurrent.BlockingQueue;
+import java.util.concurrent.ConcurrentHashMap;
 import java.util.concurrent.LinkedBlockingQueue;
 import java.util.concurrent.TimeUnit;
 import java.util.concurrent.atomic.AtomicBoolean;
@@ -25,7 +26,7 @@ public final class CacheManager {
     private AtomicBoolean isMaster = new AtomicBoolean(false);
     private AtomicBoolean fromStarted = new AtomicBoolean(false);
     private String id = UUID.randomUUID().toString();
-    private long offset = -1;
+    private Map<String, NodeMessage> nodeMessages = new ConcurrentHashMap();
 
     public CacheManager(boolean toIsCluster, boolean fromIsCluster) {
         this.toIsCluster = toIsCluster;
@@ -118,12 +119,54 @@ public final class CacheManager {
         return null;
     }
 
-    public long getOffset() {
-        return this.offset;
+    public NodeMessage getNodeMessage(String host, int port) {
+        return nodeMessages.get(host + ":" + port);
+    }
+
+    public void setNodeMessage(String host, int port, String masterId, long offset) {
+        nodeMessages.put(host + ":" + port, new NodeMessage(host, port, masterId, offset));
+    }
+
+    public Map<String, NodeMessage> getAllNodeMessages() {
+        return nodeMessages;
+    }
+
+    public void clearAllNodeMessages() {
+        nodeMessages.clear();
     }
 
     public void setOffset(long offset) {
-        this.offset = offset;
+
+    }
+
+    public static class NodeMessage {
+        private String host;
+        private int port;
+        private String masterId;
+        private long offset;
+
+        public NodeMessage(String host, int port, String masterId, long offset) {
+            this.host = host;
+            this.port = port;
+            this.masterId = masterId;
+            this.offset = offset;
+        }
+
+        public String getHost() {
+            return host;
+        }
+
+        public int getPort() {
+            return port;
+        }
+
+        public String getMasterId() {
+            return masterId;
+        }
+
+        public long getOffset() {
+            return offset;
+        }
     }
 
     public static class CommandReference {

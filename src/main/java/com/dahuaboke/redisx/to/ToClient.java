@@ -64,10 +64,10 @@ public class ToClient {
                         }
                     });
             channel = bootstrap.connect(host, port).sync().channel();
+            logger.info("Connect redis master [{}:{}]", host, port);
             channel.closeFuture().addListener((ChannelFutureListener) future -> {
                 toContext.setClose(true);
             }).sync();
-            logger.info("Connect redis master [{}:{}]", host, port);
         } catch (InterruptedException e) {
             logger.error("Connect to {{}:{}] exception", host, port, e);
         } finally {

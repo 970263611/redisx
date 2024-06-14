@@ -75,10 +75,10 @@ public class FromClient {
                     });
             channel = bootstrap.connect(masterHost, masterPort).sync().channel();
             fromContext.setFromChannel(channel);
+            logger.info("From start at [{}:{}]", masterHost, masterPort);
             channel.closeFuture().addListener((ChannelFutureListener) future -> {
                 fromContext.setClose(true);
             }).sync();
-            logger.info("From start at [{}:{}]", masterHost, masterPort);
         } catch (InterruptedException e) {
             logger.error("Connect to [{}:{}] exception", masterHost, masterPort, e);
         } finally {

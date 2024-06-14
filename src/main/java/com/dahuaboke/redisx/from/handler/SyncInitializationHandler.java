@@ -1,6 +1,7 @@
 package com.dahuaboke.redisx.from.handler;
 
 import com.dahuaboke.redisx.Constant;
+import com.dahuaboke.redisx.cache.CacheManager;
 import com.dahuaboke.redisx.from.FromContext;
 import io.netty.channel.Channel;
 import io.netty.channel.ChannelHandlerContext;
@@ -71,9 +72,17 @@ public class SyncInitializationHandler extends ChannelInboundHandlerAdapter {
                             if (Constant.OK_COMMAND.equalsIgnoreCase(reply) && state == SENT_CAPA) {
                                 clearReply(ctx);
                                 state = SENT_PSYNC;
-                                long offset = fromContext.getOffset();
-                                channel.writeAndFlush(Constant.CONFIG_ALL_PSYNC_COMMAND + offset);
-                                logger.debug("Sent psync ? " + offset + " command");
+                                CacheManager.NodeMessage nodeMessage = fromContext.getNodeMessage();
+                                String masterId = nodeMessage.getMasterId();
+                                long offset = nodeMessage.getOffset();
+                                String command = Constant.CONFIG_PSYNC_COMMAND;
+                                if (nodeMessage == null || masterId == null) {
+                                    command += "? -1";
+                                } else {
+                                    command += masterId + " " + offset;
+                                }
+                                channel.writeAndFlush(command);
+                                logger.debug("Sent " + command + " command");
                             }
                             if (state == SENT_PSYNC) {
                                 ChannelPipeline pipeline = channel.pipeline();

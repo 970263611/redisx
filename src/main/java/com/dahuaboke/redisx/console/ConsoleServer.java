@@ -58,10 +58,10 @@ public class ConsoleServer {
             } else {
                 channel = serverBootstrap.bind(port).sync().channel();
             }
+            logger.info("Publish console server at [{}:{}]", host, port);
             channel.closeFuture().addListener((ChannelFutureListener) future -> {
                 consoleContext.setClose(true);
             }).sync();
-            logger.info("Publish console server at [{}:{}]", host, port);
         } catch (Exception e) {
             logger.error("Publish at {{}:{}] exception", host, port, e);
         } finally {

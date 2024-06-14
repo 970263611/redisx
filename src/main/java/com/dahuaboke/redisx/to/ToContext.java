@@ -8,6 +8,7 @@ import org.slf4j.LoggerFactory;
 
 import java.util.ArrayList;
 import java.util.List;
+import java.util.Map;
 import java.util.concurrent.LinkedBlockingDeque;
 import java.util.concurrent.TimeUnit;
 
@@ -137,12 +138,16 @@ public class ToContext extends Context {
         cacheManager.setIsMaster(isMaster);
     }
 
-    public long getOffset() {
-        return cacheManager.getOffset();
+    public Map<String, CacheManager.NodeMessage> getAllNodeMessages() {
+        return cacheManager.getAllNodeMessages();
     }
 
-    public void setOffset(long offset) {
-        cacheManager.setOffset(offset);
+    public void setNodeMessage(String host, int port, String masterId, long offset) {
+        cacheManager.setNodeMessage(host, port, masterId, offset);
+    }
+
+    public void clearAllNodeMessages() {
+        cacheManager.clearAllNodeMessages();
     }
 
     public void preemptMaster() {
@@ -166,7 +171,14 @@ public class ToContext extends Context {
         sb.append("|");
         sb.append(this.getId());
         sb.append("|");
-        sb.append(this.getOffset());
+        getAllNodeMessages().forEach((k, v) -> {
+            sb.append(k);
+            sb.append("&");
+            sb.append(v.getMasterId());
+            sb.append("&");
+            sb.append(v.getOffset());
+            sb.append(";");
+        });
         sb.append("|");
         sb.append(System.currentTimeMillis());
         return new String(sb);

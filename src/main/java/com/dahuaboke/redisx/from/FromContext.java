@@ -132,11 +132,12 @@ public class FromContext extends Context {
         cacheManager.remove(this);
     }
 
-    public void setOffset(long offset) {
-        cacheManager.setOffset(offset);
+    public void setNodeMessage(long offset) {
+        String masterId = this.fromChannel.attr(Constant.MASTER_ID).get();
+        cacheManager.setNodeMessage(this.host, this.port, masterId, offset);
     }
 
-    public long getOffset() {
-        return cacheManager.getOffset();
+    public CacheManager.NodeMessage getNodeMessage() {
+        return cacheManager.getNodeMessage(this.host, this.port);
     }
 }
