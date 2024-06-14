@@ -25,6 +25,7 @@ public final class CacheManager {
     private AtomicBoolean isMaster = new AtomicBoolean(false);
     private AtomicBoolean fromStarted = new AtomicBoolean(false);
     private String id = UUID.randomUUID().toString();
+    private long offset;
 
     public CacheManager(boolean toIsCluster, boolean fromIsCluster) {
         this.toIsCluster = toIsCluster;
@@ -115,6 +116,14 @@ public final class CacheManager {
             logger.error("Listener command thread interrupted");
         }
         return null;
+    }
+
+    public long getOffset() {
+        return this.offset;
+    }
+
+    public void setOffset(long offset) {
+        this.offset = offset;
     }
 
     public static class CommandReference {

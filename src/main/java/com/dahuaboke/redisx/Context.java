@@ -26,7 +26,7 @@ public class Context {
         return false;
     }
 
-    public String sendCommand(String command, int timeout) {
+    public String sendCommand(Object command, int timeout) {
         throw new RuntimeException();
     }
 

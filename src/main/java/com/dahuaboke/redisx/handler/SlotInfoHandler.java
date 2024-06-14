@@ -34,6 +34,7 @@ public class SlotInfoHandler extends RedisChannelInboundHandler {
             //不需要去pipeline的底部，所以直接ctx.write
             ctx.writeAndFlush(Constant.GET_SLOT_COMMAND);
         }
+        ctx.fireChannelActive();
     }
 
     @Override
@@ -47,8 +48,8 @@ public class SlotInfoHandler extends RedisChannelInboundHandler {
                     SlotInfo slotInfo = new SlotInfo(s);
                     if (context instanceof FromContext) {
                         FromContext fromContext = (FromContext) context;
-                        if (fromContext.getMasterHost().equals(slotInfo.getIp()) &&
-                                fromContext.getMasterPort() == slotInfo.getPort()) {
+                        if (fromContext.getHost().equals(slotInfo.getIp()) &&
+                                fromContext.getPort() == slotInfo.getPort()) {
                             fromContext.setSlotInfo(slotInfo);
                             fromContext.setSlotBegin(slotInfo.getSlotStart());
                             fromContext.setSlotEnd(slotInfo.getSlotEnd());

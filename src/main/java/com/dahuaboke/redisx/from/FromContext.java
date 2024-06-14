@@ -42,7 +42,6 @@ public class FromContext extends Context {
         this.fromIsCluster = fromIsCluster;
     }
 
-
     public String getId() {
         return cacheManager.getId();
     }
@@ -114,12 +113,12 @@ public class FromContext extends Context {
     }
 
     @Override
-    public String sendCommand(String command, int timeout) {
+    public String sendCommand(Object command, int timeout) {
         if (replyQueue == null) {
             throw new IllegalStateException("By console mode replyQueue need init");
         } else {
             replyQueue.clear();
-            fromClient.sendCommand(command);
+            fromClient.sendCommand((String) command);
             try {
                 return replyQueue.poll(timeout, TimeUnit.MILLISECONDS);
             } catch (InterruptedException e) {
@@ -131,5 +130,9 @@ public class FromContext extends Context {
     public void close() {
         this.fromClient.destroy();
         cacheManager.remove(this);
+    }
+
+    public void setOffset(long offset) {
+        cacheManager.setOffset(offset);
     }
 }

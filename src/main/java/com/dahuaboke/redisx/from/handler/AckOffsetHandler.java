@@ -38,6 +38,7 @@ public class AckOffsetHandler extends ChannelDuplexHandler {
                         offset = offsetSession;
                         channel.attr(Constant.OFFSET).set(-1L);
                     }
+                    fromContext.setOffset(offset);
                     channel.writeAndFlush(Constant.ACK_COMMAND_PREFIX + offset);
                     logger.trace("Ack offset [{}]", offset);
                 }
@@ -48,7 +49,7 @@ public class AckOffsetHandler extends ChannelDuplexHandler {
                 }
             }
         });
-        heartBeatThread.setName(Constant.PROJECT_NAME + "-AckThread-" + fromContext.getMasterHost() + ":" + fromContext.getMasterPort());
+        heartBeatThread.setName(Constant.PROJECT_NAME + "-AckThread-" + fromContext.getHost() + ":" + fromContext.getPort());
         heartBeatThread.start();
     }
 

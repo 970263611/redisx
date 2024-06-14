@@ -24,19 +24,26 @@ public class CommandEncoder extends ChannelOutboundHandlerAdapter {
 
     @Override
     public void write(ChannelHandlerContext ctx, Object msg, ChannelPromise promise) {
-        String commond = ((String) msg).replaceAll("^\\s+", "");//去除字符串左侧的所有空格
         List<RedisMessage> children = new ArrayList();
-        char[] chars = commond.toCharArray();
-        StringBuilder sb = new StringBuilder();
-        for(int i=0;i<chars.length;i++){
-            if(chars[i] == ' '){
-                children.add(new FullBulkStringRedisMessage(ByteBufUtil.writeUtf8(ctx.alloc(), sb.toString())));
-                sb = new StringBuilder();
-            }else{
-                sb.append(chars[i]);
+        if (msg instanceof String) {
+            String command = ((String) msg).replaceAll("^\\s+", "");//去除字符串左侧的所有空格
+            char[] chars = command.toCharArray();
+            StringBuilder sb = new StringBuilder();
+            for (char aChar : chars) {
+                if (aChar == ' ') {
+                    children.add(new FullBulkStringRedisMessage(ByteBufUtil.writeUtf8(ctx.alloc(), sb.toString())));
+                    sb = new StringBuilder();
+                } else {
+                    sb.append(aChar);
+                }
+            }
+            children.add(new FullBulkStringRedisMessage(ByteBufUtil.writeUtf8(ctx.alloc(), sb.toString())));
+        } else if (msg instanceof List) {
+            List<String> commands = (List<String>) msg;
+            for (String command : commands) {
+                children.add(new FullBulkStringRedisMessage(ByteBufUtil.writeUtf8(ctx.alloc(), command)));
             }
         }
-        children.add(new FullBulkStringRedisMessage(ByteBufUtil.writeUtf8(ctx.alloc(), sb.toString())));
         RedisMessage request = new ArrayRedisMessage(children);
         ctx.write(request, promise);
     }

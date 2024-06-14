@@ -76,7 +76,7 @@ public class ToClient {
         }
     }
 
-    public void sendCommand(String command) {
+    public void sendCommand(Object command) {
         if (channel.isActive()) {
             channel.writeAndFlush(command);
         }

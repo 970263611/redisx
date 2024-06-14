@@ -6,7 +6,6 @@ import com.dahuaboke.redisx.cache.CacheManager;
 import org.slf4j.Logger;
 import org.slf4j.LoggerFactory;
 
-import java.util.UUID;
 import java.util.concurrent.LinkedBlockingDeque;
 import java.util.concurrent.TimeUnit;
 
@@ -85,7 +84,7 @@ public class ToContext extends Context {
     }
 
     @Override
-    public String sendCommand(String command, int timeout) {
+    public String sendCommand(Object command, int timeout) {
         if (isConsole) {
             if (replyQueue == null) {
                 throw new IllegalStateException("By console mode replyQueue need init");
@@ -127,5 +126,13 @@ public class ToContext extends Context {
 
     public void isMaster(boolean isMaster) {
         cacheManager.setIsMaster(isMaster);
+    }
+
+    public long getOffset() {
+        return cacheManager.getOffset();
+    }
+
+    public void setOffset(long offset) {
+        cacheManager.setOffset(offset);
     }
 }

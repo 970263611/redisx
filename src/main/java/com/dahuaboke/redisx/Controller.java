@@ -14,9 +14,10 @@ import org.slf4j.LoggerFactory;
 
 import java.net.InetSocketAddress;
 import java.util.List;
-import java.util.Map;
-import java.util.concurrent.*;
-import java.util.concurrent.atomic.AtomicInteger;
+import java.util.concurrent.Executor;
+import java.util.concurrent.Executors;
+import java.util.concurrent.ScheduledExecutorService;
+import java.util.concurrent.TimeUnit;
 
 /**
  * 2024/6/13 14:02
@@ -26,9 +27,6 @@ import java.util.concurrent.atomic.AtomicInteger;
 public class Controller {
 
     private static final Logger logger = LoggerFactory.getLogger(Controller.class);
-    private static Map<String, Node> nodes = new ConcurrentHashMap();
-    private static ScheduledExecutorService monitorPool = Executors.newScheduledThreadPool(1,
-            new RedisxThreadFactory(Constant.PROJECT_NAME + "-Monitor"));
     private static ScheduledExecutorService controllerPool = Executors.newScheduledThreadPool(1,
             new RedisxThreadFactory(Constant.PROJECT_NAME + "-Controller"));
     private boolean toIsCluster;
@@ -44,29 +42,6 @@ public class Controller {
 
     public void start(List<InetSocketAddress> toNodeAddresses, List<InetSocketAddress> fromNodeAddresses, InetSocketAddress consoleAddress, int consoleTimeout) {
         logger.info("Application global id is {}", cacheManager.getId());
-        monitorPool.scheduleAtFixedRate(() -> {
-            AtomicInteger alive = new AtomicInteger();
-            nodes.forEach((k, v) -> {
-                Context context = v.getContext();
-                if (context != null && context.isClose()) {
-                    logger.error("[{}] node down", k);
-                } else {
-                    alive.getAndIncrement();
-                }
-            });
-            if (alive.get() == 1) {
-                nodes.forEach((k, v) -> {
-                    Context context = v.getContext();
-                    if (!context.isClose()) {
-                        if (context instanceof ConsoleContext) {
-                            logger.error("Find only console context live, progress exit");
-                            System.exit(0);
-                        }
-                    }
-                });
-            }
-        }, 0, 1, TimeUnit.MINUTES);
-        logger.debug("Monitor thread start");
         toNodeAddresses.forEach(address -> {
             String host = address.getHostName();
             int port = address.getPort();
@@ -116,10 +91,6 @@ public class Controller {
 
         protected String name;
 
-        protected void register2Monitor(Node node) {
-            nodes.put(node.nodeName(), node);
-        }
-
         abstract String nodeName();
 
         abstract Context getContext();
@@ -143,7 +114,6 @@ public class Controller {
 
         @Override
         public void run() {
-            register2Monitor(this);
             cacheManager.registerTo(this.toContext);
             ToClient toClient = new ToClient(this.toContext,
                     getExecutor("ToEventLoop-" + host + ":" + port));
@@ -178,7 +148,6 @@ public class Controller {
 
         @Override
         public void run() {
-            register2Monitor(this);
             FromClient fromClient = new FromClient(this.fromContext, getExecutor("FromEventLoop-" + host + ":" + port));
             this.fromContext.setFromClient(fromClient);
             fromClient.start();
@@ -215,7 +184,6 @@ public class Controller {
 
         @Override
         public void run() {
-            register2Monitor(this);
             toNodeAddresses.forEach(address -> {
                 String host = address.getHostName();
                 int port = address.getPort();

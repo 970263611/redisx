@@ -24,6 +24,7 @@ public class ConsoleContext extends Context {
     private boolean fromIsCluster;
     private List<ToContext> toContexts = new ArrayList();
     private List<FromContext> fromContexts = new ArrayList();
+    private volatile int contextSize;
 
     public ConsoleContext(String host, int port, int timeout, boolean toIsCluster, boolean fromIsCluster) {
         this.host = host;
@@ -34,10 +35,12 @@ public class ConsoleContext extends Context {
     }
 
     public void setToContext(ToContext toContext) {
+        contextSize++;
         toContexts.add(toContext);
     }
 
     public void setFromContext(FromContext fromContext) {
+        contextSize++;
         fromContexts.add(fromContext);
     }
 
@@ -50,7 +53,7 @@ public class ConsoleContext extends Context {
     }
 
     public String sendCommand(String command, String type) {
-        if ("left".equalsIgnoreCase(type)) {
+        if ("from".equalsIgnoreCase(type)) {
             int fromSize = fromContexts.size();
             if (fromSize > 1) {
                 logger.warn("Master size should 1,but {}", fromSize);
@@ -61,7 +64,7 @@ public class ConsoleContext extends Context {
                 }
             }
             return null;
-        } else if ("right".equalsIgnoreCase(type)) {
+        } else if ("to".equalsIgnoreCase(type)) {
             int toSize = toContexts.size();
             if (toSize > 1) {
                 logger.warn("To size should 1,but {}", toSize);
