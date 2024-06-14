@@ -18,7 +18,7 @@
     </Appenders>
     <Loggers>
         <logger name="org.redisson" level="WARN"/>
-        <Root level="debug">
+        <Root level="trace">
             <AppenderRef ref="Console"/>
             <AppenderRef ref="RollingFileError"/>
         </Root>

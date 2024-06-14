@@ -73,13 +73,11 @@ public class SyncInitializationHandler extends ChannelInboundHandlerAdapter {
                                 clearReply(ctx);
                                 state = SENT_PSYNC;
                                 CacheManager.NodeMessage nodeMessage = fromContext.getNodeMessage();
-                                String masterId = nodeMessage.getMasterId();
-                                long offset = nodeMessage.getOffset();
                                 String command = Constant.CONFIG_PSYNC_COMMAND;
-                                if (nodeMessage == null || masterId == null) {
+                                if (nodeMessage == null || nodeMessage.getMasterId() == null) {
                                     command += "? -1";
                                 } else {
-                                    command += masterId + " " + offset;
+                                    command += nodeMessage.getMasterId() + " " + nodeMessage.getOffset();
                                 }
                                 channel.writeAndFlush(command);
                                 logger.debug("Sent " + command + " command");

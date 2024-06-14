@@ -37,7 +37,7 @@ public class PreDistributeHandler extends ChannelInboundHandlerAdapter {
             sb.append("\r\n<").append(Thread.currentThread().getName()).append(">")
                     .append("<redis massage> = ").append(in).append("\r\n");
             sb.append(ByteBufUtil.prettyHexDump(in).toString());
-            logger.debug(sb.toString());
+            logger.trace(sb.toString());
 
             if (ctx.pipeline().get(Constant.INIT_SYNC_HANDLER_NAME) != null) {
                 ctx.fireChannelRead(in);

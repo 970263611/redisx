@@ -21,9 +21,13 @@ public class OffsetCommandDecoder extends SimpleChannelInboundHandler<OffsetComm
     protected void channelRead0(ChannelHandlerContext ctx, OffsetCommand msg) throws Exception {
         Channel channel = ctx.channel();
         String masterId = msg.getMasterId();
-        Long offset = msg.getOffset();
-        channel.attr(Constant.MASTER_ID).set(masterId);
-        channel.attr(Constant.OFFSET).set(offset);
+        if (masterId != null) {
+            channel.attr(Constant.MASTER_ID).set(masterId);
+        }
+        long offset = msg.getOffset();
+        if (offset != 0) {
+            channel.attr(Constant.OFFSET).set(offset);
+        }
         logger.debug("Set masterId [{}] offset [{}]", masterId, offset);
     }
 }

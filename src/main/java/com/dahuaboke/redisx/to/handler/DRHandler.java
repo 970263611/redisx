@@ -19,7 +19,9 @@ public class DRHandler extends RedisChannelInboundHandler {
     private static final Logger logger = LoggerFactory.getLogger(DRHandler.class);
     private ToContext toContext;
     //10次标志不变从升为主
-    private final LimitedList<String> limitedList = new LimitedList(10);
+    private final LimitedList<String> limitedList = new LimitedList(10) {{
+        add("INIT");
+    }};
 
     public DRHandler(ToContext toContext) {
         this.toContext = toContext;
@@ -36,19 +38,20 @@ public class DRHandler extends RedisChannelInboundHandler {
                     toContext.preemptMasterCompulsory();
                 } else {
                     if (toContext.getId().equals(split[1])) { //主节点是自己
-                        logger.info("split[1] = " + split[1] + "  " + " toContext.getId() " + toContext.getId());
                         toContext.isMaster(true);
                         toContext.preemptMasterCompulsory();
                     } else { //主节点非自己
                         toContext.isMaster(false);
                         toContext.clearAllNodeMessages();
                         String nodeMessagesStr = split[2];
-                        String[] nodeMessagesSplit = nodeMessagesStr.split(";");
-                        for (String nodeMessageStr : nodeMessagesSplit) {
-                            String[] messageSplit = nodeMessageStr.split("&");
-                            String[] hostAndPort = messageSplit[0].split(":");
-                            toContext.setNodeMessage(hostAndPort[0],
-                                    Integer.parseInt(hostAndPort[1]), messageSplit[1], Long.parseLong(messageSplit[2]));
+                        if (!"".equals(nodeMessagesStr)) {
+                            String[] nodeMessagesSplit = nodeMessagesStr.split(";");
+                            for (String nodeMessageStr : nodeMessagesSplit) {
+                                String[] messageSplit = nodeMessageStr.split("&", -1);
+                                String[] hostAndPort = messageSplit[0].split(":");
+                                toContext.setNodeMessage(hostAndPort[0],
+                                        Integer.parseInt(hostAndPort[1]), messageSplit[1], Long.parseLong(messageSplit[2]));
+                            }
                         }
                         //这里不用时间区间判断是因为无法保证各服务器时间相同
                         String random = split[3];
@@ -79,20 +82,16 @@ public class DRHandler extends RedisChannelInboundHandler {
         }
 
         public boolean checkNeedUpgradeMaster() {
-            int size = size();
-            if (size >= limitSize) {
-                L previous = get(0);
-                for (int i = 1; i < size; i++) {
-                    L v = get(i);
-                    if (!v.equals(previous)) {
-                        return false;
-                    } else {
-                        previous = v;
-                    }
+            L previous = get(0);
+            for (int i = 1; i < size(); i++) {
+                L v = get(i);
+                if (!v.equals(previous)) {
+                    return false;
+                } else {
+                    previous = v;
                 }
-                return true;
             }
-            return false;
+            return true;
         }
     }
 }

@@ -10,7 +10,7 @@ import com.dahuaboke.redisx.Constant;
 public class OffsetCommand {
 
     private String masterId;
-    private Long offset;
+    private long offset;
 
     public OffsetCommand(String command) {
         String[] s = command.split(" ");
@@ -18,7 +18,16 @@ public class OffsetCommand {
             masterId = s[1];
             offset = Long.parseLong(s[2]);
         } else if (command.startsWith(Constant.CONTINUE)) {
-            offset = Long.parseLong(s[1]);
+            if (s.length > 2) {
+                masterId = s[1];
+                offset = Long.parseLong(s[2]);
+            } else {
+                try {
+                    offset = Long.parseLong(s[1]);
+                } catch (NumberFormatException e) {
+                    masterId = s[1];
+                }
+            }
         }
     }
 
@@ -26,7 +35,7 @@ public class OffsetCommand {
         return masterId;
     }
 
-    public Long getOffset() {
+    public long getOffset() {
         return offset;
     }
 }

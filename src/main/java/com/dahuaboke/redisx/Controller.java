@@ -44,7 +44,7 @@ public class Controller {
                       InetSocketAddress consoleAddress, int consoleTimeout) {
         logger.info("Application global id is {}", cacheManager.getId());
         toNodeAddresses.forEach(address -> {
-            String host = address.getHostName();
+            String host = address.getHostString();
             int port = address.getPort();
             ToNode toNode = new ToNode("Sync", cacheManager, host, port, toIsCluster, false);
             toNode.start();
@@ -65,7 +65,7 @@ public class Controller {
             if (isMaster && !fromIsStarted) { //抢占到主节点，from未启动
                 logger.info("Upgrade master and starting from clients");
                 fromNodeAddresses.forEach(address -> {
-                    String host = address.getHostName();
+                    String host = address.getHostString();
                     int port = address.getPort();
                     FromNode fromNode = new FromNode("Sync", cacheManager, host, port, false, fromIsCluster);
                     fromNode.start();
@@ -93,7 +93,7 @@ public class Controller {
             }
         }, 0, 1, TimeUnit.SECONDS);
         if (startConsole) {
-            String consoleHost = consoleAddress.getHostName();
+            String consoleHost = consoleAddress.getHostString();
             int consolePort = consoleAddress.getPort();
             new ConsoleNode(consoleHost, consolePort, consoleTimeout, toNodeAddresses, fromNodeAddresses).start();
         }
