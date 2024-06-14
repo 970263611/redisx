@@ -74,7 +74,7 @@ public class Controller {
                 cacheManager.setFromIsStarted(true);
             } else if (isMaster && fromIsStarted) { //抢占到主节点，from已经启动
                 //do nothing
-                logger.debug("Already upgraded master and started from clients");
+                logger.trace("Already upgraded master and started from clients");
             } else if (!isMaster && fromIsStarted) { //未抢占到主节点，from已经启动
                 logger.info("Downgrade slave and closing from clients");
                 for (Context cont : allContexts) {
@@ -83,9 +83,10 @@ public class Controller {
                         fromContext.close();
                     }
                 }
-            } else if (!isMaster && fromIsStarted) { //未抢占到主节点，from未启动
+                cacheManager.setFromIsStarted(false);
+            } else if (!isMaster && !fromIsStarted) { //未抢占到主节点，from未启动
                 //do nothing
-                logger.debug("Already slave and closed from clients");
+                logger.trace("Already slave and closed from clients");
             } else {
                 //bug do nothing
                 logger.warn("Unknown application state");
