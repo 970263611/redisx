@@ -27,10 +27,11 @@ public class Redisx {
         InetSocketAddress console = new InetSocketAddress("127.0.0.1", 9090);
         int consoleTimeout = 5000;
 
+        boolean startConsole = true;
         boolean toIsCluster = false;
         boolean fromIsCluster = false;
 
         Controller controller = new Controller(toIsCluster, fromIsCluster);
-        controller.start(tos, froms, console, consoleTimeout);
+        controller.start(tos, froms, startConsole, console, consoleTimeout);
     }
 }

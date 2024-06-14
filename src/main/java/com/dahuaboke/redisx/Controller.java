@@ -13,8 +13,6 @@ import org.slf4j.Logger;
 import org.slf4j.LoggerFactory;
 
 import java.net.InetSocketAddress;
-import java.util.ArrayList;
-import java.util.LinkedList;
 import java.util.List;
 import java.util.concurrent.Executor;
 import java.util.concurrent.Executors;
@@ -42,7 +40,8 @@ public class Controller {
         cacheManager = new CacheManager(toIsCluster, fromIsCluster);
     }
 
-    public void start(List<InetSocketAddress> toNodeAddresses, List<InetSocketAddress> fromNodeAddresses, InetSocketAddress consoleAddress, int consoleTimeout) {
+    public void start(List<InetSocketAddress> toNodeAddresses, List<InetSocketAddress> fromNodeAddresses, boolean startConsole,
+                      InetSocketAddress consoleAddress, int consoleTimeout) {
         logger.info("Application global id is {}", cacheManager.getId());
         toNodeAddresses.forEach(address -> {
             String host = address.getHostName();
@@ -64,6 +63,7 @@ public class Controller {
             boolean isMaster = cacheManager.isMaster();
             boolean fromIsStarted = cacheManager.fromIsStarted();
             if (isMaster && !fromIsStarted) { //抢占到主节点，from未启动
+                logger.info("Upgrade master and starting from clients");
                 fromNodeAddresses.forEach(address -> {
                     String host = address.getHostName();
                     int port = address.getPort();
@@ -74,7 +74,9 @@ public class Controller {
                 cacheManager.setFromIsStarted(true);
             } else if (isMaster && fromIsStarted) { //抢占到主节点，from已经启动
                 //do nothing
+                logger.debug("Already upgraded master and started from clients");
             } else if (!isMaster && fromIsStarted) { //未抢占到主节点，from已经启动
+                logger.info("Downgrade slave and closing from clients");
                 for (Context cont : allContexts) {
                     if (cont instanceof FromContext) {
                         FromContext fromContext = (FromContext) cont;
@@ -83,13 +85,17 @@ public class Controller {
                 }
             } else if (!isMaster && fromIsStarted) { //未抢占到主节点，from未启动
                 //do nothing
+                logger.debug("Already slave and closed from clients");
             } else {
                 //bug do nothing
+                logger.warn("Unknown application state");
             }
         }, 0, 1, TimeUnit.SECONDS);
-        String consoleHost = consoleAddress.getHostName();
-        int consolePort = consoleAddress.getPort();
-        new ConsoleNode(consoleHost, consolePort, consoleTimeout, toNodeAddresses, fromNodeAddresses).start();
+        if (startConsole) {
+            String consoleHost = consoleAddress.getHostName();
+            int consolePort = consoleAddress.getPort();
+            new ConsoleNode(consoleHost, consolePort, consoleTimeout, toNodeAddresses, fromNodeAddresses).start();
+        }
     }
 
     public Executor getExecutor(String name) {
