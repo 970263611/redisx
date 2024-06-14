@@ -39,15 +39,14 @@ public class DRHandler extends RedisChannelInboundHandler {
                         toContext.isMaster(true);
                         toContext.preemptMasterCompulsory();
                     } else { //主节点非自己
+                        toContext.isMaster(false);
                         long offset = Long.parseLong(split[2]);
                         toContext.setOffset(offset);
                         //这里不用时间区间判断是因为无法保证各服务器时间相同
                         String random = split[3];
                         limitedList.add(random);
                         if (limitedList.checkNeedUpgradeMaster()) {
-                            toContext.isMaster(true);
-                        } else {
-                            toContext.isMaster(false);
+                            toContext.preemptMasterCompulsory();
                         }
                     }
                 }
