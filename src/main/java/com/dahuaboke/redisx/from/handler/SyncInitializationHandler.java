@@ -77,7 +77,8 @@ public class SyncInitializationHandler extends ChannelInboundHandlerAdapter {
                                 if (nodeMessage == null || nodeMessage.getMasterId() == null) {
                                     command += "? -1";
                                 } else {
-                                    command += nodeMessage.getMasterId() + " " + nodeMessage.getOffset();
+                                    //从offset的下一位开始获取（包含）
+                                    command += nodeMessage.getMasterId() + " " + (nodeMessage.getOffset() + 1);
                                 }
                                 channel.writeAndFlush(command);
                                 logger.debug("Sent " + command + " command");

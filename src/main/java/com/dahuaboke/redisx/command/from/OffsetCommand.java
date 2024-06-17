@@ -15,8 +15,7 @@ public class OffsetCommand {
     public OffsetCommand(String command) {
         String[] s = command.split(" ");
         masterId = s[1];
-        //TODO 未找到这个 +1 偏移量的原因，观察发现差1
-        offset = Long.parseLong(s[2]) + 1;
+        offset = Long.parseLong(s[2]);
     }
 
     public String getMasterId() {
