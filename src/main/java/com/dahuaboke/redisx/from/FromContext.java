@@ -69,7 +69,7 @@ public class FromContext extends Context {
     public void setFromChannel(Channel fromChannel) {
         this.fromChannel = fromChannel;
         InetSocketAddress inetSocketAddress = (InetSocketAddress) this.fromChannel.localAddress();
-        this.localHost = inetSocketAddress.getHostName();
+        this.localHost = inetSocketAddress.getHostString();
         this.localPort = inetSocketAddress.getPort();
     }
 

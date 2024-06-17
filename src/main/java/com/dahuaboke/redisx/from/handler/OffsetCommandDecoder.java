@@ -2,6 +2,7 @@ package com.dahuaboke.redisx.from.handler;
 
 import com.dahuaboke.redisx.Constant;
 import com.dahuaboke.redisx.command.from.OffsetCommand;
+import io.netty.buffer.ByteBuf;
 import io.netty.channel.Channel;
 import io.netty.channel.ChannelHandlerContext;
 import io.netty.channel.SimpleChannelInboundHandler;
@@ -29,5 +30,9 @@ public class OffsetCommandDecoder extends SimpleChannelInboundHandler<OffsetComm
             channel.attr(Constant.OFFSET).set(offset);
         }
         logger.debug("Set masterId [{}] offset [{}]", masterId, offset);
+        ByteBuf in = msg.getIn();
+        if (in != null) {
+            ctx.fireChannelRead(in);
+        }
     }
 }

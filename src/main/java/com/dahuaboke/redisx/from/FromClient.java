@@ -55,9 +55,9 @@ public class FromClient {
                             pipeline.addLast(new CommandEncoder());
                             if (!console) {
                                 pipeline.addLast(Constant.INIT_SYNC_HANDLER_NAME, new SyncInitializationHandler(fromContext));
-                                pipeline.addLast(new PreDistributeHandler());
-                                pipeline.addLast(new AckOffsetHandler(fromContext));
+                                pipeline.addLast(new PreDistributeHandler(fromContext));
                                 pipeline.addLast(new OffsetCommandDecoder());
+                                pipeline.addLast(new AckOffsetHandler(fromContext));
                                 pipeline.addLast(new RdbByteStreamDecoder(fromContext));
                             }
                             pipeline.addLast(new RedisDecoder(true));

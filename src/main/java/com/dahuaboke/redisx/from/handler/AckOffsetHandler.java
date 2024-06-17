@@ -36,7 +36,6 @@ public class AckOffsetHandler extends ChannelDuplexHandler {
                         continue;
                     } else if (offsetSession > -1L) {
                         offset = offsetSession;
-                        channel.attr(Constant.OFFSET).set(-1L);
                     }
                     fromContext.setNodeMessage(offset);
                     channel.writeAndFlush(Constant.ACK_COMMAND_PREFIX + offset);

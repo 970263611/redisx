@@ -202,14 +202,14 @@ public class Controller {
         @Override
         public void run() {
             toNodeAddresses.forEach(address -> {
-                String host = address.getHostName();
+                String host = address.getHostString();
                 int port = address.getPort();
                 ToNode toNode = new ToNode("Console", cacheManager, host, port, toIsCluster, true);
                 consoleContext.setToContext((ToContext) toNode.getContext());
                 toNode.start();
             });
             fromNodeAddresses.forEach(address -> {
-                String host = address.getHostName();
+                String host = address.getHostString();
                 int port = address.getPort();
                 FromNode fromNode = new FromNode("Console", cacheManager, host, port, true, fromIsCluster);
                 consoleContext.setFromContext((FromContext) fromNode.getContext());
