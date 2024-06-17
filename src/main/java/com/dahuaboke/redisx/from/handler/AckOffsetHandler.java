@@ -1,6 +1,7 @@
 package com.dahuaboke.redisx.from.handler;
 
 import com.dahuaboke.redisx.Constant;
+import com.dahuaboke.redisx.cache.CacheManager;
 import com.dahuaboke.redisx.from.FromContext;
 import io.netty.channel.Channel;
 import io.netty.channel.ChannelDuplexHandler;
@@ -38,6 +39,10 @@ public class AckOffsetHandler extends ChannelDuplexHandler {
                         continue;
                     } else if (offsetSession > -1L) {
                         offset = offsetSession;
+                        CacheManager.NodeMessage nodeMessage = fromContext.getNodeMessage();
+                        if (nodeMessage == null) {
+                            fromContext.setOffset(offset);
+                        }
                     }
                     Queue<List<String>> offsetQueue = fromContext.getOffsetQueue();
                     while (!offsetQueue.isEmpty()) {
