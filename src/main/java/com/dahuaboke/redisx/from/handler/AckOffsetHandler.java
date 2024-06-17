@@ -2,12 +2,14 @@ package com.dahuaboke.redisx.from.handler;
 
 import com.dahuaboke.redisx.Constant;
 import com.dahuaboke.redisx.from.FromContext;
-import io.netty.buffer.ByteBuf;
 import io.netty.channel.Channel;
 import io.netty.channel.ChannelDuplexHandler;
 import io.netty.channel.ChannelHandlerContext;
 import org.slf4j.Logger;
 import org.slf4j.LoggerFactory;
+
+import java.util.List;
+import java.util.Queue;
 
 /**
  * 2024/5/8 9:55
@@ -37,7 +39,11 @@ public class AckOffsetHandler extends ChannelDuplexHandler {
                     } else if (offsetSession > -1L) {
                         offset = offsetSession;
                     }
-                    fromContext.setNodeMessage(offset);
+                    Queue<List<String>> offsetQueue = fromContext.getOffsetQueue();
+                    while (!offsetQueue.isEmpty()) {
+                        computeOffset(offsetQueue.poll());
+                    }
+                    offset = fromContext.getOffset();
                     channel.writeAndFlush(Constant.ACK_COMMAND_PREFIX + offset);
                     logger.trace("Ack offset [{}]", offset);
                 }
@@ -52,13 +58,16 @@ public class AckOffsetHandler extends ChannelDuplexHandler {
         heartBeatThread.start();
     }
 
-    @Override
-    public void channelRead(ChannelHandlerContext ctx, Object msg) throws Exception {
-        if (msg instanceof ByteBuf && !ctx.channel().attr(Constant.RDB_STREAM_NEXT).get()) {
-            int i = ((ByteBuf) msg).readableBytes();
-            logger.debug("Receive command length [{}], before offset [{}]", i, offset);
-            offset += i;
+    private void computeOffset(List<String> commands) {
+        long offset = fromContext.getOffset();
+        //*3\r\n
+        offset += 1 + String.valueOf(commands.size()).length() + 2;
+        for (String command : commands) {
+            //$5\r\nabcde\r\n
+            int commandLength = command.length();
+            int size = 1 + String.valueOf(commandLength).length() + 2 + commandLength + 2;
+            offset += size;
         }
-        ctx.fireChannelRead(msg);
+        fromContext.setOffset(offset);
     }
 }

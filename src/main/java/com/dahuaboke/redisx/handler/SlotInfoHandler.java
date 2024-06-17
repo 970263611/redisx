@@ -2,8 +2,8 @@ package com.dahuaboke.redisx.handler;
 
 import com.dahuaboke.redisx.Constant;
 import com.dahuaboke.redisx.Context;
-import com.dahuaboke.redisx.to.ToContext;
 import com.dahuaboke.redisx.from.FromContext;
+import com.dahuaboke.redisx.to.ToContext;
 import io.netty.channel.Channel;
 import io.netty.channel.ChannelHandlerContext;
 import org.slf4j.Logger;
@@ -24,6 +24,7 @@ public class SlotInfoHandler extends RedisChannelInboundHandler {
     private Context context;
 
     public SlotInfoHandler(Context context) {
+        super(context);
         this.context = context;
     }
 
@@ -39,9 +40,9 @@ public class SlotInfoHandler extends RedisChannelInboundHandler {
 
     @Override
     public void channelRead1(ChannelHandlerContext ctx, String msg) throws Exception {
-        Pattern pattern = Pattern.compile(Constant.SLOT_REX,Pattern.DOTALL);
+        Pattern pattern = Pattern.compile(Constant.SLOT_REX, Pattern.DOTALL);
         if (msg != null && pattern.matcher(msg).matches()) {
-            msg = msg.replace("\r","");
+            msg = msg.replace("\r", "");
             String[] arr = msg.split("\n");
             if (arr.length != 0) {
                 Arrays.stream(arr).forEach(s -> {

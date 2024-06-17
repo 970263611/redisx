@@ -1,8 +1,9 @@
 package com.dahuaboke.redisx.to.handler;
 
 import com.dahuaboke.redisx.Constant;
-import com.dahuaboke.redisx.to.ToContext;
+import com.dahuaboke.redisx.Context;
 import com.dahuaboke.redisx.handler.RedisChannelInboundHandler;
+import com.dahuaboke.redisx.to.ToContext;
 import io.netty.channel.ChannelHandlerContext;
 import org.slf4j.Logger;
 import org.slf4j.LoggerFactory;
@@ -17,8 +18,9 @@ public class SyncCommandListener extends RedisChannelInboundHandler {
     private static final Logger logger = LoggerFactory.getLogger(SyncCommandListener.class);
     private ToContext toContext;
 
-    public SyncCommandListener(ToContext toContext) {
-        this.toContext = toContext;
+    public SyncCommandListener(Context toContext) {
+        super(toContext);
+        this.toContext = (ToContext) toContext;
     }
 
     @Override
