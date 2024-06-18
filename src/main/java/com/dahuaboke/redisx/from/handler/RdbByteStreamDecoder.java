@@ -16,6 +16,7 @@ import io.netty.util.CharsetUtil;
 import org.slf4j.Logger;
 import org.slf4j.LoggerFactory;
 
+import java.nio.charset.Charset;
 import java.util.List;
 
 /**
@@ -30,7 +31,7 @@ public class RdbByteStreamDecoder extends ChannelInboundHandlerAdapter {
     private RdbType rdbType = RdbType.START;
     private int length = -1;
     private ByteBuf eofEnd = null;
-    private ByteBuf tempRdb = ByteBufAllocator.DEFAULT.buffer();
+    private ByteBuf tempRdb = null;
     private CommandParser commandParser = new CommandParser();
     private FromContext fromContext;
 
@@ -49,31 +50,36 @@ public class RdbByteStreamDecoder extends ChannelInboundHandlerAdapter {
     public void channelRead(ChannelHandlerContext ctx, Object msg) throws Exception {
         if (msg instanceof RdbCommand) {
             ByteBuf rdb = ((RdbCommand) msg).getIn();
-            logger.info("Now processing the RDB stream :" + rdbType.name());
 
             if (RdbType.START == rdbType && '$' == rdb.getByte(rdb.readerIndex())) {
                 rdb.readByte();//除去$
                 int index = ByteBufUtil.indexOf(Constant.SEPARAPOR, rdb);
                 String isEofOrSizeStr = rdb.readBytes(index - rdb.readerIndex()).toString(CharsetUtil.UTF_8);
+                logger.info("RdbType is " + rdbType.name() + ",isEofOrSizeStr " + isEofOrSizeStr);
                 rdb.readBytes(Constant.SEPARAPOR.readableBytes());
+                tempRdb = ByteBufAllocator.DEFAULT.buffer();
                 if (isEofOrSizeStr.startsWith("EOF")) {//EOF类型看收尾
                     eofEnd = Unpooled.copiedBuffer(isEofOrSizeStr.substring(4, isEofOrSizeStr.length()).getBytes());
                     rdbType = RdbType.TYPE_EOF;
+                    logger.info("RdbType is " + rdbType.name() + ",Rdb EOF is " + eofEnd.toString(Charset.defaultCharset()) + ",current data length is = " + tempRdb.readableBytes());
                 } else {//LENGTH类型数长度
                     length = Integer.parseInt(isEofOrSizeStr);
                     rdbType = RdbType.TYPE_LENGTH;
+                    logger.info("RdbType is " + rdbType.name() + ",RdbLength is " + length + ",current data length is = " + tempRdb.readableBytes());
                 }
             }
 
             if (rdb.readableBytes() != 0) {
                 if (RdbType.TYPE_LENGTH == rdbType) {
                     tempRdb.writeBytes(rdb);
+                    logger.info("RdbType is " + rdbType.name() + ",RdbLength is " + length + ",current data length is = " + tempRdb.readableBytes());
                     if (tempRdb.readableBytes() >= length) {
                         length = -1;
                         rdbType = RdbType.END;
                     }
                 } else if (RdbType.TYPE_EOF == rdbType) {
                     tempRdb.writeBytes(rdb);
+                    logger.info("RdbType is " + rdbType.name() + ",current data length is = " + tempRdb.readableBytes());
                     if (ByteBufUtil.equals(eofEnd, tempRdb.slice(tempRdb.writerIndex() - eofEnd.readableBytes(), eofEnd.readableBytes()))) {
                         eofEnd = null;
                         rdbType = RdbType.END;
@@ -81,6 +87,15 @@ public class RdbByteStreamDecoder extends ChannelInboundHandlerAdapter {
                 }
 
                 if (RdbType.END == rdbType) {
+                    byte[] start11 = new byte[11];
+                    byte[] end11 = new byte[11];
+                    if(tempRdb.writerIndex() >= 11){
+                        tempRdb.getBytes(0,start11);
+                        tempRdb.getBytes(tempRdb.writerIndex() - 11,end11);
+                    }
+                    logger.info("RdbType is " + rdbType.name() + ",Rdb prase start " + ",current data length is = " + tempRdb.readableBytes()
+                            + ",the start 11 byte is '" + new String(start11)
+                            + "',the end 11 byte is '" + new String(end11) + "'");
                     rdbType = RdbType.START;
                     ctx.channel().attr(Constant.RDB_STREAM_NEXT).set(false);
                     parse(tempRdb);

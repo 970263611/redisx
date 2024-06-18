@@ -65,14 +65,12 @@ public class AckOffsetHandler extends ChannelDuplexHandler {
 
     private void computeOffset(List<String> commands) {
         long offset = fromContext.getOffset();
-        //*3\r\n
-        offset += 1 + String.valueOf(commands.size()).length() + 2;
+        //*3\r\n$5\r\nabcde\r\n
+        offset += 3 + String.valueOf(commands.size()).length() + 5 * commands.size();
         for (String command : commands) {
-            //$5\r\nabcde\r\n
-            int commandLength = command.length();
-            int size = 1 + String.valueOf(commandLength).length() + 2 + commandLength + 2;
-            offset += size;
+            offset += String.valueOf(command.length()).length() + command.length();
         }
         fromContext.setOffset(offset);
     }
+
 }

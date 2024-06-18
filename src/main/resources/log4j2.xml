@@ -1,25 +1,53 @@
 <?xml version="1.0" encoding="UTF-8"?>
 <Configuration status="WARN">
+    <Properties>
+        <!--自定义一些常量，之后使用${变量名}引用-->
+        <Property name="logPattern">[%d{yyyy-MM-dd HH:mm:ss.SSS}] [%t] %-5level %logger{36} - %msg%n</Property>
+    </Properties>
+
     <Appenders>
         <!-- 默认打印到控制台 -->
         <Console name="Console" target="SYSTEM_OUT">
             <!-- 默认打印格式 -->
-            <PatternLayout pattern="%d{HH:mm:ss.SSS} [%t] %-5level %logger{36} - %msg%n"/>
+            <PatternLayout pattern="${logPattern}"/>
         </Console>
-        <RollingFile name="RollingFileError" fileName="logs/error.log"
-                     filePattern="logs/$${date:yyyy-MM}/error-%d{yyyy-MM-dd}-%i.log">
-            <PatternLayout pattern="[%d{yyyy-MM-dd HH:mm:ss:SSS}] [%p] - %l - %m%n"/>
+        <!-- >= ALL -->
+        <RollingFile name="RollingFileAll" fileName="logs/all.log"
+                     filePattern="logs/$${date:yyyy-MM}/all-%d{yyyy-MM-dd}-%i.log">
+            <PatternLayout pattern="${logPattern}"/>
             <Policies>
                 <TimeBasedTriggeringPolicy/>
                 <SizeBasedTriggeringPolicy size="100 MB"/>
             </Policies>
-            <ThresholdFilter level="error" onMatch="ACCEPT" onMismatch="DENY"/>
+            <ThresholdFilter level="ALL" onMatch="ACCEPT" onMismatch="DENY"/>
+        </RollingFile>
+        <!-- == INFO -->
+        <RollingFile name="RollingFileInfo" fileName="logs/info.log"
+                     filePattern="logs/$${date:yyyy-MM}/info-%d{yyyy-MM-dd}-%i.log">
+            <PatternLayout pattern="${logPattern}"/>
+            <Policies>
+                <TimeBasedTriggeringPolicy/>
+                <SizeBasedTriggeringPolicy size="100 MB"/>
+            </Policies>
+            <ThresholdFilter level="INFO" onMatch="DENY" onMismatch="DENY"/>
+        </RollingFile>
+        <!-- >= warn -->
+        <RollingFile name="RollingFileWarn" fileName="logs/warn.log"
+                     filePattern="logs/$${date:yyyy-MM}/warn-%d{yyyy-MM-dd}-%i.log">
+            <PatternLayout pattern="${logPattern}"/>
+            <Policies>
+                <TimeBasedTriggeringPolicy/>
+                <SizeBasedTriggeringPolicy size="100 MB"/>
+            </Policies>
+            <ThresholdFilter level="WARN" onMatch="ACCEPT" onMismatch="DENY"/>
         </RollingFile>
     </Appenders>
     <Loggers>
         <logger name="org.redisson" level="WARN"/>
-        <Root level="trace">
+        <Root level="INFO">
             <AppenderRef ref="Console"/>
+            <AppenderRef ref="RollingFileAll"/>
+            <AppenderRef ref="RollingFileInfo"/>
             <AppenderRef ref="RollingFileError"/>
         </Root>
     </Loggers>
