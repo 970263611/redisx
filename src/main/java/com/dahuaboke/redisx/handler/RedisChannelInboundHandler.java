@@ -49,20 +49,21 @@ public abstract class RedisChannelInboundHandler extends SimpleChannelInboundHan
             }
             return fullMsg.content().toString(CharsetUtil.UTF_8);
         } else if (msg instanceof ArrayRedisMessage) {
-            List<String> commands = new ArrayList();
+            int size = 0,length = 3;
             StringBuilder sb = new StringBuilder();
             for (RedisMessage child : ((ArrayRedisMessage) msg).children()) {
                 String c = parseRedisMessage(child, null);
                 sb.append(c);
                 sb.append(" ");
-                commands.add(c);
+                size++;
+                length += c.length() + String.valueOf(c.length()).length();
             }
-            String command = new String(sb).substring(0, sb.length() - 1);
+            length += String.valueOf(size).length() + 5 * size;
             if (context instanceof FromContext) {
                 FromContext fromContext = (FromContext) context;
-                fromContext.setCommandToQueueForComputeOffset(commands);
+                fromContext.setCommandToQueueForComputeOffset(length);
             }
-            return command;
+            return sb.delete(sb.length() - 1,sb.length()).toString();
         } else {
             throw new CodecException("Unknown message type: " + msg);
         }

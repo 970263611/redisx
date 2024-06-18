@@ -44,10 +44,7 @@ public class AckOffsetHandler extends ChannelDuplexHandler {
                             fromContext.setOffset(offset);
                         }
                     }
-                    Queue<List<String>> offsetQueue = fromContext.getOffsetQueue();
-                    while (!offsetQueue.isEmpty()) {
-                        computeOffset(offsetQueue.poll());
-                    }
+                    computeOffset(fromContext.getOffsetQueue());
                     offset = fromContext.getOffset();
                     channel.writeAndFlush(Constant.ACK_COMMAND_PREFIX + offset);
                     logger.trace("Ack offset [{}]", offset);
@@ -63,12 +60,10 @@ public class AckOffsetHandler extends ChannelDuplexHandler {
         heartBeatThread.start();
     }
 
-    private void computeOffset(List<String> commands) {
+    private void computeOffset(Queue<Integer> offsetQueue) {
         long offset = fromContext.getOffset();
-        //*3\r\n$5\r\nabcde\r\n
-        offset += 3 + String.valueOf(commands.size()).length() + 5 * commands.size();
-        for (String command : commands) {
-            offset += String.valueOf(command.length()).length() + command.length();
+        while (!offsetQueue.isEmpty()) {
+            offset += offsetQueue.poll();
         }
         fromContext.setOffset(offset);
     }
