@@ -1,5 +1,6 @@
 package dahuaboke.redisx;
 
+import com.dahuaboke.redisx.Redisx;
 import org.junit.After;
 import org.junit.Before;
 import org.junit.Test;
@@ -9,7 +10,6 @@ import org.redisson.api.RedissonClient;
 import org.redisson.client.codec.StringCodec;
 import org.redisson.config.Config;
 
-
 import java.security.NoSuchAlgorithmException;
 import java.security.SecureRandom;
 import java.util.*;
@@ -18,7 +18,7 @@ import java.util.concurrent.CountDownLatch;
 public class YaceTest {
 
     //配置单点地址，或者集群服务器中任一地址
-    private String address = "redis://192.168.20.100:17001";
+    private String address = Redisx.hostname + ":" + 17001;
 
     //是否集群
     private boolean isCluster = true;
@@ -40,7 +40,7 @@ public class YaceTest {
 
     private RedissonClient redisson;
 
-    private Map<String,Long> countMap;
+    private Map<String, Long> countMap;
 
     private SecureRandom random = SecureRandom.getInstance("SHA1PRNG");
 
@@ -52,28 +52,28 @@ public class YaceTest {
     }
 
     @Before
-    public void init(){
+    public void init() {
         Config config = new Config();
         config.setCodec(new StringCodec());
         config.setThreads(threadCount + 1);
-        if(isCluster) {
+        if (isCluster) {
             config.useClusterServers().addNodeAddress(address);
-        }else{
+        } else {
             config.useSingleServer().setAddress(address);
         }
         this.redisson = Redisson.create(config);
         threadCount = threadCount < 1 ? 1 : threadCount;
         threadCount = threadCount > 100 ? 100 : threadCount;
         second = second < 1 ? 1 : second;
-        countMap = new HashMap<String,Long>(){{
-            put("num",1l);
-            put("lastCount",0l);
-            put("maxTps",0l);
+        countMap = new HashMap<String, Long>() {{
+            put("num", 1l);
+            put("lastCount", 0l);
+            put("maxTps", 0l);
         }};
         threadSet.add(new Thread(new Runnable() {
             @Override
             public void run() {
-                while (true){
+                while (true) {
                     try {
                         Thread.sleep(1000);
                     } catch (InterruptedException e) {
@@ -83,12 +83,12 @@ public class YaceTest {
                 }
             }
         }));
-        if(flushFlag){
+        if (flushFlag) {
             flushSecond = flushSecond < 1 ? 1 : flushSecond;
             threadSet.add(new Thread(new Runnable() {
                 @Override
                 public void run() {
-                    while(true){
+                    while (true) {
                         try {
                             Thread.sleep(flushSecond * 1000);
                         } catch (InterruptedException e) {
@@ -111,9 +111,10 @@ public class YaceTest {
     public void addData() throws InterruptedException {
         long endTime = System.currentTimeMillis() + second * 1000;
         CountDownLatch countDownLatch = new CountDownLatch(threadCount);
-        for (int i = 0;i < threadCount;i++) {
+        for (int i = 0; i < threadCount; i++) {
             Thread t = new Thread(new Runnable() {
                 long c = 0;
+
                 @Override
                 public void run() {
                     try {
@@ -138,7 +139,7 @@ public class YaceTest {
     }
 
     @After
-    public void destory(){
+    public void destory() {
         threadSet.forEach(t -> {
             t.interrupt();
         });
@@ -146,10 +147,10 @@ public class YaceTest {
         redisson.shutdown();
     }
 
-    private void addAll(){
+    private void addAll() {
         long count = 0;
-        for(Map.Entry<String,Long> entry : countMap.entrySet()){
-            if(!"lastCount".equals(entry.getKey()) && !"num".equals(entry.getKey()) && !"maxTps".equals(entry.getKey())){
+        for (Map.Entry<String, Long> entry : countMap.entrySet()) {
+            if (!"lastCount".equals(entry.getKey()) && !"num".equals(entry.getKey()) && !"maxTps".equals(entry.getKey())) {
                 count += entry.getValue();
             }
         }
@@ -159,19 +160,20 @@ public class YaceTest {
         sb.append(",").append("tps=").append(count - countMap.get("lastCount"));
         sb.append(",").append("峰值tps=").append(countMap.get("maxTps"));
         System.out.println(sb.toString());
-        countMap.put("maxTps",Math.max(countMap.get("maxTps"),count - countMap.get("lastCount")));
-        countMap.put("num",countMap.get("num") + 1);
-        countMap.put("lastCount",count);
+        countMap.put("maxTps", Math.max(countMap.get("maxTps"), count - countMap.get("lastCount")));
+        countMap.put("num", countMap.get("num") + 1);
+        countMap.put("lastCount", count);
 
     }
 
     /**
      * 生成长度1~30的随机字符串
+     *
      * @return
      * @throws NoSuchAlgorithmException
      */
     private String getStr() throws NoSuchAlgorithmException {
-        return UUID.randomUUID().toString().replace("-","").substring(5,(random.nextInt(25) + 6));
+        return UUID.randomUUID().toString().replace("-", "").substring(5, (random.nextInt(25) + 6));
     }
 
 }
