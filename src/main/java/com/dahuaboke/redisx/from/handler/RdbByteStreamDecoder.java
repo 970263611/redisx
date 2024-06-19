@@ -89,9 +89,9 @@ public class RdbByteStreamDecoder extends ChannelInboundHandlerAdapter {
                 if (RdbType.END == rdbType) {
                     byte[] start11 = new byte[11];
                     byte[] end11 = new byte[11];
-                    if(tempRdb.writerIndex() >= 11){
-                        tempRdb.getBytes(0,start11);
-                        tempRdb.getBytes(tempRdb.writerIndex() - 11,end11);
+                    if (tempRdb.writerIndex() >= 11) {
+                        tempRdb.getBytes(0, start11);
+                        tempRdb.getBytes(tempRdb.writerIndex() - 11, end11);
                     }
                     logger.info("RdbType is " + rdbType.name() + ",Rdb prase start " + ",current data length is = " + tempRdb.readableBytes()
                             + ",the start 11 byte is '" + new String(start11)
