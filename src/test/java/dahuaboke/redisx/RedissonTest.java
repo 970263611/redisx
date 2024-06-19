@@ -1,5 +1,6 @@
 package dahuaboke.redisx;
 
+import com.dahuaboke.redisx.Redisx;
 import org.junit.After;
 import org.junit.Before;
 import org.junit.Test;
@@ -14,9 +15,9 @@ import java.util.Iterator;
 public class RedissonTest {
 
     //配置单点地址，或者集群服务器中任一地址
-    private String forwardsAddress = "redis://192.168.1.26:17101";
+    private String forwardsAddress = "redis://" + Redisx.hostname + ":17101";
 
-    private String slavesAddress = "redis://192.168.20.100:17001";
+    private String slavesAddress = "redis://" + Redisx.hostname + ":17001";
 
     //是否集群
     private boolean isCluster = true;
@@ -26,36 +27,39 @@ public class RedissonTest {
     private RedissonClient slavesClient;
 
     @Before
-    public void init(){
+    public void init() {
         Config forwardConfig = new Config();
         forwardConfig.setCodec(new StringCodec());
         Config slavesConfig = new Config();
         slavesConfig.setCodec(new StringCodec());
-        if(isCluster) {
+        if (isCluster) {
             forwardConfig.useClusterServers().addNodeAddress(forwardsAddress);
             slavesConfig.useClusterServers().addNodeAddress(slavesAddress);
-        }else{
+        } else {
             forwardConfig.useSingleServer().setAddress(forwardsAddress);
             slavesConfig.useSingleServer().setAddress(slavesAddress);
         }
         try {
             this.forwardClient = Redisson.create(forwardConfig);
-        }catch (Exception e){}
+        } catch (Exception e) {
+        }
         try {
             this.slavesClient = Redisson.create(slavesConfig);
-        }catch (Exception e){}
+        } catch (Exception e) {
+        }
     }
 
     @Test
-    public void flushdb(){
+    public void flushdb() {
         RKeys key1 = forwardClient.getKeys();
         key1.flushdb();
         RKeys key2 = slavesClient.getKeys();
         key2.flushdb();
+        keycount();
     }
 
     @Test
-    public void keycount(){
+    public void keycount() {
         RKeys key1 = forwardClient.getKeys();
         System.out.println(key1.count());
         RKeys key2 = slavesClient.getKeys();
@@ -63,14 +67,14 @@ public class RedissonTest {
     }
 
     @Test
-    public void test1(){
+    public void test1() {
         RKeys key1 = forwardClient.getKeys();
         Iterable<String> keys = key1.getKeys();
         Iterator<String> iterator = keys.iterator();
         //186613
         //186627
         int i = 0;
-        while(iterator.hasNext()){
+        while (iterator.hasNext()) {
             System.out.println(++i);
             slavesClient.getBucket(iterator.next()).delete();
         }
@@ -78,17 +82,19 @@ public class RedissonTest {
     }
 
     @After
-    public void destory(){
+    public void destory() {
         try {
-            if(forwardClient != null){
+            if (forwardClient != null) {
                 forwardClient.shutdown();
             }
-        }catch (Exception e){}
+        } catch (Exception e) {
+        }
         try {
-            if(slavesClient != null){
+            if (slavesClient != null) {
                 slavesClient.shutdown();
             }
-        }catch (Exception e){}
+        } catch (Exception e) {
+        }
     }
 
 }
