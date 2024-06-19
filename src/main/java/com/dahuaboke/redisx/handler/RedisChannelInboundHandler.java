@@ -10,9 +10,6 @@ import io.netty.util.CharsetUtil;
 import org.slf4j.Logger;
 import org.slf4j.LoggerFactory;
 
-import java.util.ArrayList;
-import java.util.List;
-
 /**
  * 2024/5/13 15:58
  * auth: dahua
@@ -49,7 +46,7 @@ public abstract class RedisChannelInboundHandler extends SimpleChannelInboundHan
             }
             return fullMsg.content().toString(CharsetUtil.UTF_8);
         } else if (msg instanceof ArrayRedisMessage) {
-            int size = 0,length = 3;
+            int size = 0, length = 3;
             StringBuilder sb = new StringBuilder();
             for (RedisMessage child : ((ArrayRedisMessage) msg).children()) {
                 String c = parseRedisMessage(child, null);
@@ -61,9 +58,10 @@ public abstract class RedisChannelInboundHandler extends SimpleChannelInboundHan
             length += String.valueOf(size).length() + 5 * size;
             if (context instanceof FromContext) {
                 FromContext fromContext = (FromContext) context;
-                fromContext.setCommandToQueueForComputeOffset(length);
+                long newOffset = fromContext.getOffset() + length;
+                fromContext.setOffset(newOffset);
             }
-            return sb.delete(sb.length() - 1,sb.length()).toString();
+            return sb.delete(sb.length() - 1, sb.length()).toString();
         } else {
             throw new CodecException("Unknown message type: " + msg);
         }

@@ -9,9 +9,6 @@ import io.netty.channel.ChannelHandlerContext;
 import org.slf4j.Logger;
 import org.slf4j.LoggerFactory;
 
-import java.util.List;
-import java.util.Queue;
-
 /**
  * 2024/5/8 9:55
  * auth: dahua
@@ -44,7 +41,6 @@ public class AckOffsetHandler extends ChannelDuplexHandler {
                             fromContext.setOffset(offset);
                         }
                     }
-                    computeOffset(fromContext.getOffsetQueue());
                     offset = fromContext.getOffset();
                     channel.writeAndFlush(Constant.ACK_COMMAND_PREFIX + offset);
                     logger.trace("Ack offset [{}]", offset);
@@ -59,13 +55,4 @@ public class AckOffsetHandler extends ChannelDuplexHandler {
         heartBeatThread.setName(Constant.PROJECT_NAME + "-AckThread-" + fromContext.getHost() + ":" + fromContext.getPort());
         heartBeatThread.start();
     }
-
-    private void computeOffset(Queue<Integer> offsetQueue) {
-        long offset = fromContext.getOffset();
-        while (!offsetQueue.isEmpty()) {
-            offset += offsetQueue.poll();
-        }
-        fromContext.setOffset(offset);
-    }
-
 }

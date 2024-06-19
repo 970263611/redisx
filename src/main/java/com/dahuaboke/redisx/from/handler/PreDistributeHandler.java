@@ -78,9 +78,9 @@ public class PreDistributeHandler extends ChannelInboundHandlerAdapter {
                         logger.info("+COMMAND " + headStr);
                         ctx.fireChannelRead(new OffsetCommand(headStr));
                         ctx.channel().attr(Constant.RDB_STREAM_NEXT).set(true);
-                        if(in.isReadable()){
+                        if (in.isReadable()) {
                             ctx.fireChannelRead(new RdbCommand(in));
-                        }else{
+                        } else {
                             in.release();
                         }
                     } else {

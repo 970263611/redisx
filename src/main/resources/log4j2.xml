@@ -17,9 +17,10 @@
             <PatternLayout pattern="${logPattern}"/>
             <Policies>
                 <TimeBasedTriggeringPolicy/>
-                <SizeBasedTriggeringPolicy size="100 MB"/>
+                <SizeBasedTriggeringPolicy size="1000 MB"/>
             </Policies>
             <ThresholdFilter level="ALL" onMatch="ACCEPT" onMismatch="DENY"/>
+            <DefaultRolloverStrategy max="20"/>
         </RollingFile>
         <!-- == INFO -->
         <RollingFile name="RollingFileInfo" fileName="logs/info.log"
@@ -27,9 +28,10 @@
             <PatternLayout pattern="${logPattern}"/>
             <Policies>
                 <TimeBasedTriggeringPolicy/>
-                <SizeBasedTriggeringPolicy size="100 MB"/>
+                <SizeBasedTriggeringPolicy size="1000 MB"/>
             </Policies>
             <ThresholdFilter level="INFO" onMatch="DENY" onMismatch="DENY"/>
+            <DefaultRolloverStrategy max="20"/>
         </RollingFile>
         <!-- >= warn -->
         <RollingFile name="RollingFileWarn" fileName="logs/warn.log"
@@ -37,9 +39,10 @@
             <PatternLayout pattern="${logPattern}"/>
             <Policies>
                 <TimeBasedTriggeringPolicy/>
-                <SizeBasedTriggeringPolicy size="100 MB"/>
+                <SizeBasedTriggeringPolicy size="1000 MB"/>
             </Policies>
             <ThresholdFilter level="WARN" onMatch="ACCEPT" onMismatch="DENY"/>
+            <DefaultRolloverStrategy max="20"/>
         </RollingFile>
     </Appenders>
     <Loggers>

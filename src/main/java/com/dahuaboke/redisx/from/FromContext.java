@@ -8,8 +8,6 @@ import org.slf4j.Logger;
 import org.slf4j.LoggerFactory;
 
 import java.net.InetSocketAddress;
-import java.util.List;
-import java.util.Queue;
 import java.util.concurrent.LinkedBlockingDeque;
 import java.util.concurrent.TimeUnit;
 
@@ -32,7 +30,6 @@ public class FromContext extends Context {
     private FromClient fromClient;
     private boolean isConsole;
     private boolean fromIsCluster;
-    private Queue<Integer> offsetQueue = new LinkedBlockingDeque();
 
     public FromContext(CacheManager cacheManager, String host, int port, boolean isConsole, boolean fromIsCluster) {
         this.cacheManager = cacheManager;
@@ -146,13 +143,5 @@ public class FromContext extends Context {
 
     public CacheManager.NodeMessage getNodeMessage() {
         return cacheManager.getNodeMessage(this.host, this.port);
-    }
-
-    public void setCommandToQueueForComputeOffset(int length) {
-        offsetQueue.offer(length);
-    }
-
-    public Queue<Integer> getOffsetQueue() {
-        return offsetQueue;
     }
 }
