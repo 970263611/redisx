@@ -65,20 +65,24 @@ public class PreDistributeHandler extends ChannelInboundHandlerAdapter {
                 lineBreakFlag = false;
                 if (in.getByte(in.readerIndex()) == Constant.PLUS) {
                     String headStr = in.readBytes(ByteBufUtil.indexOf(Constant.SEPARAPOR, in) - in.readerIndex()).toString(StandardCharsets.UTF_8);
+                    in.readBytes(Constant.SEPARAPOR.readableBytes());
                     if (headStr.startsWith(Constant.CONTINUE)) {
-                        logger.debug("Find continue command and will reset offset");
-                        in.readBytes(Constant.SEPARAPOR.readableBytes());
                         StringBuilder commandStr = new StringBuilder();
                         commandStr.append(Constant.CONTINUE).append(" ");
                         CacheManager.NodeMessage nodeMessage = fromContext.getNodeMessage();
                         commandStr.append(nodeMessage.getMasterId()).append(" ");
                         commandStr.append(nodeMessage.getOffset());
+                        logger.info("+COMMAND " + commandStr.toString());
                         ctx.fireChannelRead(new OffsetCommand(commandStr.toString(), in));
                     } else if (headStr.startsWith(Constant.FULLRESYNC)) {
-                        logger.debug("Find fullReSync command");
+                        logger.info("+COMMAND " + headStr);
                         ctx.fireChannelRead(new OffsetCommand(headStr));
                         ctx.channel().attr(Constant.RDB_STREAM_NEXT).set(true);
-                        in.release();
+                        if(in.isReadable()){
+                            ctx.fireChannelRead(new RdbCommand(in));
+                        }else{
+                            in.release();
+                        }
                     } else {
                         in.readerIndex(0);
                         ctx.fireChannelRead(in);
