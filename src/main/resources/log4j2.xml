@@ -44,11 +44,11 @@
     </Appenders>
     <Loggers>
         <logger name="org.redisson" level="WARN"/>
-        <Root level="INFO">
+        <Root level="TRACE">
             <AppenderRef ref="Console"/>
             <AppenderRef ref="RollingFileAll"/>
             <AppenderRef ref="RollingFileInfo"/>
-            <AppenderRef ref="RollingFileError"/>
+            <AppenderRef ref="RollingFileWarn"/>
         </Root>
     </Loggers>
 </Configuration>

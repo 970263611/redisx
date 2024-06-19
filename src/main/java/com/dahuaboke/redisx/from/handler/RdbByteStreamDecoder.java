@@ -69,6 +69,9 @@ public class RdbByteStreamDecoder extends ChannelInboundHandlerAdapter {
                 }
             }
 
+            ByteBuf rdbBuf = null;//rdb内容
+            ByteBuf commondBuf = null;//如果发生粘包，这里存放除了Rdb的后续内容
+
             if (rdb.readableBytes() != 0) {
                 if (RdbType.TYPE_LENGTH == rdbType) {
                     tempRdb.writeBytes(rdb);
@@ -78,29 +81,40 @@ public class RdbByteStreamDecoder extends ChannelInboundHandlerAdapter {
                         rdbType = RdbType.END;
                     }
                 } else if (RdbType.TYPE_EOF == rdbType) {
-                    tempRdb.writeBytes(rdb);
+                    int searchIndex = tempRdb.writerIndex() - 40;//防止拆包，从总体缓存的后40位开始检索
+                    tempRdb.writeBytes(rdb);//把内容写入缓存
+                    tempRdb.readerIndex(0);//只是为了打印日志
                     logger.info("RdbType is " + rdbType.name() + ",current data length is = " + tempRdb.readableBytes());
-                    if (ByteBufUtil.equals(eofEnd, tempRdb.slice(tempRdb.writerIndex() - eofEnd.readableBytes(), eofEnd.readableBytes()))) {
+                    tempRdb.readerIndex(searchIndex);//防止拆包，从总体缓存的后40位开始检索
+                    int index = ByteBufUtil.indexOf(eofEnd,tempRdb);//检索
+                    if (index != -1) {
                         eofEnd = null;
                         rdbType = RdbType.END;
+                        tempRdb.readerIndex(0);//读标识设置为0
+                        rdbBuf = tempRdb.slice(0,index + 40);//rdb全部内容 index + 40位的eof
+                        commondBuf = tempRdb.slice(index + 40,tempRdb.writerIndex());//命令内容
                     }
                 }
 
-                if (RdbType.END == rdbType) {
+                if (RdbType.END == rdbType) {//开始解析Rdb
                     byte[] start11 = new byte[11];
                     byte[] end11 = new byte[11];
-                    if(tempRdb.writerIndex() >= 11){
-                        tempRdb.getBytes(0,start11);
-                        tempRdb.getBytes(tempRdb.writerIndex() - 11,end11);
+                    if(rdbBuf.writerIndex() >= 11){
+                        rdbBuf.getBytes(0,start11);
+                        rdbBuf.getBytes(rdbBuf.writerIndex() - 11,end11);
                     }
-                    logger.info("RdbType is " + rdbType.name() + ",Rdb prase start " + ",current data length is = " + tempRdb.readableBytes()
+                    logger.info("RdbType is " + rdbType.name() + ",Rdb prase start " + ",current data length is = " + rdbBuf.readableBytes()
                             + ",the start 11 byte is '" + new String(start11)
                             + "',the end 11 byte is '" + new String(end11) + "'");
                     rdbType = RdbType.START;
                     ctx.channel().attr(Constant.RDB_STREAM_NEXT).set(false);
-                    parse(tempRdb);
-                    tempRdb.release();
+                    parse(rdbBuf);
+                    rdbBuf.release();
                     logger.info("The RDB stream has been processed");
+                }
+
+                if(commondBuf.isReadable()){//命令如何有内容，继续往下走
+                    ctx.fireChannelRead(commondBuf);
                 }
             }
             rdb.release();
