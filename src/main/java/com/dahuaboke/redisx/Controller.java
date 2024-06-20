@@ -14,6 +14,7 @@ import org.slf4j.LoggerFactory;
 
 import java.net.InetSocketAddress;
 import java.util.List;
+import java.util.Map;
 import java.util.concurrent.Executor;
 import java.util.concurrent.Executors;
 import java.util.concurrent.ScheduledExecutorService;
@@ -32,6 +33,8 @@ public class Controller {
     private boolean toIsCluster;
     private boolean fromIsCluster;
     private CacheManager cacheManager;
+
+    private Map<String,Object> config;
 
 
     public Controller(boolean toIsCluster, boolean fromIsCluster) {
