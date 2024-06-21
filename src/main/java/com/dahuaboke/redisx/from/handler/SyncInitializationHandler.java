@@ -44,7 +44,8 @@ public class SyncInitializationHandler extends ChannelInboundHandlerAdapter {
                 State state = null;
                 String reply;
                 while (!fromContext.isClose()) {
-                    if (channel.pipeline().get(Constant.SLOT_HANDLER_NAME) == null) {
+                    if (channel.pipeline().get(Constant.AUTH_HANDLER_NAME) == null &&
+                            channel.pipeline().get(Constant.SLOT_HANDLER_NAME) == null) {
                         if ((reply = channel.attr(Constant.SYNC_REPLY).get()) != null) {
                             if (state == INIT) {
                                 state = SENT_PING;

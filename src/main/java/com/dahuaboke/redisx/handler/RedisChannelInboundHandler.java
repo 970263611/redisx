@@ -18,7 +18,7 @@ import org.slf4j.LoggerFactory;
 public abstract class RedisChannelInboundHandler extends SimpleChannelInboundHandler<RedisMessage> {
 
     private static final Logger logger = LoggerFactory.getLogger(RedisChannelInboundHandler.class);
-    private Context context;
+    protected Context context;
 
     public RedisChannelInboundHandler(Context context) {
         this.context = context;

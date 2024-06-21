@@ -183,4 +183,8 @@ public class ToContext extends Context {
         sb.append(System.currentTimeMillis());
         return new String(sb);
     }
+
+    public String getPassword() {
+        return cacheManager.getToPassword();
+    }
 }

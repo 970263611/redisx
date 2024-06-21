@@ -2,6 +2,7 @@ package com.dahuaboke.redisx.from;
 
 import com.dahuaboke.redisx.Constant;
 import com.dahuaboke.redisx.from.handler.*;
+import com.dahuaboke.redisx.handler.AuthHandler;
 import com.dahuaboke.redisx.handler.CommandEncoder;
 import com.dahuaboke.redisx.handler.DirtyDataHandler;
 import com.dahuaboke.redisx.handler.SlotInfoHandler;
@@ -53,6 +54,7 @@ public class FromClient {
                             boolean console = fromContext.isConsole();
                             pipeline.addLast(new RedisEncoder());
                             pipeline.addLast(new CommandEncoder());
+                            pipeline.addLast(Constant.AUTH_HANDLER_NAME, new AuthHandler(fromContext.getPassword(), fromContext.isFromIsCluster()));
                             if (!console) {
                                 pipeline.addLast(Constant.INIT_SYNC_HANDLER_NAME, new SyncInitializationHandler(fromContext));
                                 pipeline.addLast(new PreDistributeHandler(fromContext));

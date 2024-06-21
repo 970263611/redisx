@@ -18,6 +18,7 @@ import org.slf4j.LoggerFactory;
 
 import java.nio.charset.Charset;
 import java.util.List;
+import java.util.concurrent.CompletableFuture;
 
 /**
  * 2024/5/6 11:09
@@ -75,12 +76,12 @@ public class RdbByteStreamDecoder extends ChannelInboundHandlerAdapter {
             if (rdb.readableBytes() != 0) {
                 if (RdbType.TYPE_LENGTH == rdbType) {
                     tempRdb.writeBytes(rdb);//把内容写入缓存
-                    if(length == tempRdb.readableBytes()){//如果rdb总长正好等于缓存大小，则开始执行解析，并且不存在需要向后发布的内容
+                    if (length == tempRdb.readableBytes()) {//如果rdb总长正好等于缓存大小，则开始执行解析，并且不存在需要向后发布的内容
                         rdbBuf = tempRdb;
                         rdbType = RdbType.END;
-                    }else if(length < tempRdb.readableBytes()){//如果rdb总长小于缓存大小，则拆分缓存，开始执行解析，并且存在需要向后发布的内容
-                        rdbBuf = tempRdb.slice(0,length);
-                        commondBuf = tempRdb.slice(length,tempRdb.writerIndex() - length);
+                    } else if (length < tempRdb.readableBytes()) {//如果rdb总长小于缓存大小，则拆分缓存，开始执行解析，并且存在需要向后发布的内容
+                        rdbBuf = tempRdb.slice(0, length);
+                        commondBuf = tempRdb.slice(length, tempRdb.writerIndex() - length);
                         rdbType = RdbType.END;
                     }
                     logger.info("RdbType is " + rdbType.name() + ",RdbLength is " + length + ",current data length is = " + tempRdb.readableBytes());
@@ -88,12 +89,12 @@ public class RdbByteStreamDecoder extends ChannelInboundHandlerAdapter {
                     int searchIndex = tempRdb.writerIndex() >= 40 ? tempRdb.writerIndex() - 40 : 0;//防止拆包，从总体缓存的后40位开始检索
                     tempRdb.writeBytes(rdb);//把内容写入缓存
                     tempRdb.readerIndex(searchIndex);//防止拆包，从总体缓存的后40位开始检索
-                    int index = ByteBufUtil.indexOf(eofEnd,tempRdb);//检索
+                    int index = ByteBufUtil.indexOf(eofEnd, tempRdb);//检索
                     if (index != -1) {
                         rdbType = RdbType.END;
                         tempRdb.readerIndex(0);//读标识设置为0
-                        rdbBuf = tempRdb.slice(0,index + 40);//rdb全部内容 index + 40位的eof
-                        commondBuf = tempRdb.slice(index + 40,tempRdb.writerIndex() - index - 40);//命令内容
+                        rdbBuf = tempRdb.slice(0, index + 40);//rdb全部内容 index + 40位的eof
+                        commondBuf = tempRdb.slice(index + 40, tempRdb.writerIndex() - index - 40);//命令内容
                     }
                     tempRdb.readerIndex(0);
                     logger.info("RdbType is " + rdbType.name() + ",current data length is = " + tempRdb.readableBytes());
@@ -103,9 +104,9 @@ public class RdbByteStreamDecoder extends ChannelInboundHandlerAdapter {
                     //---  为了方便观察Rdb内容状况，打印前后各9位 跟业务无关---
                     ByteBuf start9 = Unpooled.buffer();
                     ByteBuf end9 = Unpooled.buffer();
-                    if(rdbBuf.writerIndex() >= 9){
-                        start9 = rdbBuf.slice(0,9);
-                        end9 = rdbBuf.slice(rdbBuf.writerIndex() - 9,9);
+                    if (rdbBuf.writerIndex() >= 9) {
+                        start9 = rdbBuf.slice(0, 9);
+                        end9 = rdbBuf.slice(rdbBuf.writerIndex() - 9, 9);
                     }
                     logger.info("RdbType is " + rdbType.name() + ",Rdb prase start " + ",current data length is = " + rdbBuf.readableBytes()
                             + ",\r\n the start 9 byte is \r\n" + ByteBufUtil.prettyHexDump(start9)
@@ -115,13 +116,29 @@ public class RdbByteStreamDecoder extends ChannelInboundHandlerAdapter {
                     eofEnd = null;
                     rdbType = RdbType.START;
                     ctx.channel().attr(Constant.RDB_STREAM_NEXT).set(false);
-                    parse(rdbBuf);
-                    rdbBuf.release();
+                    fromContext.setRdbAckOffset(true);
+                    ByteBuf finalRdbBuf = rdbBuf;
+                    CompletableFuture<Void> future = CompletableFuture.supplyAsync(() -> {
+                        String threadName = Constant.PROJECT_NAME + "-RdbParseThread-" + fromContext.getHost() + ":" + fromContext.getPort();
+                        Thread.currentThread().setName(threadName);
+                        parse(finalRdbBuf);
+                        return null;
+                    });
+                    while (!future.isDone()) {
+                        if (!fromContext.isClose()) {
+                            fromContext.ackOffset();
+                        }
+                        Thread.sleep(1000);
+                    }
+                    fromContext.setRdbAckOffset(false);
                     logger.info("The RDB stream has been processed");
                 }
-
-                if(commondBuf != null && commondBuf.isReadable()){//命令如何有内容，继续往下走
+                if (commondBuf != null && commondBuf.isReadable()) {//命令如何有内容，继续往下走
                     ctx.fireChannelRead(commondBuf);
+                } else {
+                    if (rdbBuf != null) {
+                        rdbBuf.release();
+                    }
                 }
             }
             rdb.release();

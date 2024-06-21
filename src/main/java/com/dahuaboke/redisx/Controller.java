@@ -14,7 +14,6 @@ import org.slf4j.LoggerFactory;
 
 import java.net.InetSocketAddress;
 import java.util.List;
-import java.util.Map;
 import java.util.concurrent.Executor;
 import java.util.concurrent.Executors;
 import java.util.concurrent.ScheduledExecutorService;
@@ -34,18 +33,44 @@ public class Controller {
     private boolean fromIsCluster;
     private CacheManager cacheManager;
 
-    private Map<String,Object> config;
-
-
-    public Controller(boolean toIsCluster, boolean fromIsCluster) {
+    public Controller(boolean fromIsCluster, String fromPassword, boolean toIsCluster, String toPassword) {
         this.toIsCluster = toIsCluster;
         this.fromIsCluster = fromIsCluster;
-        cacheManager = new CacheManager(toIsCluster, fromIsCluster);
+        cacheManager = new CacheManager(fromIsCluster, fromPassword, toIsCluster, toPassword);
     }
 
-    public void start(List<InetSocketAddress> toNodeAddresses, List<InetSocketAddress> fromNodeAddresses, boolean startConsole,
-                      InetSocketAddress consoleAddress, int consoleTimeout) {
+    public void start(List<InetSocketAddress> fromNodeAddresses, List<InetSocketAddress> toNodeAddresses, boolean startConsole,
+                      int consolePort, int consoleTimeout) {
         logger.info("Application global id is {}", cacheManager.getId());
+        Thread shutdownHookThread = new Thread(() -> {
+            logger.info("Shutdown hook thread is starting");
+            List<Context> allContexts = cacheManager.getAllContexts();
+            for (Context cont : allContexts) {
+                if (cont instanceof FromContext) {
+                    ((FromContext) cont).close();
+                }
+            }
+            while (true) {
+                boolean allowClose = true;
+                for (Context cont : allContexts) {
+                    if (cont instanceof ToContext) {
+                        ToContext toContext = (ToContext) cont;
+                        if (!toContext.isClose) {
+                            if (!cacheManager.checkHasNeedWriteCommand(toContext)) {
+                                toContext.close();
+                            }
+                            allowClose = false;
+                            break;
+                        }
+                    }
+                }
+                if (allowClose) {
+                    break;
+                }
+            }
+        });
+        shutdownHookThread.setName(Constant.PROJECT_NAME + "-ShutdownHook");
+        Runtime.getRuntime().addShutdownHook(shutdownHookThread);
         toNodeAddresses.forEach(address -> {
             String host = address.getHostString();
             int port = address.getPort();
@@ -96,9 +121,7 @@ public class Controller {
             }
         }, 0, 1, TimeUnit.SECONDS);
         if (startConsole) {
-            String consoleHost = consoleAddress.getHostString();
-            int consolePort = consoleAddress.getPort();
-            new ConsoleNode(consoleHost, consolePort, consoleTimeout, toNodeAddresses, fromNodeAddresses).start();
+            new ConsoleNode("localhost", consolePort, consoleTimeout, toNodeAddresses, fromNodeAddresses).start();
         }
     }
 

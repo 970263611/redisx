@@ -35,9 +35,13 @@ public class Constant {
 
     public static final String INIT_SYNC_HANDLER_NAME = "INIT_SYNC_HANDLER";
 
+    public static final String AUTH_HANDLER_NAME = "AUTH_HANDLER";
+
     public static final String SLOT_HANDLER_NAME = "SLOT_HANDLER";
 
     public static final String ACK_COMMAND_PREFIX = "REPLCONF ack ";
+
+    public static final String CONFIG_AUTH_PREFIX = "AUTH ";
 
     public static final String CONFIG_PORT_COMMAND_PREFIX = "REPLCONF listening-port ";
 
@@ -60,6 +64,8 @@ public class Constant {
     public static final String GET_SLOT_COMMAND = "CLUSTER NODES";
 
     public static final String SLOT_REX = "^[0-9a-z]{40}.*";
+
+    public static final String CONFIG_FILE_NAME = "redisx.yml";
 
 
     //RDB

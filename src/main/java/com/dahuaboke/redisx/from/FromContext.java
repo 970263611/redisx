@@ -30,6 +30,7 @@ public class FromContext extends Context {
     private FromClient fromClient;
     private boolean isConsole;
     private boolean fromIsCluster;
+    private boolean rdbAckOffset = false;
 
     public FromContext(CacheManager cacheManager, String host, int port, boolean isConsole, boolean fromIsCluster) {
         this.cacheManager = cacheManager;
@@ -143,5 +144,35 @@ public class FromContext extends Context {
 
     public CacheManager.NodeMessage getNodeMessage() {
         return cacheManager.getNodeMessage(this.host, this.port);
+    }
+
+    public void ackOffset() {
+        if (fromChannel != null && fromChannel.isActive() && fromChannel.pipeline().get(Constant.INIT_SYNC_HANDLER_NAME) == null) {
+            Long offsetSession = fromChannel.attr(Constant.OFFSET).get();
+            CacheManager.NodeMessage nodeMessage = getNodeMessage();
+            if (offsetSession != null && offsetSession > -1L) {
+                if (nodeMessage == null) {
+                    setOffset(offsetSession);
+                }
+                fromChannel.attr(Constant.OFFSET).set(-1L);
+            }
+            if (nodeMessage != null) {
+                long offset = getOffset();
+                fromChannel.writeAndFlush(Constant.ACK_COMMAND_PREFIX + offset);
+                logger.trace("Ack offset [{}]", offset);
+            }
+        }
+    }
+
+    public boolean isRdbAckOffset() {
+        return rdbAckOffset;
+    }
+
+    public void setRdbAckOffset(boolean rdbAckOffset) {
+        this.rdbAckOffset = rdbAckOffset;
+    }
+
+    public String getPassword() {
+        return cacheManager.getFromPassword();
     }
 }

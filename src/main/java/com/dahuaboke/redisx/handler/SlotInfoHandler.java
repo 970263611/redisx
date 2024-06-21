@@ -29,44 +29,44 @@ public class SlotInfoHandler extends RedisChannelInboundHandler {
     }
 
     @Override
-    public void channelActive(ChannelHandlerContext ctx) throws Exception {
-        Channel channel = ctx.channel();
-        if (channel.isActive()) {
-            //不需要去pipeline的底部，所以直接ctx.write
-            ctx.writeAndFlush(Constant.GET_SLOT_COMMAND);
-        }
-        ctx.fireChannelActive();
-    }
-
-    @Override
     public void channelRead1(ChannelHandlerContext ctx, String msg) throws Exception {
-        Pattern pattern = Pattern.compile(Constant.SLOT_REX, Pattern.DOTALL);
-        if (msg != null && pattern.matcher(msg).matches()) {
-            msg = msg.replace("\r", "");
-            String[] arr = msg.split("\n");
-            if (arr.length != 0) {
-                Arrays.stream(arr).forEach(s -> {
-                    SlotInfo slotInfo = new SlotInfo(s);
-                    if (context instanceof FromContext) {
-                        FromContext fromContext = (FromContext) context;
-                        if (fromContext.getHost().equals(slotInfo.getIp()) &&
-                                fromContext.getPort() == slotInfo.getPort()) {
-                            fromContext.setSlotInfo(slotInfo);
-                            fromContext.setSlotBegin(slotInfo.getSlotStart());
-                            fromContext.setSlotEnd(slotInfo.getSlotEnd());
-                            ctx.pipeline().remove(this);
+        if ("SLOTSEND".equals(msg)) {
+            logger.info("Beginning send slot get command");
+            Channel channel = ctx.channel();
+            if (channel.isActive()) {
+                //不需要去pipeline的底部，所以直接ctx.write
+                ctx.writeAndFlush(Constant.GET_SLOT_COMMAND);
+            }
+        } else {
+            logger.info("Beginning slot message parse");
+            Pattern pattern = Pattern.compile(Constant.SLOT_REX, Pattern.DOTALL);
+            if (msg != null && pattern.matcher(msg).matches()) {
+                msg = msg.replace("\r", "");
+                String[] arr = msg.split("\n");
+                if (arr.length != 0) {
+                    Arrays.stream(arr).forEach(s -> {
+                        SlotInfo slotInfo = new SlotInfo(s);
+                        if (context instanceof FromContext) {
+                            FromContext fromContext = (FromContext) context;
+                            if (fromContext.getHost().equals(slotInfo.getIp()) &&
+                                    fromContext.getPort() == slotInfo.getPort()) {
+                                fromContext.setSlotInfo(slotInfo);
+                                fromContext.setSlotBegin(slotInfo.getSlotStart());
+                                fromContext.setSlotEnd(slotInfo.getSlotEnd());
+                                ctx.pipeline().remove(this);
+                            }
+                        } else if (context instanceof ToContext) {
+                            ToContext toContext = (ToContext) context;
+                            if (toContext.getHost().equals(slotInfo.getIp()) &&
+                                    toContext.getPort() == slotInfo.getPort()) {
+                                toContext.setSlotInfo(slotInfo);
+                                toContext.setSlotBegin(slotInfo.getSlotStart());
+                                toContext.setSlotEnd(slotInfo.getSlotEnd());
+                                ctx.pipeline().remove(this);
+                            }
                         }
-                    } else if (context instanceof ToContext) {
-                        ToContext toContext = (ToContext) context;
-                        if (toContext.getHost().equals(slotInfo.getIp()) &&
-                                toContext.getPort() == slotInfo.getPort()) {
-                            toContext.setSlotInfo(slotInfo);
-                            toContext.setSlotBegin(slotInfo.getSlotStart());
-                            toContext.setSlotEnd(slotInfo.getSlotEnd());
-                            ctx.pipeline().remove(this);
-                        }
-                    }
-                });
+                    });
+                }
             }
         }
     }

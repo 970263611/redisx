@@ -1,20 +1,19 @@
 redisx:
-  isCluster: true
-  address:
-    single:
-      from: 192.168.162.26:17001
-      to: 192.168.162.26:17101
-    cluster:
-      from:
-        - 192.168.162.26:17001
-        - 192.168.162.26:17002
-        - 192.168.162.26:17003
-      to:
-        - 192.168.162.26:17101
-        - 192.168.162.26:17202
-        - 192.168.162.26:17303
+  from:
+    password: asd123456
+    isCluster: true
+    address:
+      - 192.168.14.26:17001
+      - 192.168.14.26:17002
+      - 192.168.14.26:17004
+  to:
+    password: asd123456
+    isCluster: true
+    address:
+      - 192.168.14.26:17101
+      - 192.168.14.26:17104
+      - 192.168.14.26:17106
   console:
-    startConsole: false
-    hostname: 192.168.162.26
+    enable: false
     port: 9999
     timeout: 5000

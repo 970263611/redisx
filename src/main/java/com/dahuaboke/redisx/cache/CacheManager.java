@@ -21,16 +21,20 @@ public final class CacheManager {
     private static final Logger logger = LoggerFactory.getLogger(CacheManager.class);
     private List<Context> contexts = new ArrayList();
     private Map<Context, BlockingQueue<CommandReference>> cache = new HashMap();
-    private boolean toIsCluster;
     private boolean fromIsCluster;
+    private String fromPassword;
+    private boolean toIsCluster;
+    private String toPassword;
     private AtomicBoolean isMaster = new AtomicBoolean(false);
     private AtomicBoolean fromStarted = new AtomicBoolean(false);
     private String id = UUID.randomUUID().toString();
     private Map<String, NodeMessage> nodeMessages = new ConcurrentHashMap();
 
-    public CacheManager(boolean toIsCluster, boolean fromIsCluster) {
-        this.toIsCluster = toIsCluster;
+    public CacheManager(boolean fromIsCluster, String fromPassword, boolean toIsCluster, String toPassword) {
         this.fromIsCluster = fromIsCluster;
+        this.fromPassword = fromPassword;
+        this.toIsCluster = toIsCluster;
+        this.toPassword = toPassword;
     }
 
     /**
@@ -68,6 +72,10 @@ public final class CacheManager {
 
     public void remove(Context context) {
         cache.remove(context);
+    }
+
+    public boolean checkHasNeedWriteCommand(Context context) {
+        return cache.get(context).size() > 0;
     }
 
     /**
@@ -135,8 +143,12 @@ public final class CacheManager {
         nodeMessages.clear();
     }
 
-    public void setOffset(long offset) {
+    public String getFromPassword() {
+        return fromPassword;
+    }
 
+    public String getToPassword() {
+        return toPassword;
     }
 
     public static class NodeMessage {

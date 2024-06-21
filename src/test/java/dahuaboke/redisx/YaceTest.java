@@ -1,6 +1,5 @@
 package dahuaboke.redisx;
 
-import com.dahuaboke.redisx.Redisx;
 import org.junit.After;
 import org.junit.Before;
 import org.junit.Test;
@@ -18,7 +17,7 @@ import java.util.concurrent.CountDownLatch;
 public class YaceTest {
 
     //配置单点地址，或者集群服务器中任一地址
-    private String address = "redis://" + Redisx.hostname + ":" + 17001;
+    private String address = "redis://192.168.14.26:17001";
 
     //是否集群
     private boolean isCluster = true;

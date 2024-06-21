@@ -1,13 +1,16 @@
 package com.dahuaboke.redisx.from.handler;
 
 import com.dahuaboke.redisx.Constant;
-import com.dahuaboke.redisx.cache.CacheManager;
 import com.dahuaboke.redisx.from.FromContext;
-import io.netty.channel.Channel;
+import com.dahuaboke.redisx.thread.RedisxThreadFactory;
 import io.netty.channel.ChannelDuplexHandler;
 import io.netty.channel.ChannelHandlerContext;
 import org.slf4j.Logger;
 import org.slf4j.LoggerFactory;
+
+import java.util.concurrent.Executors;
+import java.util.concurrent.ScheduledExecutorService;
+import java.util.concurrent.TimeUnit;
 
 /**
  * 2024/5/8 9:55
@@ -17,42 +20,28 @@ import org.slf4j.LoggerFactory;
 public class AckOffsetHandler extends ChannelDuplexHandler {
 
     private static final Logger logger = LoggerFactory.getLogger(AckOffsetHandler.class);
+    private ScheduledExecutorService ackPool;
     private FromContext fromContext;
-    private long offset;
 
     public AckOffsetHandler(FromContext fromContext) {
         this.fromContext = fromContext;
+        this.ackPool = Executors.newScheduledThreadPool(1,
+                new RedisxThreadFactory(Constant.PROJECT_NAME + "-AckThread-" + fromContext.getHost() + ":" + fromContext.getPort()));
     }
 
     @Override
     public void handlerAdded(ChannelHandlerContext ctx) throws Exception {
         logger.debug("Ack offset task beginning");
-        Thread heartBeatThread = new Thread(() -> {
-            Channel channel = ctx.channel();
-            while (!fromContext.isClose()) {
-                if (channel.isActive() && channel.pipeline().get(Constant.INIT_SYNC_HANDLER_NAME) == null) {
-                    Long offsetSession = channel.attr(Constant.OFFSET).get();
-                    if (offsetSession == null) {
-                        continue;
-                    } else if (offsetSession > -1L) {
-                        offset = offsetSession;
-                        CacheManager.NodeMessage nodeMessage = fromContext.getNodeMessage();
-                        if (nodeMessage == null) {
-                            fromContext.setOffset(offset);
-                        }
-                    }
-                    offset = fromContext.getOffset();
-                    channel.writeAndFlush(Constant.ACK_COMMAND_PREFIX + offset);
-                    logger.trace("Ack offset [{}]", offset);
+        ackPool.scheduleAtFixedRate(() -> {
+            try {
+                if (fromContext.isClose()) {
+                    ackPool.shutdown();
+                } else if (!fromContext.isRdbAckOffset()) {
+                    fromContext.ackOffset();
                 }
-                try {
-                    Thread.sleep(1000);
-                } catch (InterruptedException e) {
-                    logger.error("Ack offset thread interrupted");
-                }
+            } catch (Exception e) {
+                logger.error("Ack offset exception {}", e);
             }
-        });
-        heartBeatThread.setName(Constant.PROJECT_NAME + "-AckThread-" + fromContext.getHost() + ":" + fromContext.getPort());
-        heartBeatThread.start();
+        }, 0, 1, TimeUnit.SECONDS);
     }
 }

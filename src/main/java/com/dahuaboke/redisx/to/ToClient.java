@@ -1,5 +1,7 @@
 package com.dahuaboke.redisx.to;
 
+import com.dahuaboke.redisx.Constant;
+import com.dahuaboke.redisx.handler.AuthHandler;
 import com.dahuaboke.redisx.handler.CommandEncoder;
 import com.dahuaboke.redisx.handler.DirtyDataHandler;
 import com.dahuaboke.redisx.handler.SlotInfoHandler;
@@ -52,11 +54,12 @@ public class ToClient {
                             ChannelPipeline pipeline = channel.pipeline();
                             pipeline.addLast(new RedisEncoder());
                             pipeline.addLast(new CommandEncoder());
+                            pipeline.addLast(Constant.AUTH_HANDLER_NAME, new AuthHandler(toContext.getPassword(), toContext.isToIsCluster()));
                             pipeline.addLast(new RedisDecoder(true));
                             pipeline.addLast(new RedisBulkStringAggregator());
                             pipeline.addLast(new RedisArrayAggregator());
                             if (toContext.isToIsCluster()) {
-                                pipeline.addLast(new SlotInfoHandler(toContext));
+                                pipeline.addLast(Constant.SLOT_HANDLER_NAME, new SlotInfoHandler(toContext));
                             }
                             pipeline.addLast(new DRHandler(toContext));
                             pipeline.addLast(new SyncCommandListener(toContext));

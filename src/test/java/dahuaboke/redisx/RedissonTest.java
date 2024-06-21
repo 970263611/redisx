@@ -15,9 +15,9 @@ import java.util.Iterator;
 public class RedissonTest {
 
     //配置单点地址，或者集群服务器中任一地址
-    private String forwardsAddress = "redis://" + Redisx.hostname + ":17101";
+    private String forwardsAddress = "redis://192.168.14.26:17101";
 
-    private String slavesAddress = "redis://" + Redisx.hostname + ":17001";
+    private String slavesAddress = "redis://192.168.14.26:17001";
 
     //是否集群
     private boolean isCluster = true;
