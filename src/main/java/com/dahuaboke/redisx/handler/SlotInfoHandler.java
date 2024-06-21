@@ -10,6 +10,8 @@ import org.slf4j.Logger;
 import org.slf4j.LoggerFactory;
 
 import java.util.Arrays;
+import java.util.HashMap;
+import java.util.Map;
 import java.util.regex.Pattern;
 
 
@@ -44,25 +46,41 @@ public class SlotInfoHandler extends RedisChannelInboundHandler {
                 msg = msg.replace("\r", "");
                 String[] arr = msg.split("\n");
                 if (arr.length != 0) {
+                    Map<String,SlotInfo> map = new HashMap<>();
                     Arrays.stream(arr).forEach(s -> {
                         SlotInfo slotInfo = new SlotInfo(s);
+                        map.put(slotInfo.getId(),slotInfo);
+                    });
+                    map.forEach((k,v) -> {
                         if (context instanceof FromContext) {
                             FromContext fromContext = (FromContext) context;
-                            if (fromContext.getHost().equals(slotInfo.getIp()) &&
-                                    fromContext.getPort() == slotInfo.getPort()) {
-                                fromContext.setSlotInfo(slotInfo);
-                                fromContext.setSlotBegin(slotInfo.getSlotStart());
-                                fromContext.setSlotEnd(slotInfo.getSlotEnd());
+                            if (fromContext.getHost().equals(v.getIp()) &&
+                                    fromContext.getPort() == v.getPort()) {
+                                fromContext.setSlotInfo(v);
+                                if("master".equals(v.getFlags())){
+                                    fromContext.setSlotBegin(v.getSlotStart());
+                                    fromContext.setSlotEnd(v.getSlotEnd());
+                                }else{
+                                    fromContext.setSlotBegin(map.get(v.getMasterId()).getSlotStart());
+                                    fromContext.setSlotEnd(map.get(v.getMasterId()).getSlotEnd());
+                                }
                                 ctx.pipeline().remove(this);
+                                return;
                             }
                         } else if (context instanceof ToContext) {
                             ToContext toContext = (ToContext) context;
-                            if (toContext.getHost().equals(slotInfo.getIp()) &&
-                                    toContext.getPort() == slotInfo.getPort()) {
-                                toContext.setSlotInfo(slotInfo);
-                                toContext.setSlotBegin(slotInfo.getSlotStart());
-                                toContext.setSlotEnd(slotInfo.getSlotEnd());
+                            if (toContext.getHost().equals(v.getIp()) &&
+                                    toContext.getPort() == v.getPort()) {
+                                toContext.setSlotInfo(v);
+                                if("master".equals(v.getFlags())){
+                                    toContext.setSlotBegin(v.getSlotStart());
+                                    toContext.setSlotEnd(v.getSlotEnd());
+                                }else{
+                                    toContext.setSlotBegin(map.get(v.getMasterId()).getSlotStart());
+                                    toContext.setSlotEnd(map.get(v.getMasterId()).getSlotEnd());
+                                }
                                 ctx.pipeline().remove(this);
+                                return;
                             }
                         }
                     });
@@ -136,6 +154,26 @@ public class SlotInfoHandler extends RedisChannelInboundHandler {
 
         public int getSlotEnd() {
             return slotEnd;
+        }
+
+        public String getId() {
+            return id;
+        }
+
+        public String getMasterId() {
+            return masterId;
+        }
+
+        public String getFlags() {
+            return flags;
+        }
+
+        public void setSlotStart(int slotStart) {
+            this.slotStart = slotStart;
+        }
+
+        public void setSlotEnd(int slotEnd) {
+            this.slotEnd = slotEnd;
         }
     }
 }
