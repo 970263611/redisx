@@ -39,6 +39,10 @@ public class Constant {
 
     public static final String SLOT_HANDLER_NAME = "SLOT_HANDLER";
 
+    public static final String OFFSET_DECODER_NAME = "OFFSET_DECODER";
+
+    public static final String OFFSET_HANDLER_NAME = "OFFSET_HANDLER";
+
     public static final String ACK_COMMAND_PREFIX = "REPLCONF ack ";
 
     public static final String CONFIG_AUTH_PREFIX = "AUTH ";
