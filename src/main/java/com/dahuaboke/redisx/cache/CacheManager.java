@@ -1,6 +1,7 @@
 package com.dahuaboke.redisx.cache;
 
 import com.dahuaboke.redisx.Context;
+import com.dahuaboke.redisx.from.FromContext;
 import org.slf4j.Logger;
 import org.slf4j.LoggerFactory;
 
@@ -82,10 +83,12 @@ public final class CacheManager {
      * 非web模式走这个方法，因为只有web需要回调传递
      *
      * @param command
+     * @param length
+     * @param fromContext
      * @return
      */
-    public boolean publish(String command) {
-        return publish(new CommandReference(command));
+    public boolean publish(String command, Integer length, FromContext fromContext) {
+        return publish(new CommandReference(command, length, fromContext));
     }
 
     public boolean publish(CommandReference commandReference) {
@@ -183,13 +186,25 @@ public final class CacheManager {
 
     public static class CommandReference {
         private String content;
+        private Integer length;
+        private FromContext fromContext;
 
-        public CommandReference(String content) {
+        public CommandReference(String content, Integer length, FromContext fromContext) {
             this.content = content;
+            this.length = length;
+            this.fromContext = fromContext;
         }
 
         public String getContent() {
             return content;
+        }
+
+        public Integer getLength() {
+            return length;
+        }
+
+        public FromContext getFromContext() {
+            return fromContext;
         }
     }
 }

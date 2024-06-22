@@ -10,12 +10,18 @@ import com.dahuaboke.redisx.command.Command;
 public class SyncCommand extends Command {
 
     private String command;
+    private int length;
 
-    public SyncCommand(String command) {
+    public SyncCommand(String command, int length) {
         this.command = command;
+        this.length = length;
     }
 
     public String getCommand() {
         return command;
+    }
+
+    public int getLength() {
+        return length;
     }
 }

@@ -31,6 +31,7 @@ public class Controller {
             new RedisxThreadFactory(Constant.PROJECT_NAME + "-Controller"));
     private boolean toIsCluster;
     private boolean fromIsCluster;
+
     private CacheManager cacheManager;
 
     public Controller(boolean fromIsCluster, String fromPassword, boolean toIsCluster, String toPassword) {

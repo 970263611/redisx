@@ -54,7 +54,14 @@ public class FromClient {
                             boolean console = fromContext.isConsole();
                             pipeline.addLast(new RedisEncoder());
                             pipeline.addLast(new CommandEncoder());
-                            pipeline.addLast(Constant.AUTH_HANDLER_NAME, new AuthHandler(fromContext.getPassword(), fromContext.isFromIsCluster()));
+                            boolean hasPassword = false;
+                            String password = fromContext.getPassword();
+                            if (password != null && !password.isEmpty()) {
+                                hasPassword = true;
+                            }
+                            if (hasPassword) {
+                                pipeline.addLast(Constant.AUTH_HANDLER_NAME, new AuthHandler(password, fromContext.isFromIsCluster()));
+                            }
                             if (!console) {
                                 pipeline.addLast(Constant.INIT_SYNC_HANDLER_NAME, new SyncInitializationHandler(fromContext));
                                 pipeline.addLast(new PreDistributeHandler(fromContext));
@@ -65,9 +72,9 @@ public class FromClient {
                             pipeline.addLast(new RedisBulkStringAggregator());
                             pipeline.addLast(new RedisArrayAggregator());
                             if (fromContext.isFromIsCluster()) {
-                                pipeline.addLast(Constant.SLOT_HANDLER_NAME, new SlotInfoHandler(fromContext));
+                                pipeline.addLast(Constant.SLOT_HANDLER_NAME, new SlotInfoHandler(fromContext, hasPassword));
                             }
-                            pipeline.addLast(new MessagePostProcessor(fromContext));
+                            pipeline.addLast(new MessagePostProcessor());
                             pipeline.addLast(new PostDistributeHandler());
                             pipeline.addLast(new SyncCommandPublisher(fromContext));
                             pipeline.addLast(new PingCommandDecoder());

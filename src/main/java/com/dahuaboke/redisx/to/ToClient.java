@@ -54,12 +54,19 @@ public class ToClient {
                             ChannelPipeline pipeline = channel.pipeline();
                             pipeline.addLast(new RedisEncoder());
                             pipeline.addLast(new CommandEncoder());
-                            pipeline.addLast(Constant.AUTH_HANDLER_NAME, new AuthHandler(toContext.getPassword(), toContext.isToIsCluster()));
+                            boolean hasPassword = false;
+                            String password = toContext.getPassword();
+                            if (password != null && !password.isEmpty()) {
+                                hasPassword = true;
+                            }
+                            if (hasPassword) {
+                                pipeline.addLast(Constant.AUTH_HANDLER_NAME, new AuthHandler(password, toContext.isToIsCluster()));
+                            }
                             pipeline.addLast(new RedisDecoder(true));
                             pipeline.addLast(new RedisBulkStringAggregator());
                             pipeline.addLast(new RedisArrayAggregator());
                             if (toContext.isToIsCluster()) {
-                                pipeline.addLast(Constant.SLOT_HANDLER_NAME, new SlotInfoHandler(toContext));
+                                pipeline.addLast(Constant.SLOT_HANDLER_NAME, new SlotInfoHandler(toContext, hasPassword));
                             }
                             pipeline.addLast(new DRHandler(toContext));
                             pipeline.addLast(new SyncCommandListener(toContext));

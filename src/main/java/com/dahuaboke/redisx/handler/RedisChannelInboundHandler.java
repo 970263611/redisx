@@ -1,7 +1,5 @@
 package com.dahuaboke.redisx.handler;
 
-import com.dahuaboke.redisx.Context;
-import com.dahuaboke.redisx.from.FromContext;
 import io.netty.channel.ChannelHandlerContext;
 import io.netty.channel.SimpleChannelInboundHandler;
 import io.netty.handler.codec.CodecException;
@@ -18,50 +16,52 @@ import org.slf4j.LoggerFactory;
 public abstract class RedisChannelInboundHandler extends SimpleChannelInboundHandler<RedisMessage> {
 
     private static final Logger logger = LoggerFactory.getLogger(RedisChannelInboundHandler.class);
-    protected Context context;
-
-    public RedisChannelInboundHandler(Context context) {
-        this.context = context;
-    }
 
     @Override
     protected void channelRead0(ChannelHandlerContext ctx, RedisMessage msg) throws Exception {
-        channelRead1(ctx, parseRedisMessage(msg, context));
+        channelRead1(ctx, parseRedisMessage(msg));
     }
 
-    public abstract void channelRead1(ChannelHandlerContext ctx, String reply) throws Exception;
+    protected void channelRead1(ChannelHandlerContext ctx, String[] replys) throws Exception {
+        channelRead2(ctx, replys[0]);
+    }
 
-    private String parseRedisMessage(RedisMessage msg, Context context) {
+    public abstract void channelRead2(ChannelHandlerContext ctx, String reply) throws Exception;
+
+    private String[] parseRedisMessage(RedisMessage msg) {
+        String[] result = new String[1];
         if (msg instanceof SimpleStringRedisMessage) {
-            return ((SimpleStringRedisMessage) msg).content();
+            result[0] = ((SimpleStringRedisMessage) msg).content();
+            return result;
         } else if (msg instanceof ErrorRedisMessage) {
             logger.warn("Receive error message [{}]", ((ErrorRedisMessage) msg).content());
-            return ((ErrorRedisMessage) msg).content();
+            result[0] = ((ErrorRedisMessage) msg).content();
+            return result;
         } else if (msg instanceof IntegerRedisMessage) {
-            return String.valueOf(((IntegerRedisMessage) msg).value());
+            result[0] = String.valueOf(((IntegerRedisMessage) msg).value());
+            return result;
         } else if (msg instanceof FullBulkStringRedisMessage) {
             FullBulkStringRedisMessage fullMsg = (FullBulkStringRedisMessage) msg;
             if (fullMsg.isNull()) {
                 return null;
             }
-            return fullMsg.content().toString(CharsetUtil.UTF_8);
+            result[0] = fullMsg.content().toString(CharsetUtil.UTF_8);
+            return result;
         } else if (msg instanceof ArrayRedisMessage) {
-            int size = 0, length = 3;
+            Integer size = 0, length = 3;
             StringBuilder sb = new StringBuilder();
             for (RedisMessage child : ((ArrayRedisMessage) msg).children()) {
-                String c = parseRedisMessage(child, null);
-                sb.append(c);
+                String[] c = parseRedisMessage(child);
+                sb.append(c[0]);
                 sb.append(" ");
                 size++;
-                length += c.length() + String.valueOf(c.length()).length();
+                length += c[0].length() + String.valueOf(c[0].length()).length();
             }
-            length += String.valueOf(size).length() + 5 * size;
-            if (context instanceof FromContext) {
-                FromContext fromContext = (FromContext) context;
-                long newOffset = fromContext.getOffset() + length;
-                fromContext.setOffset(newOffset);
-            }
-            return sb.delete(sb.length() - 1, sb.length()).toString();
+            length += String.valueOf(size).length()  + 5 * size;
+            result = new String[2];
+            result[0] = sb.delete(sb.length() - 1, sb.length()).toString();
+            result[1] = String.valueOf(length);
+            return result;
         } else {
             throw new CodecException("Unknown message type: " + msg);
         }

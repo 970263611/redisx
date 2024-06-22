@@ -14,19 +14,19 @@ import org.slf4j.LoggerFactory;
  * auth: dahua
  * desc:
  */
-public class PostDistributeHandler extends SimpleChannelInboundHandler<String> {
+public class PostDistributeHandler extends SimpleChannelInboundHandler<String[]> {
 
     private static final Logger logger = LoggerFactory.getLogger(PostDistributeHandler.class);
 
     @Override
-    public void channelRead0(ChannelHandlerContext ctx, String msg) throws Exception {
+    public void channelRead0(ChannelHandlerContext ctx, String[] msg) throws Exception {
         Channel channel = ctx.channel();
         if (channel.isActive() && channel.pipeline().get(Constant.INIT_SYNC_HANDLER_NAME) != null) {
-            ctx.channel().attr(Constant.SYNC_REPLY).set(msg);
-        } else if (Constant.PING_COMMAND.equalsIgnoreCase(msg)) {
+            ctx.channel().attr(Constant.SYNC_REPLY).set(msg[0]);
+        } else if (Constant.PING_COMMAND.equalsIgnoreCase(msg[0])) {
             ctx.fireChannelRead(new PingCommand());
         } else {
-            ctx.fireChannelRead(new SyncCommand(msg));
+            ctx.fireChannelRead(new SyncCommand(msg[0], Integer.parseInt(msg[1])));
         }
     }
 }

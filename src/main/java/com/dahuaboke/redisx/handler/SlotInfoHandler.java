@@ -24,67 +24,88 @@ public class SlotInfoHandler extends RedisChannelInboundHandler {
 
     private static final Logger logger = LoggerFactory.getLogger(CommandEncoder.class);
     private Context context;
+    private boolean hasPassword;
 
-    public SlotInfoHandler(Context context) {
-        super(context);
+    public SlotInfoHandler(Context context, boolean hasPassword) {
         this.context = context;
+        this.hasPassword = hasPassword;
     }
 
     @Override
-    public void channelRead1(ChannelHandlerContext ctx, String msg) throws Exception {
-        if ("SLOTSEND".equals(msg)) {
-            logger.info("Beginning send slot get command");
-            Channel channel = ctx.channel();
-            if (channel.isActive()) {
-                //不需要去pipeline的底部，所以直接ctx.write
-                ctx.writeAndFlush(Constant.GET_SLOT_COMMAND);
+    public void channelActive(ChannelHandlerContext ctx) throws Exception {
+        if (!hasPassword) {
+            sendSlotCommand(ctx);
+        }
+        ctx.fireChannelActive();
+    }
+
+    @Override
+    public void channelRead2(ChannelHandlerContext ctx, String msg) throws Exception {
+        if (hasPassword) {
+            if ("SLOTSEND".equals(msg)) {
+                sendSlotCommand(ctx);
+            } else {
+                parseSlotMessage(ctx, msg);
             }
         } else {
-            logger.info("Beginning slot message parse");
-            Pattern pattern = Pattern.compile(Constant.SLOT_REX, Pattern.DOTALL);
-            if (msg != null && pattern.matcher(msg).matches()) {
-                msg = msg.replace("\r", "");
-                String[] arr = msg.split("\n");
-                if (arr.length != 0) {
-                    Map<String,SlotInfo> map = new HashMap<>();
-                    Arrays.stream(arr).forEach(s -> {
-                        SlotInfo slotInfo = new SlotInfo(s);
-                        map.put(slotInfo.getId(),slotInfo);
-                    });
-                    map.forEach((k,v) -> {
-                        if (context instanceof FromContext) {
-                            FromContext fromContext = (FromContext) context;
-                            if (fromContext.getHost().equals(v.getIp()) &&
-                                    fromContext.getPort() == v.getPort()) {
-                                fromContext.setSlotInfo(v);
-                                if("master".equals(v.getFlags())){
-                                    fromContext.setSlotBegin(v.getSlotStart());
-                                    fromContext.setSlotEnd(v.getSlotEnd());
-                                }else{
-                                    fromContext.setSlotBegin(map.get(v.getMasterId()).getSlotStart());
-                                    fromContext.setSlotEnd(map.get(v.getMasterId()).getSlotEnd());
-                                }
-                                ctx.pipeline().remove(this);
-                                return;
+            parseSlotMessage(ctx, msg);
+        }
+    }
+
+    private void sendSlotCommand(ChannelHandlerContext ctx) {
+        logger.info("Beginning send slot get command");
+        Channel channel = ctx.channel();
+        if (channel.isActive()) {
+            //不需要去pipeline的底部，所以直接ctx.write
+            ctx.writeAndFlush(Constant.GET_SLOT_COMMAND);
+        }
+    }
+
+    private void parseSlotMessage(ChannelHandlerContext ctx, String msg) {
+        logger.info("Beginning slot message parse");
+        Pattern pattern = Pattern.compile(Constant.SLOT_REX, Pattern.DOTALL);
+        if (msg != null && pattern.matcher(msg).matches()) {
+            msg = msg.replace("\r", "");
+            String[] arr = msg.split("\n");
+            if (arr.length != 0) {
+                Map<String, SlotInfo> map = new HashMap<>();
+                Arrays.stream(arr).forEach(s -> {
+                    SlotInfo slotInfo = new SlotInfo(s);
+                    map.put(slotInfo.getId(), slotInfo);
+                });
+                map.forEach((k, v) -> {
+                    if (context instanceof FromContext) {
+                        FromContext fromContext = (FromContext) context;
+                        if (fromContext.getHost().equals(v.getIp()) &&
+                                fromContext.getPort() == v.getPort()) {
+                            fromContext.setSlotInfo(v);
+                            if ("master".equals(v.getFlags())) {
+                                fromContext.setSlotBegin(v.getSlotStart());
+                                fromContext.setSlotEnd(v.getSlotEnd());
+                            } else {
+                                fromContext.setSlotBegin(map.get(v.getMasterId()).getSlotStart());
+                                fromContext.setSlotEnd(map.get(v.getMasterId()).getSlotEnd());
                             }
-                        } else if (context instanceof ToContext) {
-                            ToContext toContext = (ToContext) context;
-                            if (toContext.getHost().equals(v.getIp()) &&
-                                    toContext.getPort() == v.getPort()) {
-                                toContext.setSlotInfo(v);
-                                if("master".equals(v.getFlags())){
-                                    toContext.setSlotBegin(v.getSlotStart());
-                                    toContext.setSlotEnd(v.getSlotEnd());
-                                }else{
-                                    toContext.setSlotBegin(map.get(v.getMasterId()).getSlotStart());
-                                    toContext.setSlotEnd(map.get(v.getMasterId()).getSlotEnd());
-                                }
-                                ctx.pipeline().remove(this);
-                                return;
-                            }
+                            ctx.pipeline().remove(this);
+                            return;
                         }
-                    });
-                }
+                    } else if (context instanceof ToContext) {
+                        ToContext toContext = (ToContext) context;
+                        if (toContext.getHost().equals(v.getIp()) &&
+                                toContext.getPort() == v.getPort()) {
+                            toContext.setSlotInfo(v);
+                            if ("master".equals(v.getFlags())) {
+                                toContext.setSlotBegin(v.getSlotStart());
+                                toContext.setSlotEnd(v.getSlotEnd());
+                            } else {
+                                toContext.setSlotBegin(map.get(v.getMasterId()).getSlotStart());
+                                toContext.setSlotEnd(map.get(v.getMasterId()).getSlotEnd());
+                            }
+                            ctx.pipeline().remove(this);
+                            return;
+                        }
+                    }
+                });
             }
         }
     }

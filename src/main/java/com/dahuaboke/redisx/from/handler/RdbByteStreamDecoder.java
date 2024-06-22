@@ -124,6 +124,10 @@ public class RdbByteStreamDecoder extends ChannelInboundHandlerAdapter {
                         parse(finalRdbBuf);
                         return null;
                     });
+                    future.exceptionally(e -> {
+                        logger.error("Parse rdb stream error", e);
+                        return null;
+                    });
                     while (!future.isDone()) {
                         if (!fromContext.isClose()) {
                             fromContext.ackOffset();
@@ -154,7 +158,7 @@ public class RdbByteStreamDecoder extends ChannelInboundHandlerAdapter {
         logger.debug(parser.getRdbInfo().getRdbHeader().toString());
         List<String> commands = commandParser.parser(parser.getRdbInfo().getRdbHeader());
         for (String command : commands) {
-            boolean success = fromContext.publish(command);
+            boolean success = fromContext.publish(command, null);
             if (success) {
                 logger.debug("Success rdb data [{}]", command);
             } else {
@@ -167,7 +171,7 @@ public class RdbByteStreamDecoder extends ChannelInboundHandlerAdapter {
             if (rdbData != null) {
                 if (rdbData.getDataNum() == 1) {
                     long selectDB = rdbData.getSelectDB();
-                    boolean success = fromContext.publish("select " + selectDB);
+                    boolean success = fromContext.publish("select " + selectDB, null);
                     if (success) {
                         logger.debug("Select db success [{}]", selectDB);
                     } else {
@@ -176,7 +180,7 @@ public class RdbByteStreamDecoder extends ChannelInboundHandlerAdapter {
                 }
                 commands = commandParser.parser(rdbData);
                 for (String command : commands) {
-                    boolean success = fromContext.publish(command);
+                    boolean success = fromContext.publish(command, null);
                     if (success) {
                         logger.debug("Success rdb data [{}]", command);
                     } else {

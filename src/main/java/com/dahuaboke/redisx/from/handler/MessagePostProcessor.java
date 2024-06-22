@@ -1,6 +1,5 @@
 package com.dahuaboke.redisx.from.handler;
 
-import com.dahuaboke.redisx.Context;
 import com.dahuaboke.redisx.handler.RedisChannelInboundHandler;
 import io.netty.channel.ChannelHandlerContext;
 import io.netty.handler.codec.CodecException;
@@ -16,12 +15,8 @@ public class MessagePostProcessor extends RedisChannelInboundHandler {
 
     private static final Logger logger = LoggerFactory.getLogger(MessagePostProcessor.class);
 
-    public MessagePostProcessor(Context context) {
-        super(context);
-    }
-
     @Override
-    public void channelRead1(ChannelHandlerContext ctx, String reply) {
+    protected void channelRead1(ChannelHandlerContext ctx, String[] reply) throws Exception {
         try {
             if (reply != null) {
                 ctx.fireChannelRead(reply);
@@ -29,5 +24,10 @@ public class MessagePostProcessor extends RedisChannelInboundHandler {
         } catch (CodecException e) {
             logger.error("Command cannot be parsed: {}", reply, e);
         }
+    }
+
+    @Override
+    public void channelRead2(ChannelHandlerContext ctx, String reply) throws Exception {
+        throw new RuntimeException();
     }
 }

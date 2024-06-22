@@ -25,12 +25,11 @@ public class DRHandler extends RedisChannelInboundHandler {
     }};
 
     public DRHandler(Context toContext) {
-        super(toContext);
         this.toContext = (ToContext) toContext;
     }
 
     @Override
-    public void channelRead1(ChannelHandlerContext ctx, String reply) throws Exception {
+    public void channelRead2(ChannelHandlerContext ctx, String reply) throws Exception {
         if (reply.startsWith(Constant.PROJECT_NAME)) {
             String[] split = reply.split("\\|");
             if (split.length != 4) {
@@ -51,8 +50,12 @@ public class DRHandler extends RedisChannelInboundHandler {
                             for (String nodeMessageStr : nodeMessagesSplit) {
                                 String[] messageSplit = nodeMessageStr.split("&", -1);
                                 String[] hostAndPort = messageSplit[0].split(":");
-                                toContext.setNodeMessage(hostAndPort[0],
-                                        Integer.parseInt(hostAndPort[1]), messageSplit[1], Long.parseLong(messageSplit[2]));
+                                String host = hostAndPort[0];
+                                int port = Integer.parseInt(hostAndPort[1]);
+                                String masterId = messageSplit[1];
+                                long offset = Long.parseLong(messageSplit[2]);
+                                logger.trace("Sync host [{}] port [{}] masterId [{}] offset [{}]", host, port, masterId, offset);
+                                toContext.setNodeMessage(host, port, masterId, offset);
                             }
                         }
                         //这里不用时间区间判断是因为无法保证各服务器时间相同

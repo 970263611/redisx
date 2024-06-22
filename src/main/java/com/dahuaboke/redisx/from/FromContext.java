@@ -55,9 +55,9 @@ public class FromContext extends Context {
         return port;
     }
 
-    public boolean publish(String msg) {
+    public boolean publish(String msg, Integer length) {
         if (!isConsole) {
-            return cacheManager.publish(msg);
+            return cacheManager.publish(msg, length, this);
         } else {
             if (replyQueue == null) {
                 throw new IllegalStateException("By console mode replyQueue need init");

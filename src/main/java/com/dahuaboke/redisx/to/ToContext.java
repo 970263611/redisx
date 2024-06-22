@@ -58,12 +58,8 @@ public class ToContext extends Context {
         return port;
     }
 
-    public String listen() {
-        CacheManager.CommandReference listen = cacheManager.listen(this);
-        if (listen != null) {
-            return listen.getContent();
-        }
-        return null;
+    public CacheManager.CommandReference listen() {
+        return cacheManager.listen(this);
     }
 
     public boolean callBack(String reply) {
