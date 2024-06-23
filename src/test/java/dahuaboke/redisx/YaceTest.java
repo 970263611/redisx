@@ -23,10 +23,10 @@ public class YaceTest {
     private boolean isCluster = true;
 
     //并发数
-    private int threadCount = 1;
+    private int threadCount = 30;
 
     //测试时间，秒
-    private int second = 3600;
+    private int second = 600;
 
     //是否定时清理
     private boolean flushFlag = false;

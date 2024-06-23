@@ -77,7 +77,6 @@ public class FromClient {
                             pipeline.addLast(new MessagePostProcessor());
                             pipeline.addLast(new PostDistributeHandler());
                             pipeline.addLast(new SyncCommandPublisher(fromContext));
-                            pipeline.addLast(new PingCommandDecoder());
                             pipeline.addLast(new DirtyDataHandler());
                         }
                     });

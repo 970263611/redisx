@@ -3,10 +3,12 @@ package com.dahuaboke.redisx.to;
 import com.dahuaboke.redisx.Constant;
 import com.dahuaboke.redisx.Context;
 import com.dahuaboke.redisx.cache.CacheManager;
+import com.dahuaboke.redisx.from.FromContext;
 import org.slf4j.Logger;
 import org.slf4j.LoggerFactory;
 
 import java.util.ArrayList;
+import java.util.HashMap;
 import java.util.List;
 import java.util.Map;
 import java.util.concurrent.LinkedBlockingDeque;
@@ -34,6 +36,7 @@ public class ToContext extends Context {
     private int slotBegin;
     private int slotEnd;
     private ToClient toClient;
+    private Map<FromContext, Integer> dbMap = new HashMap();
 
     public ToContext(CacheManager cacheManager, String host, int port, boolean toIsCluster, boolean isConsole) {
         this.cacheManager = cacheManager;
@@ -182,5 +185,17 @@ public class ToContext extends Context {
 
     public String getPassword() {
         return cacheManager.getToPassword();
+    }
+
+    public int getDb(FromContext fromContext) {
+        Integer db = dbMap.get(fromContext);
+        if (db == null) {
+            return -1;
+        }
+        return db;
+    }
+
+    public void setDb(FromContext fromContext, int db) {
+        dbMap.put(fromContext, db);
     }
 }

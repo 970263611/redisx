@@ -171,7 +171,7 @@ public class RdbByteStreamDecoder extends ChannelInboundHandlerAdapter {
             if (rdbData != null) {
                 if (rdbData.getDataNum() == 1) {
                     long selectDB = rdbData.getSelectDB();
-                    boolean success = fromContext.publish("select " + selectDB, null);
+                    boolean success = fromContext.publish(Constant.SELECT_PREFIX + selectDB, null);
                     if (success) {
                         logger.debug("Select db success [{}]", selectDB);
                     } else {

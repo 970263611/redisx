@@ -1,7 +1,6 @@
 package com.dahuaboke.redisx.from.handler;
 
 import com.dahuaboke.redisx.Constant;
-import com.dahuaboke.redisx.command.from.PingCommand;
 import com.dahuaboke.redisx.command.from.SyncCommand;
 import io.netty.channel.Channel;
 import io.netty.channel.ChannelHandlerContext;
@@ -23,8 +22,6 @@ public class PostDistributeHandler extends SimpleChannelInboundHandler<String[]>
         Channel channel = ctx.channel();
         if (channel.isActive() && channel.pipeline().get(Constant.INIT_SYNC_HANDLER_NAME) != null) {
             ctx.channel().attr(Constant.SYNC_REPLY).set(msg[0]);
-        } else if (Constant.PING_COMMAND.equalsIgnoreCase(msg[0])) {
-            ctx.fireChannelRead(new PingCommand());
         } else {
             ctx.fireChannelRead(new SyncCommand(msg[0], Integer.parseInt(msg[1])));
         }
