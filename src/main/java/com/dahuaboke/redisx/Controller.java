@@ -31,13 +31,14 @@ public class Controller {
             new RedisxThreadFactory(Constant.PROJECT_NAME + "-Controller"));
     private boolean toIsCluster;
     private boolean fromIsCluster;
-
     private CacheManager cacheManager;
+    private boolean idempotency;
 
-    public Controller(boolean fromIsCluster, String fromPassword, boolean toIsCluster, String toPassword) {
+    public Controller(boolean fromIsCluster, String fromPassword, boolean toIsCluster, String toPassword, boolean idempotency) {
         this.toIsCluster = toIsCluster;
         this.fromIsCluster = fromIsCluster;
         cacheManager = new CacheManager(fromIsCluster, fromPassword, toIsCluster, toPassword);
+        this.idempotency = idempotency;
     }
 
     public void start(List<InetSocketAddress> fromNodeAddresses, List<InetSocketAddress> toNodeAddresses, boolean startConsole,
@@ -75,7 +76,7 @@ public class Controller {
         toNodeAddresses.forEach(address -> {
             String host = address.getHostString();
             int port = address.getPort();
-            ToNode toNode = new ToNode("Sync", cacheManager, host, port, toIsCluster, false);
+            ToNode toNode = new ToNode("Sync", cacheManager, host, port, toIsCluster, false, idempotency);
             toNode.start();
             cacheManager.register(toNode.getContext());
         });
@@ -84,7 +85,7 @@ public class Controller {
             for (Context cont : allContexts) {
                 if (cont instanceof ToContext) {
                     ToContext toContext = (ToContext) cont;
-                    if (toContext.isAdapt(true, Constant.DR_KEY)) {
+                    if (toContext.isAdapt(toIsCluster, Constant.DR_KEY)) {
                         toContext.preemptMaster();
                     }
                 }
@@ -146,14 +147,14 @@ public class Controller {
         private int port;
         private ToContext toContext;
 
-        public ToNode(String threadNamePrefix, CacheManager cacheManager, String host, int port, boolean toIsCluster, boolean isConsole) {
+        public ToNode(String threadNamePrefix, CacheManager cacheManager, String host, int port, boolean toIsCluster, boolean isConsole, boolean idempotency) {
             this.name = Constant.PROJECT_NAME + "-" + threadNamePrefix + "-ToNode-" + host + "-" + port;
             this.setName(name);
             this.cacheManager = cacheManager;
             this.host = host;
             this.port = port;
             //放在构造方法而不是run，因为兼容console模式，需要收集context，否则可能收集到null
-            this.toContext = new ToContext(cacheManager, host, port, toIsCluster, isConsole);
+            this.toContext = new ToContext(cacheManager, host, port, toIsCluster, isConsole, idempotency);
         }
 
         @Override
@@ -231,7 +232,7 @@ public class Controller {
             toNodeAddresses.forEach(address -> {
                 String host = address.getHostString();
                 int port = address.getPort();
-                ToNode toNode = new ToNode("Console", cacheManager, host, port, toIsCluster, true);
+                ToNode toNode = new ToNode("Console", cacheManager, host, port, toIsCluster, true, idempotency);
                 consoleContext.setToContext((ToContext) toNode.getContext());
                 toNode.start();
             });

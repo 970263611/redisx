@@ -22,13 +22,7 @@ import java.util.concurrent.TimeUnit;
 public class ToContext extends Context {
 
     private static final Logger logger = LoggerFactory.getLogger(ToContext.class);
-    private static final String lua = "local v = redis.call('GET',KEYS[1]);\n" +
-            "    if v then\n" +
-            "        return v;\n" +
-            "    else\n" +
-            "        local result = redis.call('SET',KEYS[1],ARGV[1]);\n" +
-            "        return result;\n" +
-            "    end";
+    private static final String lua = "local v = redis.call('GET',KEYS[1]);\n" + "    if v then\n" + "        return v;\n" + "    else\n" + "        local result = redis.call('SET',KEYS[1],ARGV[1]);\n" + "        return result;\n" + "    end";
     private CacheManager cacheManager;
     private String host;
     private int port;
@@ -37,8 +31,9 @@ public class ToContext extends Context {
     private int slotEnd;
     private ToClient toClient;
     private Map<FromContext, Integer> dbMap = new HashMap();
+    private boolean idempotency;
 
-    public ToContext(CacheManager cacheManager, String host, int port, boolean toIsCluster, boolean isConsole) {
+    public ToContext(CacheManager cacheManager, String host, int port, boolean toIsCluster, boolean isConsole, boolean idempotency) {
         this.cacheManager = cacheManager;
         this.host = host;
         this.port = port;
@@ -47,6 +42,7 @@ public class ToContext extends Context {
         if (isConsole) {
             replyQueue = new LinkedBlockingDeque();
         }
+        this.idempotency = idempotency;
     }
 
     public String getId() {
@@ -94,6 +90,10 @@ public class ToContext extends Context {
 
     @Override
     public String sendCommand(Object command, int timeout) {
+        return sendCommand(command, timeout, false);
+    }
+
+    public String sendCommand(Object command, int timeout, boolean unCheck) {
         if (isConsole) {
             if (replyQueue == null) {
                 throw new IllegalStateException("By console mode replyQueue need init");
@@ -107,8 +107,21 @@ public class ToContext extends Context {
                 }
             }
         } else {
-            toClient.sendCommand(command);
-            return null;
+            if (unCheck) {
+                toClient.sendCommand(command);
+                return null;
+            } else {
+                List<Context> allContexts = cacheManager.getAllContexts();
+                for (Context context : allContexts) {
+                    if (context instanceof ToContext && command instanceof String) {
+                        ToContext toContext = (ToContext) context;
+                        if (toContext.isAdapt(toIsCluster, (String) command)) {
+                            return toContext.sendCommand(command, 1000, true);
+                        }
+                    }
+                }
+                throw new IllegalArgumentException(String.valueOf(command));
+            }
         }
     }
 
@@ -157,11 +170,15 @@ public class ToContext extends Context {
             add(Constant.DR_KEY);
             add(preemptMasterCommand());
         }};
-        this.sendCommand(commands, 1000);
+        this.sendCommand(commands, 1000, true);
     }
 
     public void preemptMasterCompulsory() {
-        this.sendCommand("set " + Constant.DR_KEY + " " + preemptMasterCommand(), 1000);
+        this.sendCommand(buildPreemptMasterCompulsoryCommand(), 1000);
+    }
+
+    public String buildPreemptMasterCompulsoryCommand() {
+        return "set " + Constant.DR_KEY + " " + preemptMasterCommand();
     }
 
     private String preemptMasterCommand() {
@@ -197,5 +214,9 @@ public class ToContext extends Context {
 
     public void setDb(FromContext fromContext, int db) {
         dbMap.put(fromContext, db);
+    }
+
+    public boolean isIdempotency() {
+        return idempotency;
     }
 }

@@ -10,7 +10,7 @@ public class Redisx {
 
     public static void main(String[] args) {
         Config config = YamlUtil.parseYamlParam();
-        Controller controller = new Controller(config.fromIsCluster(), config.getFromPassword(), config.toIsCluster(), config.getToPassword());
+        Controller controller = new Controller(config.fromIsCluster(), config.getFromPassword(), config.toIsCluster(), config.getToPassword(), config.isIdempotency());
         controller.start(config.getFromAddresses(), config.getToAddresses(), config.consoleEnable(),
                 config.getConsolePort(), config.getConsoleTimeout());
     }
@@ -19,12 +19,14 @@ public class Redisx {
         private From from;
         private To to;
         private Console console;
+        private boolean idempotency;
 
         public Config(boolean fromIsCluster, String fromPassword, List<InetSocketAddress> fromAddresses, boolean toIsCluster, String toPassword,
-                      List<InetSocketAddress> toAddresses, boolean consoleEnable, int consolePort, int consoleTimeout) {
+                      List<InetSocketAddress> toAddresses, boolean consoleEnable, int consolePort, int consoleTimeout, boolean idempotency) {
             this.from = new From(fromIsCluster, fromAddresses, fromPassword);
             this.to = new To(toIsCluster, toAddresses, toPassword);
             this.console = new Console(consoleEnable, consolePort, consoleTimeout);
+            this.idempotency = idempotency;
         }
 
         public boolean fromIsCluster() {
@@ -61,6 +63,10 @@ public class Redisx {
 
         public String getToPassword() {
             return this.to.password;
+        }
+
+        public boolean isIdempotency() {
+            return idempotency;
         }
 
         private static class From {

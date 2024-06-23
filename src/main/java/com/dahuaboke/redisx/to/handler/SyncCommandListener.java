@@ -42,33 +42,15 @@ public class SyncCommandListener extends RedisChannelInboundHandler {
                             changeDb = true;
                             logger.debug("Write change db command success [{}]", changeDbCommand);
                         }
-                        String command = reference.getContent();
-                        ctx.writeAndFlush(command);
                         Integer length = reference.getLength();
-                        if (length != null) {
-                            int pingSize = reference.getPingSize();
-                            if (pingSize > 0) {
-                                //ping指令固定14字节*1\r\n$4\r\nping\r\n
-                                offset += pingSize * 14L;
-                                logger.debug("Update offset because receive ping command size [{}], new offset [{}]", pingSize, offset);
-                            }
-                            if (changeDb) {
-                                if (fromDb > 9) {
-                                    //*2\r\n$6\r\nselect\r\n$2\r\nxx\r\n
-                                    offset += 24;
-                                } else {
-                                    //*2\r\n$6\r\nselect\r\n$1\r\nx\r\n
-                                    offset += 23;
-                                }
-                                logger.debug("Update offset because db change db index [{}], new offset [{}]", offset, fromDb);
-                            }
-                            long newOffset = offset + length;
-                            fromContext.setOffset(newOffset);
-                            logger.debug("Write command success [{}] length [{}], before offset [{}] new offset [{}]", command, length, offset, newOffset);
+                        String command = reference.getContent();
+                        if (toContext.isIdempotency()) { //强一致模式
+                            updateOffset(length, reference, offset, changeDb, fromDb, fromContext, command);
+                            ctx.writeAndFlush(command);
+                            toContext.preemptMasterCompulsory();
                         } else {
-                            //rdb的切库指令不需要添加offset，避免rdb切库后正常切库指令无法添加offset（库号一致），这里设置成-2
-                            toContext.setDb(fromContext, -2);
-                            logger.debug("Write command success [{}], offset are not calculated, offset [{}]", command, offset);
+                            ctx.writeAndFlush(command);
+                            updateOffset(length, reference, offset, changeDb, fromDb, fromContext, command);
                         }
                     }
                 }
@@ -82,5 +64,33 @@ public class SyncCommandListener extends RedisChannelInboundHandler {
     public void channelRead2(ChannelHandlerContext ctx, String reply) throws Exception {
         logger.debug("Receive redis reply [{}]", reply);
         toContext.callBack(reply);
+    }
+
+    private void updateOffset(Integer length, CacheManager.CommandReference reference, long offset, boolean changeDb, int fromDb, FromContext fromContext, String command) {
+        if (length != null) {
+            int pingSize = reference.getPingSize();
+            if (pingSize > 0) {
+                //ping指令固定14字节*1\r\n$4\r\nping\r\n
+                offset += pingSize * 14L;
+                logger.debug("Update offset because receive ping command size [{}], new offset [{}]", pingSize, offset);
+            }
+            if (changeDb) {
+                if (fromDb > 9) {
+                    //*2\r\n$6\r\nselect\r\n$2\r\nxx\r\n
+                    offset += 24;
+                } else {
+                    //*2\r\n$6\r\nselect\r\n$1\r\nx\r\n
+                    offset += 23;
+                }
+                logger.debug("Update offset because db change db index [{}], new offset [{}]", offset, fromDb);
+            }
+            long newOffset = offset + length;
+            fromContext.setOffset(newOffset);
+            logger.debug("Write command success [{}] length [{}], before offset [{}] new offset [{}]", command, length, offset, newOffset);
+        } else {
+            //rdb的切库指令不需要添加offset，避免rdb切库后正常切库指令无法添加offset（库号一致），这里设置成-2
+            toContext.setDb(fromContext, -2);
+            logger.debug("Write command success [{}], offset are not calculated, offset [{}]", command, offset);
+        }
     }
 }
