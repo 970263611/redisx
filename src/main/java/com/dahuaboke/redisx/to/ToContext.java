@@ -26,18 +26,17 @@ public class ToContext extends Context {
     private CacheManager cacheManager;
     private String host;
     private int port;
-    private boolean toIsCluster;
     private int slotBegin;
     private int slotEnd;
     private ToClient toClient;
     private Map<FromContext, Integer> dbMap = new HashMap();
     private boolean idempotency;
 
-    public ToContext(CacheManager cacheManager, String host, int port, boolean toIsCluster, boolean isConsole, boolean idempotency) {
+    public ToContext(CacheManager cacheManager, String host, int port, boolean fromIsCluster, boolean toIsCluster, boolean isConsole, boolean idempotency) {
+        super(fromIsCluster, toIsCluster);
         this.cacheManager = cacheManager;
         this.host = host;
         this.port = port;
-        this.toIsCluster = toIsCluster;
         this.isConsole = isConsole;
         if (isConsole) {
             replyQueue = new LinkedBlockingDeque();
@@ -135,10 +134,6 @@ public class ToContext extends Context {
 
     public void setClient(ToClient toClient) {
         this.toClient = toClient;
-    }
-
-    public boolean isToIsCluster() {
-        return toIsCluster;
     }
 
     public void close() {

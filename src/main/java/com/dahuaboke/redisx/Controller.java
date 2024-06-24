@@ -154,7 +154,7 @@ public class Controller {
             this.host = host;
             this.port = port;
             //放在构造方法而不是run，因为兼容console模式，需要收集context，否则可能收集到null
-            this.toContext = new ToContext(cacheManager, host, port, toIsCluster, isConsole, idempotency);
+            this.toContext = new ToContext(cacheManager, host, port, fromIsCluster, toIsCluster, isConsole, idempotency);
         }
 
         @Override
@@ -188,7 +188,7 @@ public class Controller {
             this.host = host;
             this.port = port;
             //放在构造方法而不是run，因为兼容console模式，需要收集console，否则可能收集到null
-            this.fromContext = new FromContext(cacheManager, host, port, isConsole, masterIsCluster);
+            this.fromContext = new FromContext(cacheManager, host, port, isConsole, masterIsCluster, toIsCluster);
         }
 
         @Override

@@ -20,6 +20,13 @@ public class Context {
     protected SlotInfoHandler.SlotInfo slotInfo;
     protected boolean isClose = false;
     protected boolean isConsole;
+    protected boolean toIsCluster;
+    protected boolean fromIsCluster;
+
+    public Context(boolean fromIsCluster, boolean toIsCluster) {
+        this.fromIsCluster = fromIsCluster;
+        this.toIsCluster = toIsCluster;
+    }
 
     public boolean isAdapt(boolean isCluster, String command) {
         return false;
@@ -48,5 +55,13 @@ public class Context {
 
     public void setClose(boolean close) {
         isClose = close;
+    }
+
+    public boolean isToIsCluster() {
+        return toIsCluster;
+    }
+
+    public boolean isFromIsCluster() {
+        return fromIsCluster;
     }
 }

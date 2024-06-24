@@ -27,6 +27,7 @@ public class ConsoleContext extends Context {
     private volatile int contextSize;
 
     public ConsoleContext(String host, int port, int timeout, boolean toIsCluster, boolean fromIsCluster) {
+        super(fromIsCluster, toIsCluster);
         this.host = host;
         this.port = port;
         this.timeout = timeout;

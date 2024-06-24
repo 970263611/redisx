@@ -29,12 +29,10 @@ public class FromContext extends Context {
     private int slotEnd;
     private FromClient fromClient;
     private boolean isConsole;
-    private boolean fromIsCluster;
     private boolean rdbAckOffset = false;
-    private int db = -1;
-    private int pingSize = 0;
 
-    public FromContext(CacheManager cacheManager, String host, int port, boolean isConsole, boolean fromIsCluster) {
+    public FromContext(CacheManager cacheManager, String host, int port, boolean isConsole, boolean fromIsCluster, boolean toIsCluster) {
+        super(fromIsCluster, toIsCluster);
         this.cacheManager = cacheManager;
         this.host = host;
         this.port = port;
@@ -42,7 +40,6 @@ public class FromContext extends Context {
         if (isConsole) {
             replyQueue = new LinkedBlockingDeque();
         }
-        this.fromIsCluster = fromIsCluster;
     }
 
     public String getId() {
@@ -59,26 +56,7 @@ public class FromContext extends Context {
 
     public boolean publish(String msg, Integer length) {
         if (!isConsole) {
-            if (msg.toUpperCase().startsWith(Constant.SELECT_PREFIX)) {
-                String dbStr = msg.substring(Constant.SELECT_PREFIX.length());
-                try {
-                    setDb(Integer.parseInt(dbStr));
-                    logger.debug("Change db to [{}]", dbStr);
-                } catch (NumberFormatException e) {
-                    return false;
-                }
-                return true;
-            } else if (msg.equalsIgnoreCase(Constant.PING_COMMAND)) {
-                pingSize++;
-                logger.trace("Receive ping command, having ping size [{}]", pingSize);
-                return true;
-            } else {
-                boolean successPublish = cacheManager.publish(msg, length, this, pingSize);
-                if (pingSize > 0) {
-                    clearPingSize();
-                }
-                return successPublish;
-            }
+            return cacheManager.publish(msg, length, this);
         } else {
             if (replyQueue == null) {
                 throw new IllegalStateException("By console mode replyQueue need init");
@@ -128,10 +106,6 @@ public class FromContext extends Context {
 
     public void setSlotEnd(int slotEnd) {
         this.slotEnd = slotEnd;
-    }
-
-    public boolean isFromIsCluster() {
-        return fromIsCluster;
     }
 
     @Override
@@ -195,17 +169,5 @@ public class FromContext extends Context {
 
     public String getPassword() {
         return cacheManager.getFromPassword();
-    }
-
-    public int getDb() {
-        return db;
-    }
-
-    public void setDb(int db) {
-        this.db = db;
-    }
-
-    public void clearPingSize() {
-        this.pingSize = 0;
     }
 }

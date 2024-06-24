@@ -88,11 +88,7 @@ public final class CacheManager {
      * @return
      */
     public boolean publish(String command, Integer length, FromContext fromContext) {
-        return publish(command, length, fromContext, 0);
-    }
-
-    public boolean publish(String command, Integer length, FromContext fromContext, int pingSize) {
-        return publish(new CommandReference(command, length, fromContext, pingSize));
+        return publish(new CommandReference(command, length, fromContext));
     }
 
     public boolean publish(CommandReference commandReference) {
@@ -192,13 +188,11 @@ public final class CacheManager {
         private String content;
         private Integer length;
         private FromContext fromContext;
-        private int pingSize;
 
-        public CommandReference(String content, Integer length, FromContext fromContext, int pingSize) {
+        public CommandReference(String content, Integer length, FromContext fromContext) {
             this.content = content;
             this.length = length;
             this.fromContext = fromContext;
-            this.pingSize = pingSize;
         }
 
         public String getContent() {
@@ -211,10 +205,6 @@ public final class CacheManager {
 
         public FromContext getFromContext() {
             return fromContext;
-        }
-
-        public int getPingSize() {
-            return pingSize;
         }
     }
 }
