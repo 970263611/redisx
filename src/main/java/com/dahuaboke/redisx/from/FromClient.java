@@ -97,6 +97,7 @@ public class FromClient {
             logger.info("From start at [{}:{}]", masterHost, masterPort);
             channel.closeFuture().addListener((ChannelFutureListener) future -> {
                 fromContext.setClose(true);
+                fromContext.unRegister();
             }).sync();
         } catch (InterruptedException e) {
             logger.error("Connect to [{}:{}] exception", masterHost, masterPort, e);
@@ -116,7 +117,6 @@ public class FromClient {
      * 销毁方法
      */
     public void destroy() {
-        fromContext.setClose(true);
         if (channel != null) {
             String masterHost = fromContext.getHost();
             int masterPort = fromContext.getPort();

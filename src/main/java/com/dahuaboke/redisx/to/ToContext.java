@@ -138,7 +138,6 @@ public class ToContext extends Context {
 
     public void close() {
         this.toClient.destroy();
-        cacheManager.remove(this);
     }
 
     public void isMaster(boolean isMaster) {
@@ -222,5 +221,9 @@ public class ToContext extends Context {
 
     public int getSlotEnd() {
         return slotEnd;
+    }
+
+    public void unRegister() {
+        cacheManager.remove(this);
     }
 }

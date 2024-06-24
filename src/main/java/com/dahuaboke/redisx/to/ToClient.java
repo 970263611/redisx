@@ -86,7 +86,10 @@ public class ToClient {
                 flag.countDown();
             });
             channel = sync.channel();
-            channel.closeFuture().addListener((ChannelFutureListener) future -> toContext.setClose(true)).sync();
+            channel.closeFuture().addListener((ChannelFutureListener) future -> {
+                toContext.setClose(true);
+                toContext.unRegister();
+            }).sync();
         } catch (InterruptedException e) {
             logger.error("Connect to {{}:{}] exception", host, port, e);
         } finally {
@@ -105,7 +108,6 @@ public class ToClient {
      * 销毁方法
      */
     public void destroy() {
-        toContext.setClose(true);
         if (channel != null) {
             String host = toContext.getHost();
             int port = toContext.getPort();

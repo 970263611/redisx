@@ -127,7 +127,6 @@ public class FromContext extends Context {
 
     public void close() {
         this.fromClient.destroy();
-        cacheManager.remove(this);
     }
 
     public long getOffset() {
@@ -175,5 +174,9 @@ public class FromContext extends Context {
 
     public boolean isAlwaysFullSync() {
         return alwaysFullSync;
+    }
+
+    public void unRegister() {
+        cacheManager.remove(this);
     }
 }

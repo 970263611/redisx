@@ -11,6 +11,7 @@ import com.dahuaboke.redisx.to.ToContext;
 import io.netty.util.concurrent.ThreadPerTaskExecutor;
 import org.slf4j.Logger;
 import org.slf4j.LoggerFactory;
+import org.slf4j.MDC;
 
 import java.net.InetSocketAddress;
 import java.util.List;
@@ -34,8 +35,8 @@ public class Controller {
     public Controller(boolean fromIsCluster, String fromPassword, boolean toIsCluster, String toPassword, boolean immediate) {
         this.toIsCluster = toIsCluster;
         this.fromIsCluster = fromIsCluster;
-        cacheManager = new CacheManager(fromIsCluster, fromPassword, toIsCluster, toPassword);
         this.immediate = immediate;
+        cacheManager = new CacheManager(fromIsCluster, fromPassword, toIsCluster, toPassword);
     }
 
     public void start(List<InetSocketAddress> fromNodeAddresses, List<InetSocketAddress> toNodeAddresses, boolean startConsole,
@@ -69,6 +70,7 @@ public class Controller {
                     break;
                 }
             }
+            logger.info("Application exit success");
         });
         shutdownHookThread.setName(Constant.PROJECT_NAME + "-ShutdownHook");
         Runtime.getRuntime().addShutdownHook(shutdownHookThread);
