@@ -68,6 +68,8 @@ public class DRHandler extends RedisChannelInboundHandler {
                     }
                 }
             }
+        } else {
+            ctx.fireChannelRead(reply);
         }
     }
 

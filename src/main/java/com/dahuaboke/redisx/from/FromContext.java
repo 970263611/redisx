@@ -30,8 +30,9 @@ public class FromContext extends Context {
     private FromClient fromClient;
     private boolean isConsole;
     private boolean rdbAckOffset = false;
+    private boolean alwaysFullSync;
 
-    public FromContext(CacheManager cacheManager, String host, int port, boolean isConsole, boolean fromIsCluster, boolean toIsCluster) {
+    public FromContext(CacheManager cacheManager, String host, int port, boolean isConsole, boolean fromIsCluster, boolean toIsCluster, boolean alwaysFullSync) {
         super(fromIsCluster, toIsCluster);
         this.cacheManager = cacheManager;
         this.host = host;
@@ -40,6 +41,7 @@ public class FromContext extends Context {
         if (isConsole) {
             replyQueue = new LinkedBlockingDeque();
         }
+        this.alwaysFullSync = alwaysFullSync;
     }
 
     public String getId() {
@@ -169,5 +171,9 @@ public class FromContext extends Context {
 
     public String getPassword() {
         return cacheManager.getFromPassword();
+    }
+
+    public boolean isAlwaysFullSync() {
+        return alwaysFullSync;
     }
 }

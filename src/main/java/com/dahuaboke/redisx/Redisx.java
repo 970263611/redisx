@@ -10,23 +10,25 @@ public class Redisx {
 
     public static void main(String[] args) {
         Config config = YamlUtil.parseYamlParam();
-        Controller controller = new Controller(config.fromIsCluster(), config.getFromPassword(), config.toIsCluster(), config.getToPassword(), config.isIdempotency());
+        Controller controller = new Controller(config.fromIsCluster(), config.getFromPassword(), config.toIsCluster(), config.getToPassword(), config.isImmediate());
         controller.start(config.getFromAddresses(), config.getToAddresses(), config.consoleEnable(),
-                config.getConsolePort(), config.getConsoleTimeout());
+                config.getConsolePort(), config.getConsoleTimeout(), config.isAlwaysFullSync());
     }
 
     public static class Config {
         private From from;
         private To to;
         private Console console;
-        private boolean idempotency;
+        private boolean immediate;
+        private boolean alwaysFullSync;
 
         public Config(boolean fromIsCluster, String fromPassword, List<InetSocketAddress> fromAddresses, boolean toIsCluster, String toPassword,
-                      List<InetSocketAddress> toAddresses, boolean consoleEnable, int consolePort, int consoleTimeout, boolean idempotency) {
+                      List<InetSocketAddress> toAddresses, boolean consoleEnable, int consolePort, int consoleTimeout, boolean immediate, boolean alwaysFullSync) {
             this.from = new From(fromIsCluster, fromAddresses, fromPassword);
             this.to = new To(toIsCluster, toAddresses, toPassword);
             this.console = new Console(consoleEnable, consolePort, consoleTimeout);
-            this.idempotency = idempotency;
+            this.immediate = immediate;
+            this.alwaysFullSync = alwaysFullSync;
         }
 
         public boolean fromIsCluster() {
@@ -65,8 +67,12 @@ public class Redisx {
             return this.to.password;
         }
 
-        public boolean isIdempotency() {
-            return idempotency;
+        public boolean isImmediate() {
+            return immediate;
+        }
+
+        public boolean isAlwaysFullSync() {
+            return alwaysFullSync;
         }
 
         private static class From {

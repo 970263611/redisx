@@ -64,4 +64,8 @@ public class Context {
     public boolean isFromIsCluster() {
         return fromIsCluster;
     }
+
+    public boolean isConsole() {
+        return isConsole;
+    }
 }

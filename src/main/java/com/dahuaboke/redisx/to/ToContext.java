@@ -30,9 +30,9 @@ public class ToContext extends Context {
     private int slotEnd;
     private ToClient toClient;
     private Map<FromContext, Integer> dbMap = new HashMap();
-    private boolean idempotency;
+    private boolean immediate;
 
-    public ToContext(CacheManager cacheManager, String host, int port, boolean fromIsCluster, boolean toIsCluster, boolean isConsole, boolean idempotency) {
+    public ToContext(CacheManager cacheManager, String host, int port, boolean fromIsCluster, boolean toIsCluster, boolean isConsole, boolean immediate) {
         super(fromIsCluster, toIsCluster);
         this.cacheManager = cacheManager;
         this.host = host;
@@ -41,7 +41,7 @@ public class ToContext extends Context {
         if (isConsole) {
             replyQueue = new LinkedBlockingDeque();
         }
-        this.idempotency = idempotency;
+        this.immediate = immediate;
     }
 
     public String getId() {
@@ -211,7 +211,7 @@ public class ToContext extends Context {
         dbMap.put(fromContext, db);
     }
 
-    public boolean isIdempotency() {
-        return idempotency;
+    public boolean isImmediate() {
+        return immediate;
     }
 }

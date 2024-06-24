@@ -32,17 +32,17 @@ public class Controller {
     private boolean toIsCluster;
     private boolean fromIsCluster;
     private CacheManager cacheManager;
-    private boolean idempotency;
+    private boolean immediate;
 
-    public Controller(boolean fromIsCluster, String fromPassword, boolean toIsCluster, String toPassword, boolean idempotency) {
+    public Controller(boolean fromIsCluster, String fromPassword, boolean toIsCluster, String toPassword, boolean immediate) {
         this.toIsCluster = toIsCluster;
         this.fromIsCluster = fromIsCluster;
         cacheManager = new CacheManager(fromIsCluster, fromPassword, toIsCluster, toPassword);
-        this.idempotency = idempotency;
+        this.immediate = immediate;
     }
 
     public void start(List<InetSocketAddress> fromNodeAddresses, List<InetSocketAddress> toNodeAddresses, boolean startConsole,
-                      int consolePort, int consoleTimeout) {
+                      int consolePort, int consoleTimeout, boolean alwaysFullSync) {
         logger.info("Application global id is {}", cacheManager.getId());
         Thread shutdownHookThread = new Thread(() -> {
             logger.info("Shutdown hook thread is starting");
@@ -76,7 +76,7 @@ public class Controller {
         toNodeAddresses.forEach(address -> {
             String host = address.getHostString();
             int port = address.getPort();
-            ToNode toNode = new ToNode("Sync", cacheManager, host, port, toIsCluster, false, idempotency);
+            ToNode toNode = new ToNode("Sync", cacheManager, host, port, toIsCluster, false, immediate);
             toNode.start();
             cacheManager.register(toNode.getContext());
         });
@@ -97,7 +97,7 @@ public class Controller {
                 fromNodeAddresses.forEach(address -> {
                     String host = address.getHostString();
                     int port = address.getPort();
-                    FromNode fromNode = new FromNode("Sync", cacheManager, host, port, false, fromIsCluster);
+                    FromNode fromNode = new FromNode("Sync", cacheManager, host, port, false, alwaysFullSync);
                     fromNode.start();
                     cacheManager.register(fromNode.getContext());
                 });
@@ -147,14 +147,14 @@ public class Controller {
         private int port;
         private ToContext toContext;
 
-        public ToNode(String threadNamePrefix, CacheManager cacheManager, String host, int port, boolean toIsCluster, boolean isConsole, boolean idempotency) {
+        public ToNode(String threadNamePrefix, CacheManager cacheManager, String host, int port, boolean toIsCluster, boolean isConsole, boolean immediate) {
             this.name = Constant.PROJECT_NAME + "-" + threadNamePrefix + "-ToNode-" + host + "-" + port;
             this.setName(name);
             this.cacheManager = cacheManager;
             this.host = host;
             this.port = port;
             //放在构造方法而不是run，因为兼容console模式，需要收集context，否则可能收集到null
-            this.toContext = new ToContext(cacheManager, host, port, fromIsCluster, toIsCluster, isConsole, idempotency);
+            this.toContext = new ToContext(cacheManager, host, port, fromIsCluster, toIsCluster, isConsole, immediate);
         }
 
         @Override
@@ -182,13 +182,13 @@ public class Controller {
         private int port;
         private FromContext fromContext;
 
-        public FromNode(String threadNamePrefix, CacheManager cacheManager, String host, int port, boolean isConsole, boolean masterIsCluster) {
+        public FromNode(String threadNamePrefix, CacheManager cacheManager, String host, int port, boolean isConsole, boolean alwaysFullSync) {
             this.name = Constant.PROJECT_NAME + "-" + threadNamePrefix + "-FromNode - " + host + " - " + port;
             this.setName(name);
             this.host = host;
             this.port = port;
             //放在构造方法而不是run，因为兼容console模式，需要收集console，否则可能收集到null
-            this.fromContext = new FromContext(cacheManager, host, port, isConsole, masterIsCluster, toIsCluster);
+            this.fromContext = new FromContext(cacheManager, host, port, isConsole, fromIsCluster, toIsCluster, alwaysFullSync);
         }
 
         @Override
@@ -232,14 +232,14 @@ public class Controller {
             toNodeAddresses.forEach(address -> {
                 String host = address.getHostString();
                 int port = address.getPort();
-                ToNode toNode = new ToNode("Console", cacheManager, host, port, toIsCluster, true, idempotency);
+                ToNode toNode = new ToNode("Console", cacheManager, host, port, toIsCluster, true, immediate);
                 consoleContext.setToContext((ToContext) toNode.getContext());
                 toNode.start();
             });
             fromNodeAddresses.forEach(address -> {
                 String host = address.getHostString();
                 int port = address.getPort();
-                FromNode fromNode = new FromNode("Console", cacheManager, host, port, true, fromIsCluster);
+                FromNode fromNode = new FromNode("Console", cacheManager, host, port, false, true);
                 consoleContext.setFromContext((FromContext) fromNode.getContext());
                 fromNode.start();
             });

@@ -6,6 +6,7 @@ import com.dahuaboke.redisx.cache.CacheManager;
 import com.dahuaboke.redisx.from.FromContext;
 import com.dahuaboke.redisx.handler.RedisChannelInboundHandler;
 import com.dahuaboke.redisx.to.ToContext;
+import io.netty.channel.ChannelFutureListener;
 import io.netty.channel.ChannelHandlerContext;
 import org.slf4j.Logger;
 import org.slf4j.LoggerFactory;
@@ -36,9 +37,20 @@ public class SyncCommandListener extends RedisChannelInboundHandler {
                         long offset = fromContext.getOffset();
                         Integer length = reference.getLength();
                         String command = reference.getContent();
-                        ctx.writeAndFlush(command);
-                        updateOffset(length, offset, fromContext, command);
-                        if (toContext.isIdempotency()) { //强一致模式
+                        if (length != null) {
+                            offset += length;
+                            fromContext.setOffset(offset);
+                        }
+                        long finalOffset = offset;
+                        ctx.writeAndFlush(command).addListener((ChannelFutureListener) future -> {
+                            boolean success = future.isSuccess();
+                            if (!success) {
+                                logger.error("Write command error [{}]", future.cause());
+                            } else {
+                                logger.debug("Write command success [{}] length [{}], now offset [{}]", command, length, finalOffset);
+                            }
+                        });
+                        if (toContext.isImmediate()) { //强一致模式
                             toContext.preemptMasterCompulsory();
                         }
                     }
@@ -51,15 +63,13 @@ public class SyncCommandListener extends RedisChannelInboundHandler {
 
     @Override
     public void channelRead2(ChannelHandlerContext ctx, String reply) throws Exception {
-        logger.debug("Receive redis reply [{}]", reply);
-        toContext.callBack(reply);
-    }
-
-    private void updateOffset(Integer length, long offset, FromContext fromContext, String command) {
-        if (length != null) {
-            long newOffset = offset + length;
-            fromContext.setOffset(newOffset);
-            logger.debug("Write command success [{}] length [{}], before offset [{}] new offset [{}]", command, length, offset, newOffset);
+        if (reply.startsWith(Constant.ERROR_REPLY_PREFIX)) {
+            logger.debug("Receive redis error reply [{}]", reply);
+        } else {
+            logger.debug("Receive redis reply [{}]", reply);
+        }
+        if (toContext.isConsole()) {
+            toContext.callBack(reply);
         }
     }
 }

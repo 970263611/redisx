@@ -75,11 +75,15 @@ public class SyncInitializationHandler extends ChannelInboundHandlerAdapter {
                                 state = SENT_PSYNC;
                                 CacheManager.NodeMessage nodeMessage = fromContext.getNodeMessage();
                                 String command = Constant.CONFIG_PSYNC_COMMAND;
-                                if (nodeMessage == null || nodeMessage.getMasterId() == null) {
+                                if (fromContext.isAlwaysFullSync()) {
                                     command += "? -1";
                                 } else {
-                                    //从offset的下一位开始获取（包含）
-                                    command += nodeMessage.getMasterId() + " " + (nodeMessage.getOffset() + 1);
+                                    if (nodeMessage == null || nodeMessage.getMasterId() == null) {
+                                        command += "? -1";
+                                    } else {
+                                        //从offset的下一位开始获取（包含）
+                                        command += nodeMessage.getMasterId() + " " + (nodeMessage.getOffset() + 1);
+                                    }
                                 }
                                 channel.writeAndFlush(command);
                                 logger.debug("Sent " + command + " command");

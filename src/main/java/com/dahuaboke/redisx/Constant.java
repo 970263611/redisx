@@ -72,7 +72,10 @@ public class Constant {
     public static final String CONFIG_FILE_NAME = "redisx.yml";
 
     public static final String SELECT_PREFIX = "SELECT ";
+
     public static final String SELECT = "SELECT";
+
+    public static final String ERROR_REPLY_PREFIX = "ERROR:";
 
 
     //RDB
