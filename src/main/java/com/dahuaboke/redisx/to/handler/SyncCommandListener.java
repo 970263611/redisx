@@ -4,10 +4,10 @@ import com.dahuaboke.redisx.Constant;
 import com.dahuaboke.redisx.Context;
 import com.dahuaboke.redisx.cache.CacheManager;
 import com.dahuaboke.redisx.from.FromContext;
-import com.dahuaboke.redisx.handler.RedisChannelInboundHandler;
 import com.dahuaboke.redisx.to.ToContext;
 import io.netty.channel.ChannelFutureListener;
 import io.netty.channel.ChannelHandlerContext;
+import io.netty.channel.ChannelInboundHandlerAdapter;
 import org.slf4j.Logger;
 import org.slf4j.LoggerFactory;
 
@@ -16,13 +16,12 @@ import org.slf4j.LoggerFactory;
  * auth: dahua
  * desc:
  */
-public class SyncCommandListener extends RedisChannelInboundHandler {
+public class SyncCommandListener extends ChannelInboundHandlerAdapter {
 
     private static final Logger logger = LoggerFactory.getLogger(SyncCommandListener.class);
     private ToContext toContext;
 
     public SyncCommandListener(Context toContext) {
-        super(toContext);
         this.toContext = (ToContext) toContext;
     }
 
@@ -59,17 +58,5 @@ public class SyncCommandListener extends RedisChannelInboundHandler {
         });
         thread.setName(Constant.PROJECT_NAME + "-To-Writer-" + toContext.getHost() + ":" + toContext.getPort());
         thread.start();
-    }
-
-    @Override
-    public void channelRead2(ChannelHandlerContext ctx, String reply) throws Exception {
-        if (reply.startsWith(Constant.ERROR_REPLY_PREFIX)) {
-            logger.debug("Receive redis error reply [{}]", reply);
-        } else {
-            logger.debug("Receive redis reply [{}]", reply);
-        }
-        if (toContext.isConsole()) {
-            toContext.callBack(reply);
-        }
     }
 }

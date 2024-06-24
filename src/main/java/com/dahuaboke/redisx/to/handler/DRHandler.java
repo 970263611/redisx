@@ -69,7 +69,14 @@ public class DRHandler extends RedisChannelInboundHandler {
                 }
             }
         } else {
-            ctx.fireChannelRead(reply);
+            if (reply.startsWith(Constant.ERROR_REPLY_PREFIX)) {
+                logger.debug("Receive redis error reply [{}]", reply);
+            } else {
+                logger.debug("Receive redis reply [{}]", reply);
+            }
+            if (toContext.isConsole()) {
+                toContext.callBack(reply);
+            }
         }
     }
 
