@@ -20,9 +20,6 @@ public abstract class RedisChannelInboundHandler extends SimpleChannelInboundHan
     private static final Logger logger = LoggerFactory.getLogger(RedisChannelInboundHandler.class);
     private Context context;
 
-    public RedisChannelInboundHandler() {
-    }
-
     public RedisChannelInboundHandler(Context context) {
         this.context = context;
     }

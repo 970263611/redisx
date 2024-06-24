@@ -27,6 +27,7 @@ public class SlotInfoHandler extends RedisChannelInboundHandler {
     private boolean hasPassword;
 
     public SlotInfoHandler(Context context, boolean hasPassword) {
+        super(context);
         this.context = context;
         this.hasPassword = hasPassword;
     }

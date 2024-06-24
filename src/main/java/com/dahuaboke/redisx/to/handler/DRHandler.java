@@ -25,6 +25,7 @@ public class DRHandler extends RedisChannelInboundHandler {
     }};
 
     public DRHandler(Context toContext) {
+        super(toContext);
         this.toContext = (ToContext) toContext;
     }
 

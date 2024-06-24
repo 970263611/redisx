@@ -21,6 +21,7 @@ public class SyncCommandListener extends RedisChannelInboundHandler {
     private ToContext toContext;
 
     public SyncCommandListener(Context toContext) {
+        super(toContext);
         this.toContext = (ToContext) toContext;
     }
 

@@ -1,5 +1,6 @@
 package com.dahuaboke.redisx.from.handler;
 
+import com.dahuaboke.redisx.Context;
 import com.dahuaboke.redisx.handler.RedisChannelInboundHandler;
 import io.netty.channel.ChannelHandlerContext;
 import io.netty.handler.codec.CodecException;
@@ -14,6 +15,10 @@ import org.slf4j.LoggerFactory;
 public class MessagePostProcessor extends RedisChannelInboundHandler {
 
     private static final Logger logger = LoggerFactory.getLogger(MessagePostProcessor.class);
+
+    public MessagePostProcessor(Context context) {
+        super(context);
+    }
 
     @Override
     protected void channelRead1(ChannelHandlerContext ctx, String[] reply) throws Exception {
