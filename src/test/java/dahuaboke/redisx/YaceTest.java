@@ -17,13 +17,13 @@ import java.util.concurrent.CountDownLatch;
 public class YaceTest {
 
     //配置单点地址，或者集群服务器中任一地址
-    private String address = "redis://192.168.0.104:17001";
+    private String address = "redis://localhost:16001";
 
     //是否集群
     private boolean isCluster = true;
 
     //并发数
-    private int threadCount = 30;
+    private int threadCount = 20;
 
     //测试时间，秒
     private int second = 600;

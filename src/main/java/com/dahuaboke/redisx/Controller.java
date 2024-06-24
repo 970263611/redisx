@@ -14,10 +14,7 @@ import org.slf4j.LoggerFactory;
 
 import java.net.InetSocketAddress;
 import java.util.List;
-import java.util.concurrent.Executor;
-import java.util.concurrent.Executors;
-import java.util.concurrent.ScheduledExecutorService;
-import java.util.concurrent.TimeUnit;
+import java.util.concurrent.*;
 
 /**
  * 2024/6/13 14:02
@@ -46,6 +43,8 @@ public class Controller {
         logger.info("Application global id is {}", cacheManager.getId());
         Thread shutdownHookThread = new Thread(() -> {
             logger.info("Shutdown hook thread is starting");
+            controllerPool.shutdown();
+            logger.info("Update offset thread shutdown");
             List<Context> allContexts = cacheManager.getAllContexts();
             for (Context cont : allContexts) {
                 if (cont instanceof FromContext) {
@@ -78,7 +77,9 @@ public class Controller {
             int port = address.getPort();
             ToNode toNode = new ToNode("Sync", cacheManager, host, port, toIsCluster, false, immediate);
             toNode.start();
-            cacheManager.register(toNode.getContext());
+            if (toNode.isStarted(5000)) {
+                cacheManager.register(toNode.getContext());
+            }
         });
         controllerPool.scheduleAtFixedRate(() -> {
             List<Context> allContexts = cacheManager.getAllContexts();
@@ -99,7 +100,9 @@ public class Controller {
                     int port = address.getPort();
                     FromNode fromNode = new FromNode("Sync", cacheManager, host, port, false, alwaysFullSync);
                     fromNode.start();
-                    cacheManager.register(fromNode.getContext());
+                    if (fromNode.isStarted(5000)) {
+                        cacheManager.register(fromNode.getContext());
+                    }
                 });
                 cacheManager.setFromIsStarted(true);
             } else if (isMaster && fromIsStarted) { //抢占到主节点，from已经启动
@@ -136,9 +139,19 @@ public class Controller {
 
         protected String name;
 
+        protected CountDownLatch flag = new CountDownLatch(1);
+
         abstract String nodeName();
 
         abstract Context getContext();
+
+        public boolean isStarted(int timeout) {
+            try {
+                return flag.await(timeout, TimeUnit.MILLISECONDS);
+            } catch (InterruptedException e) {
+                return false;
+            }
+        }
     }
 
     private class ToNode extends Node {
@@ -163,7 +176,7 @@ public class Controller {
             ToClient toClient = new ToClient(this.toContext,
                     getExecutor("ToEventLoop-" + host + ":" + port));
             this.toContext.setClient(toClient);
-            toClient.start();
+            toClient.start(flag);
         }
 
         @Override
@@ -195,7 +208,7 @@ public class Controller {
         public void run() {
             FromClient fromClient = new FromClient(this.fromContext, getExecutor("FromEventLoop-" + host + ":" + port));
             this.fromContext.setFromClient(fromClient);
-            fromClient.start();
+            fromClient.start(flag);
         }
 
         @Override
@@ -245,6 +258,7 @@ public class Controller {
             });
             ConsoleServer consoleServer = new ConsoleServer(consoleContext, getExecutor("Console-Boss"), getExecutor("Console-Worker"));
             consoleServer.start();
+            flag.countDown();
         }
 
         @Override

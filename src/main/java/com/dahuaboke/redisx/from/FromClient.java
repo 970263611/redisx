@@ -17,6 +17,7 @@ import io.netty.handler.codec.redis.RedisEncoder;
 import org.slf4j.Logger;
 import org.slf4j.LoggerFactory;
 
+import java.util.concurrent.CountDownLatch;
 import java.util.concurrent.Executor;
 
 /**
@@ -39,8 +40,10 @@ public class FromClient {
 
     /**
      * 启动方法
+     *
+     * @param flag
      */
-    public void start() {
+    public void start(CountDownLatch flag) {
         String masterHost = fromContext.getHost();
         int masterPort = fromContext.getPort();
         try {
@@ -80,7 +83,16 @@ public class FromClient {
                             pipeline.addLast(new DirtyDataHandler());
                         }
                     });
-            channel = bootstrap.connect(masterHost, masterPort).sync().channel();
+            ChannelFuture sync = bootstrap.connect(masterHost, masterPort).sync().addListener((ChannelFutureListener) future -> {
+                if (future.isSuccess()) {
+                    logger.info("Connected redis [{}:{}]", masterHost, masterPort);
+                }
+                if (future.cause() != null) {
+                    logger.info("Connect redis error [{}]", future.cause());
+                }
+                flag.countDown();
+            });
+            channel = sync.channel();
             fromContext.setFromChannel(channel);
             logger.info("From start at [{}:{}]", masterHost, masterPort);
             channel.closeFuture().addListener((ChannelFutureListener) future -> {

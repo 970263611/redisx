@@ -3,18 +3,19 @@ redisx:
     #password: asd123456
     isCluster: true
     address:
-      - 192.168.0.104:17001
-      - 192.168.0.104:17002
-      - 192.168.0.104:17003
+      - 192.168.120.49:16001
+      - 192.168.120.49:16002
+      - 192.168.120.49:16003
   to:
     #password: asd123456
     isCluster: true
     address:
-      - 192.168.0.104:17101
-      - 192.168.0.104:17102
-      - 192.168.0.104:17103
+      - 192.168.120.49:16101
+      - 192.168.120.49:16102
+      - 192.168.120.49:16103
   console:
     enable: false
     port: 9999
     timeout: 5000
-  idempotency: false
+  immediate: false
+  alwaysFullSync: false
