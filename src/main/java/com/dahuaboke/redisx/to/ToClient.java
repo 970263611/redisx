@@ -101,7 +101,7 @@ public class ToClient {
             String host = toContext.getHost();
             int port = toContext.getPort();
             channel.close();
-            logger.info("Close to [{}:{}]", host, port);
+            logger.warn("Close to [{}:{}]", host, port);
         }
     }
 }

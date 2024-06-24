@@ -33,9 +33,9 @@ public class SyncCommandListener extends ChannelInboundHandlerAdapter {
                     CacheManager.CommandReference reference = toContext.listen();
                     if (reference != null) {
                         FromContext fromContext = reference.getFromContext();
-                        long offset = fromContext.getOffset();
                         Integer length = reference.getLength();
                         String command = reference.getContent();
+                        long offset = fromContext.getOffset();
                         if (length != null) {
                             offset += length;
                             fromContext.setOffset(offset);
@@ -47,11 +47,11 @@ public class SyncCommandListener extends ChannelInboundHandlerAdapter {
                                 logger.error("Write command error [{}]", future.cause());
                             } else {
                                 logger.debug("Write command success [{}] length [{}], now offset [{}]", command, length, finalOffset);
+                                if (toContext.isImmediate()) { //强一致模式
+                                    toContext.preemptMasterCompulsory();
+                                }
                             }
                         });
-                        if (toContext.isImmediate()) { //强一致模式
-                            toContext.preemptMasterCompulsory();
-                        }
                     }
                 }
             }

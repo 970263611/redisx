@@ -214,4 +214,13 @@ public class ToContext extends Context {
     public boolean isImmediate() {
         return immediate;
     }
+
+    //TODO 219-225需要删除
+    public int getSlotBegin() {
+        return slotBegin;
+    }
+
+    public int getSlotEnd() {
+        return slotEnd;
+    }
 }

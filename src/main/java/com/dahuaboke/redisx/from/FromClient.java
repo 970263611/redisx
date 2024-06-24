@@ -109,7 +109,7 @@ public class FromClient {
             String masterHost = fromContext.getHost();
             int masterPort = fromContext.getPort();
             channel.close();
-            logger.info("Close from [{}:{}]", masterHost, masterPort);
+            logger.warn("Close from [{}:{}]", masterHost, masterPort);
         }
     }
 }

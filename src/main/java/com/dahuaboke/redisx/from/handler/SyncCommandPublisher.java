@@ -29,7 +29,7 @@ public class SyncCommandPublisher extends SimpleChannelInboundHandler<SyncComman
         if (success) {
             logger.debug("Success sync command [{}], length [{}]", command, length);
         } else {
-            logger.error("Sync command [{}] failed", command);
+            logger.error("Sync command [{}] failed, length [{}]", command, length);
         }
     }
 }

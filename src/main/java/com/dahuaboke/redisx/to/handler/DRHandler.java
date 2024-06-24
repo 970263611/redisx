@@ -31,7 +31,8 @@ public class DRHandler extends RedisChannelInboundHandler {
 
     @Override
     public void channelRead2(ChannelHandlerContext ctx, String reply) throws Exception {
-        if (reply.startsWith(Constant.PROJECT_NAME)) {
+        if (ctx.pipeline().get(Constant.SLOT_HANDLER_NAME) == null &&
+                reply.startsWith(Constant.PROJECT_NAME)) {
             String[] split = reply.split("\\|");
             if (split.length != 4) {
                 toContext.preemptMasterCompulsory();
@@ -70,9 +71,7 @@ public class DRHandler extends RedisChannelInboundHandler {
             }
         } else {
             if (reply.startsWith(Constant.ERROR_REPLY_PREFIX)) {
-                logger.debug("Receive redis error reply [{}]", reply);
-            } else {
-                logger.debug("Receive redis reply [{}]", reply);
+                logger.error("Receive redis error reply [{}]", reply);
             }
             if (toContext.isConsole()) {
                 toContext.callBack(reply);
