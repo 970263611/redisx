@@ -47,55 +47,44 @@ public class ToClient {
     public void start(CountDownLatch flag) {
         String host = toContext.getHost();
         int port = toContext.getPort();
-        try {
-            Bootstrap bootstrap = new Bootstrap();
-            bootstrap.group(group)
-                    .channel(NioSocketChannel.class)
-                    .handler(new ChannelInitializer() {
-                        @Override
-                        protected void initChannel(Channel channel) throws Exception {
-                            ChannelPipeline pipeline = channel.pipeline();
-                            pipeline.addLast(new RedisEncoder());
-                            pipeline.addLast(new CommandEncoder());
-                            boolean hasPassword = false;
-                            String password = toContext.getPassword();
-                            if (password != null && !password.isEmpty()) {
-                                hasPassword = true;
-                            }
-                            if (hasPassword) {
-                                pipeline.addLast(Constant.AUTH_HANDLER_NAME, new AuthHandler(password, toContext.isToIsCluster()));
-                            }
-                            pipeline.addLast(new RedisDecoder(true));
-                            pipeline.addLast(new RedisBulkStringAggregator());
-                            pipeline.addLast(new RedisArrayAggregator());
-                            if (toContext.isToIsCluster()) {
-                                pipeline.addLast(Constant.SLOT_HANDLER_NAME, new SlotInfoHandler(toContext, hasPassword));
-                            }
-                            pipeline.addLast(new DRHandler(toContext));
-                            pipeline.addLast(new SyncCommandListener(toContext));
-                            pipeline.addLast(new DirtyDataHandler());
+        Bootstrap bootstrap = new Bootstrap();
+        bootstrap.group(group)
+                .channel(NioSocketChannel.class)
+                .handler(new ChannelInitializer() {
+                    @Override
+                    protected void initChannel(Channel channel) throws Exception {
+                        ChannelPipeline pipeline = channel.pipeline();
+                        pipeline.addLast(new RedisEncoder());
+                        pipeline.addLast(new CommandEncoder());
+                        boolean hasPassword = false;
+                        String password = toContext.getPassword();
+                        if (password != null && !password.isEmpty()) {
+                            hasPassword = true;
                         }
-                    });
-            ChannelFuture sync = bootstrap.connect(host, port).sync().addListener((ChannelFutureListener) future -> {
-                if (future.isSuccess()) {
-                    logger.info("Connected redis [{}:{}]", host, port);
-                }
-                if (future.cause() != null) {
-                    logger.info("Connect redis error [{}]", future.cause());
-                }
-                flag.countDown();
-            });
-            channel = sync.channel();
-            channel.closeFuture().addListener((ChannelFutureListener) future -> {
-                toContext.setClose(true);
-                toContext.unRegister();
-            }).sync();
-        } catch (InterruptedException e) {
-            logger.error("Connect to {{}:{}] exception", host, port, e);
-        } finally {
-            toContext.close();
-            group.shutdownGracefully();
-        }
+                        if (hasPassword) {
+                            pipeline.addLast(Constant.AUTH_HANDLER_NAME, new AuthHandler(password, toContext.isToIsCluster()));
+                        }
+                        pipeline.addLast(new RedisDecoder(true));
+                        pipeline.addLast(new RedisBulkStringAggregator());
+                        pipeline.addLast(new RedisArrayAggregator());
+                        if (toContext.isToIsCluster()) {
+                            pipeline.addLast(Constant.SLOT_HANDLER_NAME, new SlotInfoHandler(toContext, hasPassword));
+                        }
+                        pipeline.addLast(new DRHandler(toContext));
+                        pipeline.addLast(new SyncCommandListener(toContext));
+                        pipeline.addLast(new DirtyDataHandler());
+                    }
+                });
+        ChannelFuture sync = bootstrap.connect(host, port).addListener((ChannelFutureListener) future -> {
+            if (future.isSuccess()) {
+                logger.info("[To] started at [{}:{}]", host, port);
+            }
+            if (future.cause() != null) {
+                logger.info("[To] start error", future.cause());
+            }
+            flag.countDown();
+        });
+        channel = sync.channel();
     }
 
     public void sendCommand(Object command) {
@@ -108,11 +97,22 @@ public class ToClient {
      * 销毁方法
      */
     public void destroy() {
-        if (channel != null) {
-            String host = toContext.getHost();
-            int port = toContext.getPort();
+        if (channel != null && channel.isOpen()) {
             channel.close();
-            logger.warn("Close to [{}:{}]", host, port);
+            try {
+                channel.closeFuture().addListener((ChannelFutureListener) channelFuture -> {
+                    if (channelFuture.isSuccess()) {
+                        toContext.setClose(true);
+                        toContext.unRegister();
+                        group.shutdownGracefully();
+                        logger.warn("Close [to] [{}:{}]", toContext.getHost(), toContext.getPort());
+                    } else {
+                        logger.error("Close [to] error", channelFuture.cause());
+                    }
+                }).sync();
+            } catch (InterruptedException e) {
+                logger.error("Close [from] error", e);
+            }
         }
     }
 }

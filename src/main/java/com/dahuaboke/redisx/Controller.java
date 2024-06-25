@@ -9,9 +9,12 @@ import com.dahuaboke.redisx.thread.RedisxThreadFactory;
 import com.dahuaboke.redisx.to.ToClient;
 import com.dahuaboke.redisx.to.ToContext;
 import io.netty.util.concurrent.ThreadPerTaskExecutor;
+import org.apache.logging.log4j.LogManager;
+import org.apache.logging.log4j.core.impl.Log4jContextFactory;
+import org.apache.logging.log4j.core.util.DefaultShutdownCallbackRegistry;
+import org.apache.logging.log4j.spi.LoggerContextFactory;
 import org.slf4j.Logger;
 import org.slf4j.LoggerFactory;
-import org.slf4j.MDC;
 
 import java.net.InetSocketAddress;
 import java.util.List;
@@ -41,6 +44,7 @@ public class Controller {
 
     public void start(List<InetSocketAddress> fromNodeAddresses, List<InetSocketAddress> toNodeAddresses, boolean startConsole,
                       int consolePort, int consoleTimeout, boolean alwaysFullSync) {
+        closeLog4jShutdownHook();
         logger.info("Application global id is {}", cacheManager.getId());
         Thread shutdownHookThread = new Thread(() -> {
             logger.info("Shutdown hook thread is starting");
@@ -71,6 +75,8 @@ public class Controller {
                 }
             }
             logger.info("Application exit success");
+            //否则日志不一定打印，因为shutdownHook顺序无法保证
+            LogManager.shutdown();
         });
         shutdownHookThread.setName(Constant.PROJECT_NAME + "-ShutdownHook");
         Runtime.getRuntime().addShutdownHook(shutdownHookThread);
@@ -109,7 +115,7 @@ public class Controller {
                 cacheManager.setFromIsStarted(true);
             } else if (isMaster && fromIsStarted) { //抢占到主节点，from已经启动
                 //do nothing
-                logger.trace("Already upgraded master and started from clients");
+                logger.trace("state: master");
             } else if (!isMaster && fromIsStarted) { //未抢占到主节点，from已经启动
                 logger.info("Downgrade slave and closing from clients");
                 for (Context cont : allContexts) {
@@ -121,7 +127,7 @@ public class Controller {
                 cacheManager.setFromIsStarted(false);
             } else if (!isMaster && !fromIsStarted) { //未抢占到主节点，from未启动
                 //do nothing
-                logger.trace("Already slave and closed from clients");
+                logger.trace("state: slave");
             } else {
                 //bug do nothing
                 logger.warn("Unknown application state");
@@ -271,6 +277,14 @@ public class Controller {
         @Override
         public Context getContext() {
             return consoleContext;
+        }
+    }
+
+    private void closeLog4jShutdownHook() {
+        LoggerContextFactory factory = LogManager.getFactory();
+        if (factory instanceof Log4jContextFactory) {
+            Log4jContextFactory contextFactory = (Log4jContextFactory) factory;
+            ((DefaultShutdownCallbackRegistry) contextFactory.getShutdownCallbackRegistry()).stop();
         }
     }
 }

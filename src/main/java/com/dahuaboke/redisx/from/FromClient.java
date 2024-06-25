@@ -46,65 +46,53 @@ public class FromClient {
     public void start(CountDownLatch flag) {
         String masterHost = fromContext.getHost();
         int masterPort = fromContext.getPort();
-        try {
-            Bootstrap bootstrap = new Bootstrap();
-            bootstrap.group(group)
-                    .channel(NioSocketChannel.class)
-                    .handler(new ChannelInitializer() {
-                        @Override
-                        protected void initChannel(Channel channel) throws Exception {
-                            ChannelPipeline pipeline = channel.pipeline();
-                            boolean console = fromContext.isConsole();
-                            pipeline.addLast(new RedisEncoder());
-                            pipeline.addLast(new CommandEncoder());
-                            boolean hasPassword = false;
-                            String password = fromContext.getPassword();
-                            if (password != null && !password.isEmpty()) {
-                                hasPassword = true;
-                            }
-                            if (hasPassword) {
-                                pipeline.addLast(Constant.AUTH_HANDLER_NAME, new AuthHandler(password, fromContext.isFromIsCluster()));
-                            }
-                            if (!console) {
-                                pipeline.addLast(Constant.INIT_SYNC_HANDLER_NAME, new SyncInitializationHandler(fromContext));
-                                pipeline.addLast(new PreDistributeHandler(fromContext));
-                                pipeline.addLast(Constant.OFFSET_DECODER_NAME, new OffsetCommandDecoder(fromContext));
-                                pipeline.addLast(new RdbByteStreamDecoder(fromContext));
-                            }
-                            pipeline.addLast(new RedisDecoder(true));
-                            pipeline.addLast(new RedisBulkStringAggregator());
-                            pipeline.addLast(new RedisArrayAggregator());
-                            if (fromContext.isFromIsCluster()) {
-                                pipeline.addLast(Constant.SLOT_HANDLER_NAME, new SlotInfoHandler(fromContext, hasPassword));
-                            }
-                            pipeline.addLast(new MessagePostProcessor(fromContext));
-                            pipeline.addLast(new PostDistributeHandler());
-                            pipeline.addLast(new SyncCommandPublisher(fromContext));
-                            pipeline.addLast(new DirtyDataHandler());
+        Bootstrap bootstrap = new Bootstrap();
+        bootstrap.group(group)
+                .channel(NioSocketChannel.class)
+                .handler(new ChannelInitializer() {
+                    @Override
+                    protected void initChannel(Channel channel) throws Exception {
+                        ChannelPipeline pipeline = channel.pipeline();
+                        boolean console = fromContext.isConsole();
+                        pipeline.addLast(new RedisEncoder());
+                        pipeline.addLast(new CommandEncoder());
+                        boolean hasPassword = false;
+                        String password = fromContext.getPassword();
+                        if (password != null && !password.isEmpty()) {
+                            hasPassword = true;
                         }
-                    });
-            ChannelFuture sync = bootstrap.connect(masterHost, masterPort).sync().addListener((ChannelFutureListener) future -> {
-                if (future.isSuccess()) {
-                    logger.info("Connected redis [{}:{}]", masterHost, masterPort);
-                }
-                if (future.cause() != null) {
-                    logger.info("Connect redis error [{}]", future.cause());
-                }
-                flag.countDown();
-            });
-            channel = sync.channel();
-            fromContext.setFromChannel(channel);
-            logger.info("From start at [{}:{}]", masterHost, masterPort);
-            channel.closeFuture().addListener((ChannelFutureListener) future -> {
-                fromContext.setClose(true);
-                fromContext.unRegister();
-            }).sync();
-        } catch (InterruptedException e) {
-            logger.error("Connect to [{}:{}] exception", masterHost, masterPort, e);
-        } finally {
-            fromContext.close();
-            group.shutdownGracefully();
-        }
+                        if (hasPassword) {
+                            pipeline.addLast(Constant.AUTH_HANDLER_NAME, new AuthHandler(password, fromContext.isFromIsCluster()));
+                        }
+                        if (!console) {
+                            pipeline.addLast(Constant.INIT_SYNC_HANDLER_NAME, new SyncInitializationHandler(fromContext));
+                            pipeline.addLast(new PreDistributeHandler(fromContext));
+                            pipeline.addLast(Constant.OFFSET_DECODER_NAME, new OffsetCommandDecoder(fromContext));
+                            pipeline.addLast(new RdbByteStreamDecoder(fromContext));
+                        }
+                        pipeline.addLast(new RedisDecoder(true));
+                        pipeline.addLast(new RedisBulkStringAggregator());
+                        pipeline.addLast(new RedisArrayAggregator());
+                        if (fromContext.isFromIsCluster()) {
+                            pipeline.addLast(Constant.SLOT_HANDLER_NAME, new SlotInfoHandler(fromContext, hasPassword));
+                        }
+                        pipeline.addLast(new MessagePostProcessor(fromContext));
+                        pipeline.addLast(new PostDistributeHandler());
+                        pipeline.addLast(new SyncCommandPublisher(fromContext));
+                        pipeline.addLast(new DirtyDataHandler());
+                    }
+                });
+        ChannelFuture sync = bootstrap.connect(masterHost, masterPort).addListener((ChannelFutureListener) future -> {
+            if (future.isSuccess()) {
+                logger.info("[From] started at [{}:{}]", masterHost, masterPort);
+            }
+            if (future.cause() != null) {
+                logger.info("[From] start error", future.cause());
+            }
+            flag.countDown();
+        });
+        channel = sync.channel();
+        fromContext.setFromChannel(channel);
     }
 
     public void sendCommand(String command) {
@@ -117,11 +105,22 @@ public class FromClient {
      * 销毁方法
      */
     public void destroy() {
-        if (channel != null) {
-            String masterHost = fromContext.getHost();
-            int masterPort = fromContext.getPort();
+        if (channel != null && channel.isOpen()) {
             channel.close();
-            logger.warn("Close from [{}:{}]", masterHost, masterPort);
+            try {
+                channel.closeFuture().addListener((ChannelFutureListener) channelFuture -> {
+                    if (channelFuture.isSuccess()) {
+                        fromContext.setClose(true);
+                        fromContext.unRegister();
+                        group.shutdownGracefully();
+                        logger.warn("Close [from] [{}:{}]", fromContext.getHost(), fromContext.getPort());
+                    } else {
+                        logger.error("Close [from] error", channelFuture.cause());
+                    }
+                }).sync();
+            } catch (InterruptedException e) {
+                logger.error("Close [from] error", e);
+            }
         }
     }
 }

@@ -38,7 +38,7 @@ public class DRHandler extends RedisChannelInboundHandler {
                 toContext.preemptMasterCompulsory();
             } else {
                 if (!Constant.PROJECT_NAME.equals(split[0])) {
-                    toContext.preemptMasterCompulsory();
+                    toContext.preemptMasterCompulsoryWithCheckPrefix();
                 } else {
                     if (toContext.getId().equals(split[1])) { //主节点是自己
                         toContext.isMaster(true);

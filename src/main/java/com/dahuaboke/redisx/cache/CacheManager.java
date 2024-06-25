@@ -31,7 +31,7 @@ public final class CacheManager {
     private String toPassword;
     private AtomicBoolean isMaster = new AtomicBoolean(false);
     private AtomicBoolean fromStarted = new AtomicBoolean(false);
-    private String id = UUID.randomUUID().toString();
+    private String id = UUID.randomUUID().toString().replaceAll("-", "");
     private Map<String, NodeMessage> nodeMessages = new ConcurrentHashMap();
 
     public CacheManager(boolean fromIsCluster, String fromPassword, boolean toIsCluster, String toPassword) {

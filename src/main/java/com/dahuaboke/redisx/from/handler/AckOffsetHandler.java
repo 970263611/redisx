@@ -7,7 +7,6 @@ import io.netty.channel.ChannelDuplexHandler;
 import io.netty.channel.ChannelHandlerContext;
 import org.slf4j.Logger;
 import org.slf4j.LoggerFactory;
-import org.slf4j.MDC;
 
 import java.util.concurrent.Executors;
 import java.util.concurrent.ScheduledExecutorService;
@@ -37,6 +36,7 @@ public class AckOffsetHandler extends ChannelDuplexHandler {
             try {
                 if (fromContext.isClose()) {
                     ackPool.shutdown();
+                    logger.warn("Ack offset thread shutdown");
                 } else if (!fromContext.isRdbAckOffset()) {
                     fromContext.ackOffset();
                 }

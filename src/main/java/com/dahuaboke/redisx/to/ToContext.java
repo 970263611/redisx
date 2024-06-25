@@ -22,7 +22,8 @@ import java.util.concurrent.TimeUnit;
 public class ToContext extends Context {
 
     private static final Logger logger = LoggerFactory.getLogger(ToContext.class);
-    private static final String lua = "local v = redis.call('GET',KEYS[1]);\n" + "    if v then\n" + "        return v;\n" + "    else\n" + "        local result = redis.call('SET',KEYS[1],ARGV[1]);\n" + "        return result;\n" + "    end";
+    private static final String lua1 = "local v = redis.call('GET',KEYS[1]);\n" + "    if v then\n" + "        return v;\n" + "    else\n" + "        local result = redis.call('SET',KEYS[1],ARGV[1]);\n" + "        return result;\n" + "    end";
+    private static final String lua2 = "local v = redis.call('GET',KEYS[1]);\n" + "if string.match(v,ARGV[1]) then\n redis.call('SET',KEYS[1],ARGV[2]);\nend";
     private CacheManager cacheManager;
     private String host;
     private int port;
@@ -89,10 +90,18 @@ public class ToContext extends Context {
 
     @Override
     public String sendCommand(Object command, int timeout) {
-        return sendCommand(command, timeout, false);
+        return sendCommand(command, timeout, false, null);
+    }
+
+    public String sendCommand(Object command, int timeout, String key) {
+        return sendCommand(command, timeout, false, key);
     }
 
     public String sendCommand(Object command, int timeout, boolean unCheck) {
+        return sendCommand(command, timeout, unCheck, null);
+    }
+
+    public String sendCommand(Object command, int timeout, boolean unCheck, String key) {
         if (isConsole) {
             if (replyQueue == null) {
                 throw new IllegalStateException("By console mode replyQueue need init");
@@ -114,8 +123,14 @@ public class ToContext extends Context {
                 for (Context context : allContexts) {
                     if (context instanceof ToContext && command instanceof String) {
                         ToContext toContext = (ToContext) context;
-                        if (toContext.isAdapt(toIsCluster, (String) command)) {
-                            return toContext.sendCommand(command, 1000, true);
+                        String flag;
+                        if (key != null) {
+                            flag = key;
+                        } else {
+                            flag = (String) command;
+                        }
+                        if (toContext.isAdapt(toIsCluster, flag)) {
+                            return toContext.sendCommand(command, 1000, true, null);
                         }
                     }
                 }
@@ -159,7 +174,7 @@ public class ToContext extends Context {
     public void preemptMaster() {
         List<String> commands = new ArrayList() {{
             add("EVAL");
-            add(lua);
+            add(lua1);
             add("1");
             add(Constant.DR_KEY);
             add(preemptMasterCommand());
@@ -169,6 +184,17 @@ public class ToContext extends Context {
 
     public void preemptMasterCompulsory() {
         this.sendCommand(buildPreemptMasterCompulsoryCommand(), 1000);
+    }
+
+    public void preemptMasterCompulsoryWithCheckPrefix() {
+        List<String> commands = new ArrayList() {{
+            add("EVAL");
+            add(lua2);
+            add("1");
+            add(Constant.DR_KEY);
+            add(preemptMasterCommand());
+        }};
+        this.sendCommand(commands, 1000, Constant.DR_KEY);
     }
 
     public String buildPreemptMasterCompulsoryCommand() {
