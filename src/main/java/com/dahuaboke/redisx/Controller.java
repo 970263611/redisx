@@ -89,7 +89,8 @@ public class Controller {
                 cacheManager.register(toNode.getContext());
             }
         });
-        controllerPool.scheduleAtFixedRate(() -> {
+        ////scheduleWithFixedDelay not scheduleAtFixedRate，无需关心异常
+        controllerPool.scheduleWithFixedDelay(() -> {
             List<Context> allContexts = cacheManager.getAllContexts();
             for (Context cont : allContexts) {
                 if (cont instanceof ToContext) {
@@ -132,7 +133,7 @@ public class Controller {
                 //bug do nothing
                 logger.warn("Unknown application state");
             }
-        }, 0, 1, TimeUnit.SECONDS);
+        }, 5000, 1000000, TimeUnit.MICROSECONDS); //用微秒减少主从抢占脑裂问题，纳秒个人感觉太夸张了
         if (startConsole) {
             new ConsoleNode("localhost", consolePort, consoleTimeout, toNodeAddresses, fromNodeAddresses).start();
         }

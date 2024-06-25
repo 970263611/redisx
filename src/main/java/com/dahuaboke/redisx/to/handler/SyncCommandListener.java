@@ -5,7 +5,7 @@ import com.dahuaboke.redisx.Context;
 import com.dahuaboke.redisx.cache.CacheManager;
 import com.dahuaboke.redisx.from.FromContext;
 import com.dahuaboke.redisx.to.ToContext;
-import io.netty.channel.ChannelFutureListener;
+import io.netty.channel.Channel;
 import io.netty.channel.ChannelHandlerContext;
 import io.netty.channel.ChannelInboundHandlerAdapter;
 import org.slf4j.Logger;
@@ -28,8 +28,9 @@ public class SyncCommandListener extends ChannelInboundHandlerAdapter {
     @Override
     public void handlerAdded(ChannelHandlerContext ctx) throws Exception {
         Thread thread = new Thread(() -> {
-            while (!toContext.isClose()) {
-                if (ctx.channel().pipeline().get(Constant.SLOT_HANDLER_NAME) == null) {
+            Channel channel = ctx.channel();
+            while (!toContext.isClose() && channel.isActive() && channel.isWritable()) {
+                if (channel.pipeline().get(Constant.SLOT_HANDLER_NAME) == null) {
                     CacheManager.CommandReference reference = toContext.listen();
                     if (reference != null) {
                         FromContext fromContext = reference.getFromContext();
@@ -41,17 +42,11 @@ public class SyncCommandListener extends ChannelInboundHandlerAdapter {
                             fromContext.setOffset(offset);
                         }
                         long finalOffset = offset;
-                        ctx.writeAndFlush(command).addListener((ChannelFutureListener) future -> {
-                            boolean success = future.isSuccess();
-                            if (!success) {
-                                logger.error("Write command error [{}]", future.cause());
-                            } else {
-                                logger.debug("Write command success [{}] length [{}], now offset [{}]", command, length, finalOffset);
-                                if (toContext.isImmediate()) { //强一致模式
-                                    toContext.preemptMasterCompulsory();
-                                }
-                            }
-                        });
+                        ctx.writeAndFlush(command);
+                        logger.debug("Write command success [{}] length [{}], now offset [{}]", command, length, finalOffset);
+                        if (toContext.isImmediate()) { //强一致模式
+                            toContext.preemptMasterCompulsoryWithCheckId();
+                        }
                     }
                 }
             }

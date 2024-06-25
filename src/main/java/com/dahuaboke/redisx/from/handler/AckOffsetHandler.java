@@ -32,7 +32,8 @@ public class AckOffsetHandler extends ChannelDuplexHandler {
     @Override
     public void handlerAdded(ChannelHandlerContext ctx) throws Exception {
         logger.debug("Ack offset task beginning");
-        ackPool.scheduleAtFixedRate(() -> {
+        //scheduleWithFixedDelay not scheduleAtFixedRate
+        ackPool.scheduleWithFixedDelay(() -> {
             try {
                 if (fromContext.isClose()) {
                     ackPool.shutdown();
@@ -41,7 +42,7 @@ public class AckOffsetHandler extends ChannelDuplexHandler {
                     fromContext.ackOffset();
                 }
             } catch (Exception e) {
-                logger.error("Ack offset exception {}", e);
+                logger.error("Ack offset exception", e);
             }
         }, 0, 1, TimeUnit.SECONDS);
     }

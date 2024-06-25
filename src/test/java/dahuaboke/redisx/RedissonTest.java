@@ -1,6 +1,5 @@
 package dahuaboke.redisx;
 
-import com.dahuaboke.redisx.Redisx;
 import org.junit.After;
 import org.junit.Before;
 import org.junit.Test;
@@ -60,10 +59,17 @@ public class RedissonTest {
 
     @Test
     public void keycount() {
-        RKeys key1 = forwardClient.getKeys();
-        System.out.println(key1.count());
-        RKeys key2 = slavesClient.getKeys();
-        System.out.println(key2.count());
+        while (true) {
+            RKeys key1 = forwardClient.getKeys();
+            System.out.println(key1.count());
+            RKeys key2 = slavesClient.getKeys();
+            System.out.println(key2.count());
+            try {
+                Thread.sleep(1000);
+            } catch (InterruptedException e) {
+                throw new RuntimeException(e);
+            }
+        }
     }
 
     @Test

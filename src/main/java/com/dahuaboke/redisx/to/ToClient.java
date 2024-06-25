@@ -97,7 +97,7 @@ public class ToClient {
      * 销毁方法
      */
     public void destroy() {
-        if (channel != null && channel.isOpen()) {
+        if (channel != null && channel.isActive()) {
             channel.close();
             try {
                 channel.closeFuture().addListener((ChannelFutureListener) channelFuture -> {

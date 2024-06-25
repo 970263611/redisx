@@ -186,12 +186,13 @@ public class ToContext extends Context {
         this.sendCommand(buildPreemptMasterCompulsoryCommand(), 1000);
     }
 
-    public void preemptMasterCompulsoryWithCheckPrefix() {
+    public void preemptMasterCompulsoryWithCheckId() {
         List<String> commands = new ArrayList() {{
             add("EVAL");
             add(lua2);
             add("1");
             add(Constant.DR_KEY);
+            add(getId());
             add(preemptMasterCommand());
         }};
         this.sendCommand(commands, 1000, Constant.DR_KEY);

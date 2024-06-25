@@ -23,7 +23,7 @@ public class YaceTest {
     private boolean isCluster = true;
 
     //并发数
-    private int threadCount = 1;
+    private int threadCount = 20;
 
     //测试时间，秒
     private int second = 600;
