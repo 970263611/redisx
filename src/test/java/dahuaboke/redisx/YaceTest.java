@@ -17,7 +17,7 @@ import java.util.concurrent.CountDownLatch;
 public class YaceTest {
 
     //配置单点地址，或者集群服务器中任一地址
-    private String address = "redis://localhost:16001";
+    private String address = "redis://192.168.14.26:16001";
 
     //是否集群
     private boolean isCluster = true;
@@ -26,7 +26,7 @@ public class YaceTest {
     private int threadCount = 20;
 
     //测试时间，秒
-    private int second = 600;
+    private int second = 300;
 
     //是否定时清理
     private boolean flushFlag = false;
@@ -118,7 +118,8 @@ public class YaceTest {
                 public void run() {
                     try {
                         while (true) {
-                            redisson.getBucket(onlyKey ? String.valueOf(idWorker.nextId()) : getStr()).set(getStr());
+                            //redisson.getBucket(onlyKey ? String.valueOf(idWorker.nextId()) : getStr()).set(getStr());
+                            redisson.getBucket(onlyKey ? String.valueOf(idWorker.nextId()) : getStr()).set("dimple");
                             countMap.put(Thread.currentThread().getName(), ++c);
                             if (System.currentTimeMillis() > endTime) {
                                 countDownLatch.countDown();
