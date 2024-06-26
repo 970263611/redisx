@@ -2,12 +2,9 @@ package com.dahuaboke.redisx.cache;
 
 import com.dahuaboke.redisx.Context;
 import com.dahuaboke.redisx.from.FromContext;
-import com.dahuaboke.redisx.to.ToContext;
-import com.dahuaboke.redisx.utils.CRC16;
 import org.slf4j.Logger;
 import org.slf4j.LoggerFactory;
 
-import java.nio.charset.StandardCharsets;
 import java.util.*;
 import java.util.concurrent.BlockingQueue;
 import java.util.concurrent.ConcurrentHashMap;
@@ -107,14 +104,7 @@ public final class CacheManager {
                 return offer;
             }
         }
-        //TODO 110-116行需要删除掉
-        String[] ary = command.split(" ");
-        int i = CRC16.crc16(ary[1].getBytes(StandardCharsets.UTF_8));
-        for (Map.Entry<Context, BlockingQueue<CommandReference>> entry : cache.entrySet()) {
-            ToContext k = (ToContext) entry.getKey();
-            logger.error("Port [{}], slot begin [{}] end [{}]", k.getPort(), k.getSlotBegin(), k.getSlotEnd());
-        }
-        logger.error("Key hash not adapt any toContext [{}]", i);
+        logger.error("Key hash not adapt any toContext [{}]", command);
         return false;
     }
 
