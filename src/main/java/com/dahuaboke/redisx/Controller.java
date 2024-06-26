@@ -85,7 +85,7 @@ public class Controller {
             int port = address.getPort();
             ToNode toNode = new ToNode("Sync", cacheManager, host, port, toIsCluster, false, immediate);
             toNode.start();
-            if (toNode.isStarted(5000)) {
+            if (toNode.isStarted(10000)) {
                 cacheManager.register(toNode.getContext());
             }
         });
@@ -158,6 +158,7 @@ public class Controller {
             try {
                 return flag.await(timeout, TimeUnit.MILLISECONDS);
             } catch (InterruptedException e) {
+                logger.error("Node start error", e);
                 return false;
             }
         }

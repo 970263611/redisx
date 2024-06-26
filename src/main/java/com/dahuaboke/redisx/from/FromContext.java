@@ -70,17 +70,16 @@ public class FromContext extends Context {
 
     public void setFromChannel(Channel fromChannel) {
         this.fromChannel = fromChannel;
-        InetSocketAddress inetSocketAddress = (InetSocketAddress) this.fromChannel.localAddress();
-        this.localHost = inetSocketAddress.getHostString();
-        this.localPort = inetSocketAddress.getPort();
     }
 
     public String getLocalHost() {
-        return localHost;
+        InetSocketAddress inetSocketAddress = (InetSocketAddress) this.fromChannel.localAddress();
+        return inetSocketAddress.getHostString();
     }
 
     public int getLocalPort() {
-        return localPort;
+        InetSocketAddress inetSocketAddress = (InetSocketAddress) this.fromChannel.localAddress();
+        return inetSocketAddress.getPort();
     }
 
     public void setFromClient(FromClient fromClient) {
@@ -174,9 +173,5 @@ public class FromContext extends Context {
 
     public boolean isAlwaysFullSync() {
         return alwaysFullSync;
-    }
-
-    public void unRegister() {
-        cacheManager.remove(this);
     }
 }

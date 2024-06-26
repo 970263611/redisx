@@ -30,7 +30,6 @@ public class ToContext extends Context {
     private int slotBegin;
     private int slotEnd;
     private ToClient toClient;
-    private Map<FromContext, Integer> dbMap = new HashMap();
     private boolean immediate;
 
     public ToContext(CacheManager cacheManager, String host, int port, boolean fromIsCluster, boolean toIsCluster, boolean isConsole, boolean immediate) {
@@ -225,18 +224,6 @@ public class ToContext extends Context {
         return cacheManager.getToPassword();
     }
 
-    public int getDb(FromContext fromContext) {
-        Integer db = dbMap.get(fromContext);
-        if (db == null) {
-            return -1;
-        }
-        return db;
-    }
-
-    public void setDb(FromContext fromContext, int db) {
-        dbMap.put(fromContext, db);
-    }
-
     public boolean isImmediate() {
         return immediate;
     }
@@ -248,9 +235,5 @@ public class ToContext extends Context {
 
     public int getSlotEnd() {
         return slotEnd;
-    }
-
-    public void unRegister() {
-        cacheManager.remove(this);
     }
 }

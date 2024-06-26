@@ -29,8 +29,11 @@ public class SyncCommandListener extends ChannelInboundHandlerAdapter {
     public void handlerAdded(ChannelHandlerContext ctx) throws Exception {
         Thread thread = new Thread(() -> {
             Channel channel = ctx.channel();
-            while (!toContext.isClose() && channel.isActive() && channel.isWritable()) {
-                if (channel.pipeline().get(Constant.SLOT_HANDLER_NAME) == null) {
+            int flushThreshold = 0;
+            long timeThreshold = System.currentTimeMillis();
+            while (!toContext.isClose()) {
+                if (channel.pipeline().get(Constant.SLOT_HANDLER_NAME) == null &&
+                        channel.isActive() && channel.isWritable()) {
                     CacheManager.CommandReference reference = toContext.listen();
                     if (reference != null) {
                         FromContext fromContext = reference.getFromContext();
@@ -42,8 +45,15 @@ public class SyncCommandListener extends ChannelInboundHandlerAdapter {
                             fromContext.setOffset(offset);
                         }
                         long finalOffset = offset;
-                        ctx.writeAndFlush(command);
-                        logger.debug("Write command success [{}] length [{}], now offset [{}]", command, length, finalOffset);
+                        ctx.write(command);
+                        flushThreshold++;
+                        logger.debug("Write command [{}] length [{}], now offset [{}]", command, length, finalOffset);
+                    }
+                    if (flushThreshold > 100 || (System.currentTimeMillis() - timeThreshold > 100)) {
+                        ctx.flush();
+                        logger.debug("Flush data success");
+                        flushThreshold = 0;
+                        timeThreshold = System.currentTimeMillis();
                         if (toContext.isImmediate()) { //强一致模式
                             toContext.preemptMasterCompulsoryWithCheckId();
                         }

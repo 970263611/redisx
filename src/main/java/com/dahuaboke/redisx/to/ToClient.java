@@ -98,14 +98,21 @@ public class ToClient {
      */
     public void destroy() {
         if (channel != null && channel.isActive()) {
+            String host = toContext.getHost();
+            int port = toContext.getPort();
+            Channel flush = channel.flush();
+            if (flush.newSucceededFuture().isSuccess()) {
+                logger.info("Flush data success [{}] [{}]", host, port);
+            } else {
+                logger.error("Flush data error [{}] [{}]", host, port);
+            }
+            toContext.setClose(true);
             channel.close();
             try {
                 channel.closeFuture().addListener((ChannelFutureListener) channelFuture -> {
                     if (channelFuture.isSuccess()) {
-                        toContext.setClose(true);
-                        toContext.unRegister();
                         group.shutdownGracefully();
-                        logger.warn("Close [to] [{}:{}]", toContext.getHost(), toContext.getPort());
+                        logger.warn("Close [to] [{}:{}]", host, port);
                     } else {
                         logger.error("Close [to] error", channelFuture.cause());
                     }

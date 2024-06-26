@@ -106,12 +106,11 @@ public class FromClient {
      */
     public void destroy() {
         if (channel != null && channel.isActive()) {
+            fromContext.setClose(true);
             channel.close();
             try {
                 channel.closeFuture().addListener((ChannelFutureListener) channelFuture -> {
                     if (channelFuture.isSuccess()) {
-                        fromContext.setClose(true);
-                        fromContext.unRegister();
                         group.shutdownGracefully();
                         logger.warn("Close [from] [{}:{}]", fromContext.getHost(), fromContext.getPort());
                     } else {
