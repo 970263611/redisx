@@ -35,6 +35,7 @@ public class SyncCommandListener extends ChannelInboundHandlerAdapter {
                 if (channel.pipeline().get(Constant.SLOT_HANDLER_NAME) == null &&
                         channel.isActive() && channel.isWritable()) {
                     CacheManager.CommandReference reference = toContext.listen();
+                    boolean immediate = toContext.isImmediate();
                     if (reference != null) {
                         FromContext fromContext = reference.getFromContext();
                         Integer length = reference.getLength();
@@ -44,19 +45,22 @@ public class SyncCommandListener extends ChannelInboundHandlerAdapter {
                             offset += length;
                             fromContext.setOffset(offset);
                         }
-                        long finalOffset = offset;
-                        ctx.write(command);
-                        flushThreshold++;
-                        logger.debug("Write command [{}] length [{}], now offset [{}]", command, length, finalOffset);
+                        if (immediate) { //强一致模式
+                            if (!ctx.writeAndFlush(command).isSuccess() || toContext.preemptMasterCompulsoryWithCheckId()) {
+                                logger.error("Write command [{}] length [{}] error", command, length);
+                                continue;
+                            }
+                        } else {
+                            ctx.write(command);
+                            flushThreshold++;
+                        }
+                        logger.debug("Write command [{}] length [{}], now offset [{}]", command, length, offset);
                     }
-                    if (flushThreshold > 100 || (System.currentTimeMillis() - timeThreshold > 100)) {
+                    if (immediate && (flushThreshold > 100 || (System.currentTimeMillis() - timeThreshold > 100))) {
                         ctx.flush();
-                        logger.debug("Flush data success");
+                        logger.trace("Flush data success");
                         flushThreshold = 0;
                         timeThreshold = System.currentTimeMillis();
-                        if (toContext.isImmediate()) { //强一致模式
-                            toContext.preemptMasterCompulsoryWithCheckId();
-                        }
                     }
                 }
             }

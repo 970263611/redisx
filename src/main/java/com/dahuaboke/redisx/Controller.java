@@ -79,7 +79,9 @@ public class Controller {
             LogManager.shutdown();
         });
         shutdownHookThread.setName(Constant.PROJECT_NAME + "-ShutdownHook");
-        Runtime.getRuntime().addShutdownHook(shutdownHookThread);
+        if (!immediate) {
+            Runtime.getRuntime().addShutdownHook(shutdownHookThread);
+        }
         toNodeAddresses.forEach(address -> {
             String host = address.getHostString();
             int port = address.getPort();

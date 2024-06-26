@@ -87,10 +87,20 @@ public class ToClient {
         channel = sync.channel();
     }
 
-    public void sendCommand(Object command) {
+    public boolean sendCommand(Object command) {
+        return sendCommand(command, false);
+    }
+
+    public boolean sendCommand(Object command, boolean needIsSuccess) {
         if (channel.isActive()) {
-            channel.writeAndFlush(command);
+            if (needIsSuccess) {
+                ChannelFuture channelFuture = channel.writeAndFlush(command);
+                return channelFuture.isSuccess();
+            } else {
+                channel.writeAndFlush(command);
+            }
         }
+        return false;
     }
 
     /**

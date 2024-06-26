@@ -3,12 +3,10 @@ package com.dahuaboke.redisx.to;
 import com.dahuaboke.redisx.Constant;
 import com.dahuaboke.redisx.Context;
 import com.dahuaboke.redisx.cache.CacheManager;
-import com.dahuaboke.redisx.from.FromContext;
 import org.slf4j.Logger;
 import org.slf4j.LoggerFactory;
 
 import java.util.ArrayList;
-import java.util.HashMap;
 import java.util.List;
 import java.util.Map;
 import java.util.concurrent.LinkedBlockingDeque;
@@ -115,8 +113,7 @@ public class ToContext extends Context {
             }
         } else {
             if (unCheck) {
-                toClient.sendCommand(command);
-                return null;
+                return String.valueOf(toClient.sendCommand(command, true));
             } else {
                 List<Context> allContexts = cacheManager.getAllContexts();
                 for (Context context : allContexts) {
@@ -185,7 +182,7 @@ public class ToContext extends Context {
         this.sendCommand(buildPreemptMasterCompulsoryCommand(), 1000);
     }
 
-    public void preemptMasterCompulsoryWithCheckId() {
+    public boolean preemptMasterCompulsoryWithCheckId() {
         List<String> commands = new ArrayList() {{
             add("EVAL");
             add(lua2);
@@ -194,7 +191,7 @@ public class ToContext extends Context {
             add(getId());
             add(preemptMasterCommand());
         }};
-        this.sendCommand(commands, 1000, Constant.DR_KEY);
+        return Boolean.valueOf(this.sendCommand(commands, 1000, Constant.DR_KEY));
     }
 
     public String buildPreemptMasterCompulsoryCommand() {
