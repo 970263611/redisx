@@ -29,8 +29,9 @@ public class ToContext extends Context {
     private int slotEnd;
     private ToClient toClient;
     private boolean immediate;
+    private int immediateResendTimes;
 
-    public ToContext(CacheManager cacheManager, String host, int port, boolean fromIsCluster, boolean toIsCluster, boolean isConsole, boolean immediate) {
+    public ToContext(CacheManager cacheManager, String host, int port, boolean fromIsCluster, boolean toIsCluster, boolean isConsole, boolean immediate, int immediateResendTimes) {
         super(fromIsCluster, toIsCluster);
         this.cacheManager = cacheManager;
         this.host = host;
@@ -40,6 +41,7 @@ public class ToContext extends Context {
             replyQueue = new LinkedBlockingDeque();
         }
         this.immediate = immediate;
+        this.immediateResendTimes = immediateResendTimes;
     }
 
     public String getId() {
@@ -223,5 +225,9 @@ public class ToContext extends Context {
 
     public boolean isImmediate() {
         return immediate;
+    }
+
+    public int getImmediateResendTimes() {
+        return immediateResendTimes;
     }
 }

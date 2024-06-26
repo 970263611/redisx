@@ -46,9 +46,11 @@ public class SyncCommandListener extends ChannelInboundHandlerAdapter {
                             fromContext.setOffset(offset);
                         }
                         if (immediate) { //强一致模式
-                            if (!ctx.writeAndFlush(command).isSuccess() || toContext.preemptMasterCompulsoryWithCheckId()) {
-                                logger.error("Write command [{}] length [{}] error", command, length);
-                                continue;
+                            for (int i = 0; i < toContext.getImmediateResendTimes(); i++) {
+                                boolean success = immediateSend(ctx, command, length, i + 1);
+                                if (success) {
+                                    break;
+                                }
                             }
                         } else {
                             ctx.write(command);
@@ -56,7 +58,7 @@ public class SyncCommandListener extends ChannelInboundHandlerAdapter {
                         }
                         logger.debug("Write command [{}] length [{}], now offset [{}]", command, length, offset);
                     }
-                    if (immediate && (flushThreshold > 100 || (System.currentTimeMillis() - timeThreshold > 100))) {
+                    if (!immediate && (flushThreshold > 100 || (System.currentTimeMillis() - timeThreshold > 100))) {
                         ctx.flush();
                         logger.trace("Flush data success");
                         flushThreshold = 0;
@@ -67,5 +69,13 @@ public class SyncCommandListener extends ChannelInboundHandlerAdapter {
         });
         thread.setName(Constant.PROJECT_NAME + "-To-Writer-" + toContext.getHost() + ":" + toContext.getPort());
         thread.start();
+    }
+
+    private boolean immediateSend(ChannelHandlerContext ctx, String command, int length, int times) {
+        if (!ctx.writeAndFlush(command).isSuccess() || toContext.preemptMasterCompulsoryWithCheckId()) {
+            logger.error("Write command [{}] length [{}] error times: [" + times + "]", command, length);
+            return false;
+        }
+        return true;
     }
 }

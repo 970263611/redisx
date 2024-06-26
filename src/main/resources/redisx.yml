@@ -17,5 +17,7 @@ redisx:
     enable: false
     port: 9999
     timeout: 5000
-  immediate: false
+  immediate:
+    enable: false
+    resendTimes: 3
   alwaysFullSync: false

@@ -34,11 +34,13 @@ public class Controller {
     private boolean fromIsCluster;
     private CacheManager cacheManager;
     private boolean immediate;
+    private int immediateResendTimes;
 
-    public Controller(boolean fromIsCluster, String fromPassword, boolean toIsCluster, String toPassword, boolean immediate) {
+    public Controller(boolean fromIsCluster, String fromPassword, boolean toIsCluster, String toPassword, boolean immediate, int immediateResendTimes) {
         this.toIsCluster = toIsCluster;
         this.fromIsCluster = fromIsCluster;
         this.immediate = immediate;
+        this.immediateResendTimes = immediateResendTimes;
         cacheManager = new CacheManager(fromIsCluster, fromPassword, toIsCluster, toPassword);
     }
 
@@ -85,7 +87,7 @@ public class Controller {
         toNodeAddresses.forEach(address -> {
             String host = address.getHostString();
             int port = address.getPort();
-            ToNode toNode = new ToNode("Sync", cacheManager, host, port, toIsCluster, false, immediate);
+            ToNode toNode = new ToNode("Sync", cacheManager, host, port, toIsCluster, false, immediate, immediateResendTimes);
             toNode.start();
             if (toNode.isStarted(10000)) {
                 cacheManager.register(toNode.getContext());
@@ -172,14 +174,14 @@ public class Controller {
         private int port;
         private ToContext toContext;
 
-        public ToNode(String threadNamePrefix, CacheManager cacheManager, String host, int port, boolean toIsCluster, boolean isConsole, boolean immediate) {
+        public ToNode(String threadNamePrefix, CacheManager cacheManager, String host, int port, boolean toIsCluster, boolean isConsole, boolean immediate, int immediateResendTimes) {
             this.name = Constant.PROJECT_NAME + "-" + threadNamePrefix + "-ToNode-" + host + "-" + port;
             this.setName(name);
             this.cacheManager = cacheManager;
             this.host = host;
             this.port = port;
             //放在构造方法而不是run，因为兼容console模式，需要收集context，否则可能收集到null
-            this.toContext = new ToContext(cacheManager, host, port, fromIsCluster, toIsCluster, isConsole, immediate);
+            this.toContext = new ToContext(cacheManager, host, port, fromIsCluster, toIsCluster, isConsole, immediate, immediateResendTimes);
         }
 
         @Override
@@ -257,7 +259,7 @@ public class Controller {
             toNodeAddresses.forEach(address -> {
                 String host = address.getHostString();
                 int port = address.getPort();
-                ToNode toNode = new ToNode("Console", cacheManager, host, port, toIsCluster, true, immediate);
+                ToNode toNode = new ToNode("Console", cacheManager, host, port, toIsCluster, true, immediate, 0);
                 consoleContext.setToContext((ToContext) toNode.getContext());
                 toNode.start();
             });

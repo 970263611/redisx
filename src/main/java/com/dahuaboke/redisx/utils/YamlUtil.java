@@ -45,10 +45,11 @@ public class YamlUtil {
             boolean consoleEnable = (boolean) paramMap.get("redisx.console.enable");
             int consolePort = (int) paramMap.get("redisx.console.port");
             int consoleTimeout = (int) paramMap.get("redisx.console.timeout");
-            boolean immediate = (boolean) paramMap.get("redisx.immediate");
+            boolean immediate = (boolean) paramMap.get("redisx.immediate.enable");
+            int immediateResendTimes = (int) paramMap.get("redisx.immediate.resendTimes");
             boolean alwaysFullSync = (boolean) paramMap.get("redisx.alwaysFullSync");
             return new Redisx.Config(fromIsCluster, fromPassword, fromAddresses, toIsCluster, toPassword, toAddresses,
-                    consoleEnable, consolePort, consoleTimeout, immediate, alwaysFullSync);
+                    consoleEnable, consolePort, consoleTimeout, immediate, alwaysFullSync, immediateResendTimes);
         } catch (Exception e) {
             logger.error("Config param error", e);
             System.exit(0);
