@@ -12,6 +12,7 @@ import io.netty.channel.ChannelInboundHandlerAdapter;
 import org.slf4j.Logger;
 import org.slf4j.LoggerFactory;
 
+import java.nio.charset.Charset;
 import java.nio.charset.StandardCharsets;
 
 /**
@@ -79,6 +80,19 @@ public class PreDistributeHandler extends ChannelInboundHandlerAdapter {
                         ctx.fireChannelRead(new OffsetCommand(headStr));
                         ctx.channel().attr(Constant.RDB_STREAM_NEXT).set(true);
                         if (in.isReadable()) {
+                            ctx.fireChannelRead(new RdbCommand(in));
+                        } else {
+                            in.release();
+                        }
+                    } else if (!fromContext.redisVersionBeyond3()) {
+                        ctx.channel().attr(Constant.RDB_STREAM_NEXT).set(true);
+                        if (in.isReadable()) {
+                            if (in.getByte(0) == '$') {
+                                int index = ByteBufUtil.indexOf(Constant.SEPARAPOR, in);
+                                long offset = Long.parseLong(in.readBytes(index).toString(Charset.defaultCharset()).substring(1));
+                                ctx.fireChannelRead(new OffsetCommand("? " + offset));
+                            }
+                            in.readerIndex(0);
                             ctx.fireChannelRead(new RdbCommand(in));
                         } else {
                             in.release();

@@ -43,8 +43,7 @@ public class SyncInitializationHandler extends ChannelInboundHandlerAdapter {
             Thread thread = new Thread(() -> {
                 State state = null;
                 String reply;
-                String redisVersion = fromContext.getRedisVersion();
-                boolean versionBeyond3 = redisVersion.charAt(0) > 3;
+                boolean redisVersionBeyond3 = fromContext.redisVersionBeyond3();
                 while (!fromContext.isClose()) {
                     if (channel.pipeline().get(Constant.AUTH_HANDLER_NAME) == null &&
                             channel.pipeline().get(Constant.SLOT_HANDLER_NAME) == null) {
@@ -54,7 +53,7 @@ public class SyncInitializationHandler extends ChannelInboundHandlerAdapter {
                             }
                             if (Constant.PONG_COMMAND.equalsIgnoreCase(reply) && state == SENT_PING) {
                                 clearReply(ctx);
-                                if (versionBeyond3) {
+                                if (redisVersionBeyond3) {
                                     state = SENT_PORT;
                                 } else {
                                     state = SENT_CAPA;
@@ -81,7 +80,7 @@ public class SyncInitializationHandler extends ChannelInboundHandlerAdapter {
                                 state = SENT_PSYNC;
                                 CacheManager.NodeMessage nodeMessage = fromContext.getNodeMessage();
                                 String command = Constant.CONFIG_PSYNC_COMMAND;
-                                if (versionBeyond3) {
+                                if (redisVersionBeyond3) {
                                     if (fromContext.isAlwaysFullSync()) {
                                         command += "? -1";
                                     } else {
