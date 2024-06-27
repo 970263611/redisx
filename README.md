@@ -12,15 +12,15 @@ Jdk1.8+
 
 ### 建设思路
 
-![](images\redis-x.png)
+![](https://raw.githubusercontent.com/970263611/redis-x/main/images/redis-x.png)
 
 ### 性能测试
 
 CPU为13600KF、内存为DDR5 64G（32G双通道）的电脑上搭建3主3从两套redis集群，发压工具（30并发）和redis-x同时运行，在redis-x没有特殊指定启动内存大小、没有-server启动、jdk为1.8的形况下，测试结果如下：
 
-![](images\sendtest.png)
+![](https://raw.githubusercontent.com/970263611/redis-x/main/images/)sendtest.png)
 
-![](images\recvtest.png)
+![](https://raw.githubusercontent.com/970263611/redis-x/main/images/)recvtest.png)
 
 ### 准确性测试
 
