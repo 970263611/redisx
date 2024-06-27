@@ -35,12 +35,14 @@ public class Controller {
     private CacheManager cacheManager;
     private boolean immediate;
     private int immediateResendTimes;
+    private String switchFlag;
 
-    public Controller(String redisVersion, boolean fromIsCluster, String fromPassword, boolean toIsCluster, String toPassword, boolean immediate, int immediateResendTimes) {
+    public Controller(String redisVersion, boolean fromIsCluster, String fromPassword, boolean toIsCluster, String toPassword, boolean immediate, int immediateResendTimes, String switchFlag) {
         this.toIsCluster = toIsCluster;
         this.fromIsCluster = fromIsCluster;
         this.immediate = immediate;
         this.immediateResendTimes = immediateResendTimes;
+        this.switchFlag = switchFlag;
         cacheManager = new CacheManager(redisVersion, fromIsCluster, fromPassword, toIsCluster, toPassword);
     }
 
@@ -87,7 +89,7 @@ public class Controller {
         toNodeAddresses.forEach(address -> {
             String host = address.getHostString();
             int port = address.getPort();
-            ToNode toNode = new ToNode("Sync", cacheManager, host, port, toIsCluster, false, immediate, immediateResendTimes);
+            ToNode toNode = new ToNode("Sync", cacheManager, host, port, toIsCluster, false, immediate, immediateResendTimes, switchFlag);
             toNode.start();
             if (toNode.isStarted(10000)) {
                 cacheManager.register(toNode.getContext());
@@ -99,7 +101,7 @@ public class Controller {
             for (Context cont : allContexts) {
                 if (cont instanceof ToContext) {
                     ToContext toContext = (ToContext) cont;
-                    if (toContext.isAdapt(toIsCluster, Constant.DR_KEY)) {
+                    if (toContext.isAdapt(toIsCluster, switchFlag)) {
                         toContext.preemptMaster();
                     }
                 }
@@ -174,14 +176,14 @@ public class Controller {
         private int port;
         private ToContext toContext;
 
-        public ToNode(String threadNamePrefix, CacheManager cacheManager, String host, int port, boolean toIsCluster, boolean isConsole, boolean immediate, int immediateResendTimes) {
+        public ToNode(String threadNamePrefix, CacheManager cacheManager, String host, int port, boolean toIsCluster, boolean isConsole, boolean immediate, int immediateResendTimes, String switchFlag) {
             this.name = Constant.PROJECT_NAME + "-" + threadNamePrefix + "-ToNode-" + host + "-" + port;
             this.setName(name);
             this.cacheManager = cacheManager;
             this.host = host;
             this.port = port;
             //放在构造方法而不是run，因为兼容console模式，需要收集context，否则可能收集到null
-            this.toContext = new ToContext(cacheManager, host, port, fromIsCluster, toIsCluster, isConsole, immediate, immediateResendTimes);
+            this.toContext = new ToContext(cacheManager, host, port, fromIsCluster, toIsCluster, isConsole, immediate, immediateResendTimes, switchFlag);
         }
 
         @Override
@@ -259,7 +261,7 @@ public class Controller {
             toNodeAddresses.forEach(address -> {
                 String host = address.getHostString();
                 int port = address.getPort();
-                ToNode toNode = new ToNode("Console", cacheManager, host, port, toIsCluster, true, immediate, 0);
+                ToNode toNode = new ToNode("Console", cacheManager, host, port, toIsCluster, true, immediate, 0, switchFlag);
                 consoleContext.setToContext((ToContext) toNode.getContext());
                 toNode.start();
             });

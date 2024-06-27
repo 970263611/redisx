@@ -11,7 +11,7 @@ import io.netty.util.AttributeKey;
  */
 public class Constant {
 
-    public static final String DR_KEY = "REDISX-AUTHOR:DAHUA&CHANGDONGLIANG&ZHANGHUIHAO&ZHANGSHUHAN";
+    public static final String SWITCH_FLAG = "REDIS-X-AUTHOR:DAHUA&CHANGDONGLIANG&ZHANGHUIHAO&ZHANGSHUHAN";
 
     public static final String PROJECT_NAME = "Redis-x";
 

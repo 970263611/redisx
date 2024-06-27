@@ -30,8 +30,9 @@ public class ToContext extends Context {
     private ToClient toClient;
     private boolean immediate;
     private int immediateResendTimes;
+    private String switchFlag;
 
-    public ToContext(CacheManager cacheManager, String host, int port, boolean fromIsCluster, boolean toIsCluster, boolean isConsole, boolean immediate, int immediateResendTimes) {
+    public ToContext(CacheManager cacheManager, String host, int port, boolean fromIsCluster, boolean toIsCluster, boolean isConsole, boolean immediate, int immediateResendTimes, String switchFlag) {
         super(fromIsCluster, toIsCluster);
         this.cacheManager = cacheManager;
         this.host = host;
@@ -42,6 +43,7 @@ public class ToContext extends Context {
         }
         this.immediate = immediate;
         this.immediateResendTimes = immediateResendTimes;
+        this.switchFlag = switchFlag;
     }
 
     public String getId() {
@@ -174,7 +176,7 @@ public class ToContext extends Context {
             add("EVAL");
             add(lua1);
             add("1");
-            add(Constant.DR_KEY);
+            add(switchFlag);
             add(preemptMasterCommand());
         }};
         this.sendCommand(commands, 1000, true);
@@ -189,15 +191,15 @@ public class ToContext extends Context {
             add("EVAL");
             add(lua2);
             add("1");
-            add(Constant.DR_KEY);
+            add(switchFlag);
             add(getId());
             add(preemptMasterCommand());
         }};
-        return Boolean.valueOf(this.sendCommand(commands, 1000, Constant.DR_KEY));
+        return Boolean.valueOf(this.sendCommand(commands, 1000, switchFlag));
     }
 
     public String buildPreemptMasterCompulsoryCommand() {
-        return "set " + Constant.DR_KEY + " " + preemptMasterCommand();
+        return "set " + switchFlag + " " + preemptMasterCommand();
     }
 
     private String preemptMasterCommand() {

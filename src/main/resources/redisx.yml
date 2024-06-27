@@ -1,20 +1,20 @@
 redisx:
-  redis:
-    version: 6.0.9
   from:
+    redis:
+      version: 6.0.9
     #password: asd123456
     isCluster: true
     address:
-      - 192.168.20.11:16001
-      - 192.168.20.11:16002
-      - 192.168.20.11:16003
+      - 172.31.84.163:16001
+      - 172.31.84.163:16002
+      - 172.31.84.163:16003
   to:
     #password: asd123456
     isCluster: true
     address:
-      - 192.168.20.11:16101
-      - 192.168.20.11:16102
-      - 192.168.20.11:16103
+      - 172.31.84.163:16101
+      - 172.31.84.163:16102
+      - 172.31.84.163:16103
   console:
     enable: false
     port: 9999
@@ -23,3 +23,4 @@ redisx:
     enable: false
     resendTimes: 3
   alwaysFullSync: false
+  switchFlag: REDIS-X-AUTHOR:DAHUA&CHANGDONGLIANG&ZHANGHUIHAO&ZHANGSHUHAN

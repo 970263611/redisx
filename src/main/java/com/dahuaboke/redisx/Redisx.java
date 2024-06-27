@@ -10,7 +10,8 @@ public class Redisx {
 
     public static void main(String[] args) {
         Config config = YamlUtil.parseYamlParam();
-        Controller controller = new Controller(config.getRedisVersion(), config.fromIsCluster(), config.getFromPassword(), config.toIsCluster(), config.getToPassword(), config.isImmediate(), config.getImmediateResendTimes());
+        Controller controller = new Controller(config.getRedisVersion(), config.fromIsCluster(), config.getFromPassword(),
+                config.toIsCluster(), config.getToPassword(), config.isImmediate(), config.getImmediateResendTimes(), config.getSwitchFlag());
         controller.start(config.getFromAddresses(), config.getToAddresses(), config.consoleEnable(),
                 config.getConsolePort(), config.getConsoleTimeout(), config.isAlwaysFullSync());
     }
@@ -23,9 +24,10 @@ public class Redisx {
         private boolean alwaysFullSync;
         private int immediateResendTimes;
         private String redisVersion;
+        private String switchFlag;
 
         public Config(boolean fromIsCluster, String fromPassword, List<InetSocketAddress> fromAddresses, boolean toIsCluster, String toPassword,
-                      List<InetSocketAddress> toAddresses, boolean consoleEnable, int consolePort, int consoleTimeout, boolean immediate, boolean alwaysFullSync, int immediateResendTimes, String redisVersion) {
+                      List<InetSocketAddress> toAddresses, boolean consoleEnable, int consolePort, int consoleTimeout, boolean immediate, boolean alwaysFullSync, int immediateResendTimes, String redisVersion, String switchFlag) {
             this.from = new From(fromIsCluster, fromAddresses, fromPassword);
             this.to = new To(toIsCluster, toAddresses, toPassword);
             this.console = new Console(consoleEnable, consolePort, consoleTimeout);
@@ -33,6 +35,7 @@ public class Redisx {
             this.alwaysFullSync = alwaysFullSync;
             this.immediateResendTimes = immediateResendTimes;
             this.redisVersion = redisVersion;
+            this.switchFlag = switchFlag;
         }
 
         public boolean fromIsCluster() {
@@ -85,6 +88,10 @@ public class Redisx {
 
         public String getRedisVersion() {
             return redisVersion;
+        }
+
+        public String getSwitchFlag() {
+            return switchFlag;
         }
 
         private static class From {
