@@ -36,12 +36,12 @@ public class Controller {
     private boolean immediate;
     private int immediateResendTimes;
 
-    public Controller(boolean fromIsCluster, String fromPassword, boolean toIsCluster, String toPassword, boolean immediate, int immediateResendTimes) {
+    public Controller(String redisVersion, boolean fromIsCluster, String fromPassword, boolean toIsCluster, String toPassword, boolean immediate, int immediateResendTimes) {
         this.toIsCluster = toIsCluster;
         this.fromIsCluster = fromIsCluster;
         this.immediate = immediate;
         this.immediateResendTimes = immediateResendTimes;
-        cacheManager = new CacheManager(fromIsCluster, fromPassword, toIsCluster, toPassword);
+        cacheManager = new CacheManager(redisVersion, fromIsCluster, fromPassword, toIsCluster, toPassword);
     }
 
     public void start(List<InetSocketAddress> fromNodeAddresses, List<InetSocketAddress> toNodeAddresses, boolean startConsole,

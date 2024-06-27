@@ -30,8 +30,10 @@ public final class CacheManager {
     private AtomicBoolean fromStarted = new AtomicBoolean(false);
     private String id = UUID.randomUUID().toString().replaceAll("-", "");
     private Map<String, NodeMessage> nodeMessages = new ConcurrentHashMap();
+    private String redisVersion;
 
-    public CacheManager(boolean fromIsCluster, String fromPassword, boolean toIsCluster, String toPassword) {
+    public CacheManager(String redisVersion, boolean fromIsCluster, String fromPassword, boolean toIsCluster, String toPassword) {
+        this.redisVersion = redisVersion;
         this.fromIsCluster = fromIsCluster;
         this.fromPassword = fromPassword;
         this.toIsCluster = toIsCluster;
@@ -157,6 +159,10 @@ public final class CacheManager {
 
     public String getToPassword() {
         return toPassword;
+    }
+
+    public String getRedisVersion() {
+        return redisVersion;
     }
 
     public static class NodeMessage {

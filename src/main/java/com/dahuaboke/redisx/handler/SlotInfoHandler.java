@@ -144,7 +144,7 @@ public class SlotInfoHandler extends RedisChannelInboundHandler {
             int b = arr[1].indexOf("@");
             this.ip = arr[1].substring(0, a);
             if (b == -1) {
-                port = Integer.parseInt(arr[1].substring(b + 1));
+                port = Integer.parseInt(arr[1].substring(a + 1));
             } else {
                 port = Integer.parseInt(arr[1].substring(a + 1, b));
                 nodeNum = arr[1].substring(b + 1);

@@ -1,4 +1,6 @@
 redisx:
+  redis:
+    version: 3.0.7
   from:
     #password: asd123456
     isCluster: true

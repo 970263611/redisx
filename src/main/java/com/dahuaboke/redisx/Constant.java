@@ -55,6 +55,8 @@ public class Constant {
 
     public static final String CONFIG_PSYNC_COMMAND = "PSYNC ";
 
+    public static final String CONFIG_SYNC_COMMAND = "SYNC";
+
     public static final String CONSOLE_URI_PREFIX = "/console";
 
     public static final String CONSOLE_COMMAND = "command";

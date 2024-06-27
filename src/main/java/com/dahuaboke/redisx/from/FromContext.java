@@ -174,4 +174,8 @@ public class FromContext extends Context {
     public boolean isAlwaysFullSync() {
         return alwaysFullSync;
     }
+
+    public String getRedisVersion() {
+        return cacheManager.getRedisVersion();
+    }
 }
