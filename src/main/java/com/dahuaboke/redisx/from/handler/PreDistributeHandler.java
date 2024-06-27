@@ -28,6 +28,8 @@ public class PreDistributeHandler extends ChannelInboundHandlerAdapter {
 
     private FromContext fromContext;
 
+    private boolean firstFlag = true;
+
     public PreDistributeHandler(FromContext fromContext) {
         this.fromContext = fromContext;
     }
@@ -84,23 +86,19 @@ public class PreDistributeHandler extends ChannelInboundHandlerAdapter {
                         } else {
                             in.release();
                         }
-                    } else if (!fromContext.redisVersionBeyond3()) {
-                        ctx.channel().attr(Constant.RDB_STREAM_NEXT).set(true);
-                        if (in.isReadable()) {
-                            if (in.getByte(0) == '$') {
-                                int index = ByteBufUtil.indexOf(Constant.SEPARAPOR, in);
-                                long offset = Long.parseLong(in.readBytes(index).toString(Charset.defaultCharset()).substring(1));
-                                ctx.fireChannelRead(new OffsetCommand("? " + offset));
-                            }
-                            in.readerIndex(0);
-                            ctx.fireChannelRead(new RdbCommand(in));
-                        } else {
-                            in.release();
-                        }
                     } else {
                         in.readerIndex(0);
                         ctx.fireChannelRead(in);
                     }
+                } else if (firstFlag && !fromContext.redisVersionBeyond3()) {
+                    firstFlag = false;
+                    ctx.channel().attr(Constant.RDB_STREAM_NEXT).set(true);
+                    int index = ByteBufUtil.indexOf(Constant.SEPARAPOR, in);
+                    long offset = Long.parseLong(in.readBytes(index).toString(Charset.defaultCharset()).substring(1));
+                    ctx.fireChannelRead(new OffsetCommand("FULL" + " ? " + offset));
+                    in.readerIndex(0);
+                    ctx.fireChannelRead(new RdbCommand(in));
+
                 } else {
                     ctx.fireChannelRead(in);
                 }
