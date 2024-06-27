@@ -49,7 +49,7 @@
     </Appenders>
     <Loggers>
         <logger name="org.redisson" level="WARN"/>
-        <Root level="TRACE">
+        <Root level="info">
             <AppenderRef ref="Console"/>
             <AppenderRef ref="RollingFileAll"/>
             <AppenderRef ref="RollingFileInfo"/>
