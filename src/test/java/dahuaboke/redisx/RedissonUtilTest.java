@@ -4,6 +4,7 @@ import org.junit.After;
 import org.junit.Before;
 import org.junit.Test;
 import org.redisson.Redisson;
+import org.redisson.api.RBucket;
 import org.redisson.api.RKeys;
 import org.redisson.api.RedissonClient;
 import org.redisson.client.codec.StringCodec;
@@ -20,17 +21,23 @@ import java.util.concurrent.atomic.AtomicLong;
 
 public class RedissonUtilTest {
 
-    //配置单点地址，或者集群服务器中任一地址
-    private String toAddress = "redis://192.168.20.11:16101";
+    //配置单点地址，或者集群服务器中任一地址,哨兵模式下需配置哨兵节点的ip端口
+    private String toAddress = "redis://192.168.20.11:27101";
 
-    private String fromAddress = "redis://192.168.20.11:16001";
+    private String fromAddress = "redis://192.168.20.11:27001";
 
-    //是否集群
-    private boolean isCluster = true;
+    //类型
+    private ServerType serverType = ServerType.SENTINEL;
 
     private RedissonClient toClient;
 
     private RedissonClient fromClient;
+
+    enum ServerType{
+        SINGLE,
+        CLUSTER,
+        SENTINEL;
+    }
 
     @Before
     public void init() {
@@ -38,12 +45,15 @@ public class RedissonUtilTest {
         toConfig.setCodec(new StringCodec());
         Config fromConfig = new Config();
         fromConfig.setCodec(new StringCodec());
-        if (isCluster) {
+        if (ServerType.CLUSTER == serverType) {
             toConfig.useClusterServers().addNodeAddress(toAddress);
             fromConfig.useClusterServers().addNodeAddress(fromAddress);
-        } else {
+        } else if(ServerType.SINGLE == serverType) {
             toConfig.useSingleServer().setAddress(toAddress);
             fromConfig.useSingleServer().setAddress(fromAddress);
+        } else{
+            toConfig.useSentinelServers().addSentinelAddress(toAddress).setCheckSentinelsList(false).setMasterName("mymaster");
+            fromConfig.useSentinelServers().addSentinelAddress(fromAddress).setCheckSentinelsList(false).setMasterName("mymaster");
         }
         try {
             this.toClient = Redisson.create(toConfig);
@@ -66,6 +76,13 @@ public class RedissonUtilTest {
 
 
     @Test
+    public void testaaa(){
+        RBucket<Object> aaaa = toClient.getBucket("fdfdfd");
+        aaaa.set("dddfffd");
+    }
+
+
+    @Test
     public void keycount() {
         ScheduledExecutorService scheduledExecutorService = Executors.newScheduledThreadPool(1);
         AtomicLong last = new AtomicLong();
@@ -78,8 +95,8 @@ public class RedissonUtilTest {
             long to = key1.count();
             long from = key2.count();
             long c = to - last.get();
-//            System.out.println(from + "," + to + "," + (to - last.get())+","+max.get() );
-            System.out.println(format.format(new Date()) + "-" + c);
+            System.out.println(from + "," + to + "," + (to - last.get())+","+max.get() );
+//            System.out.println(format.format(new Date()) + "-" + c);
             last.set(to);
             max.set(Math.max(max.get(),c));
         },0,1, TimeUnit.SECONDS);

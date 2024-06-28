@@ -17,11 +17,11 @@ import java.util.concurrent.CountDownLatch;
 
 public class StressTestingUtilTest {
 
-    //配置单点地址，或者集群服务器中任一地址
+    //配置单点地址，或者集群服务器中任一地址,哨兵模式下需配置哨兵节点的ip端口
     private String address = "redis://192.168.20.11:16001";
 
     //是否集群
-    private boolean isCluster = true;
+    private ServerType serverType = ServerType.SENTINEL;
 
     //并发数
     private int threadCount = 20;
@@ -48,6 +48,12 @@ public class StressTestingUtilTest {
 
     SnowflakeIdWorker idWorker = new SnowflakeIdWorker(0, 0);
 
+    enum ServerType{
+        SINGLE,
+        CLUSTER,
+        SENTINEL;
+    }
+
     public StressTestingUtilTest() throws NoSuchAlgorithmException {
     }
 
@@ -56,10 +62,12 @@ public class StressTestingUtilTest {
         Config config = new Config();
         config.setCodec(new StringCodec());
         config.setThreads(threadCount + 1);
-        if (isCluster) {
+        if (ServerType.CLUSTER == serverType) {
             config.useClusterServers().addNodeAddress(address);
-        } else {
+        } else if(ServerType.SINGLE == serverType) {
             config.useSingleServer().setAddress(address);
+        } else{
+            config.useSentinelServers().addSentinelAddress(address).setCheckSentinelsList(false).setMasterName("mymaster");
         }
         this.redisson = Redisson.create(config);
         threadCount = threadCount < 1 ? 1 : threadCount;
@@ -148,24 +156,6 @@ public class StressTestingUtilTest {
         redisson.shutdown();
     }
 
-//    private void addAll() {
-//        long count = 0;
-//        for (Map.Entry<String, Long> entry : countMap.entrySet()) {
-//            if (!"lastCount".equals(entry.getKey()) && !"num".equals(entry.getKey()) && !"maxTps".equals(entry.getKey())) {
-//                count += entry.getValue();
-//            }
-//        }
-//        StringBuilder sb = new StringBuilder();
-//        sb.append(countMap.get("num")).append("-");
-//        sb.append(count);
-//        sb.append(",").append(countMap.get("maxTps"));
-//        sb.append(",").append(count - countMap.get("lastCount"));
-//        System.out.println(sb.toString());
-//        countMap.put("maxTps", Math.max(countMap.get("maxTps"), count - countMap.get("lastCount")));
-//        countMap.put("num", countMap.get("num") + 1);
-//        countMap.put("lastCount", count);
-//    }
-
     private void addAll() {
         long count = 0;
         for (Map.Entry<String, Long> entry : countMap.entrySet()) {
@@ -173,12 +163,30 @@ public class StressTestingUtilTest {
                 count += entry.getValue();
             }
         }
-        SimpleDateFormat format = new SimpleDateFormat("mm:ss");
-        System.out.println(format.format(new Date()) + "-" + (count - countMap.get("lastCount")));
+        StringBuilder sb = new StringBuilder();
+        sb.append(countMap.get("num")).append("-");
+        sb.append(count);
+        sb.append(",").append(countMap.get("maxTps"));
+        sb.append(",").append(count - countMap.get("lastCount"));
+        System.out.println(sb.toString());
         countMap.put("maxTps", Math.max(countMap.get("maxTps"), count - countMap.get("lastCount")));
         countMap.put("num", countMap.get("num") + 1);
         countMap.put("lastCount", count);
     }
+
+//    private void addAll() {
+//        long count = 0;
+//        for (Map.Entry<String, Long> entry : countMap.entrySet()) {
+//            if (!"lastCount".equals(entry.getKey()) && !"num".equals(entry.getKey()) && !"maxTps".equals(entry.getKey())) {
+//                count += entry.getValue();
+//            }
+//        }
+//        SimpleDateFormat format = new SimpleDateFormat("mm:ss");
+//        System.out.println(format.format(new Date()) + "-" + (count - countMap.get("lastCount")));
+//        countMap.put("maxTps", Math.max(countMap.get("maxTps"), count - countMap.get("lastCount")));
+//        countMap.put("num", countMap.get("num") + 1);
+//        countMap.put("lastCount", count);
+//    }
 
     /**
      * 生成长度1~30的随机字符串

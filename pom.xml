@@ -18,7 +18,7 @@
         <log4j-core.ver>2.23.1</log4j-core.ver>
         <snakeyaml.ver>1.29</snakeyaml.ver>
         <junit.ver>4.13.1</junit.ver>
-        <redisson.ver>3.13.4</redisson.ver>
+        <redisson.ver>3.16.8</redisson.ver>
     </properties>
 
     <dependencies>
@@ -57,7 +57,6 @@
             <groupId>org.redisson</groupId>
             <artifactId>redisson</artifactId>
             <version>${redisson.ver}</version>
-            <scope>test</scope>
         </dependency>
     </dependencies>
 
