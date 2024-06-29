@@ -55,10 +55,10 @@ public class ConsoleContext extends Context {
 
     public String sendCommand(String command, String type) {
         if ("from".equalsIgnoreCase(type)) {
-            int fromSize = fromContexts.size();
-            if (fromSize > 1) {
-                logger.warn("Master size should 1,but {}", fromSize);
-            }
+//            int fromSize = fromContexts.size();
+//            if (fromSize > 1) {
+//                logger.warn("Master size should 1,but {}", fromSize);
+//            }
             for (FromContext fromContext : fromContexts) {
                 if (fromContext.isAdapt(fromIsCluster, command)) {
                     return fromContext.sendCommand(command, timeout);
@@ -66,10 +66,10 @@ public class ConsoleContext extends Context {
             }
             return null;
         } else if ("to".equalsIgnoreCase(type)) {
-            int toSize = toContexts.size();
-            if (toSize > 1) {
-                logger.warn("To size should 1,but {}", toSize);
-            }
+//            int toSize = toContexts.size();
+//            if (toSize > 1) {
+//                logger.warn("To size should 1,but {}", toSize);
+//            }
             for (ToContext toContext : toContexts) {
                 if (toContext.isAdapt(toIsCluster, command)) {
                     return toContext.sendCommand(command, timeout);
@@ -77,7 +77,7 @@ public class ConsoleContext extends Context {
             }
             return null;
         } else {
-            throw new IllegalArgumentException("Type is error, should be left or right");
+            throw new IllegalArgumentException("Type is error, should be [from] or [to]");
         }
     }
 }
