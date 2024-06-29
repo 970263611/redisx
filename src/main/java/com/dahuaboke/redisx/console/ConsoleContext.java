@@ -24,7 +24,6 @@ public class ConsoleContext extends Context {
     private boolean fromIsCluster;
     private List<ToContext> toContexts = new ArrayList();
     private List<FromContext> fromContexts = new ArrayList();
-    private volatile int contextSize;
 
     public ConsoleContext(String host, int port, int timeout, boolean toIsCluster, boolean fromIsCluster) {
         super(fromIsCluster, toIsCluster);
@@ -36,12 +35,10 @@ public class ConsoleContext extends Context {
     }
 
     public void setToContext(ToContext toContext) {
-        contextSize++;
         toContexts.add(toContext);
     }
 
     public void setFromContext(FromContext fromContext) {
-        contextSize++;
         fromContexts.add(fromContext);
     }
 
