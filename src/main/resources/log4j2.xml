@@ -31,8 +31,6 @@
                 <SizeBasedTriggeringPolicy size="100 MB"/>
             </Policies>
             <ThresholdFilter level="INFO" onMatch="ACCEPT" onMismatch="DENY"/>
-            <ThresholdFilter level="WARN" onMatch="DENY" onMismatch="NEUTRAL"/>
-
             <DefaultRolloverStrategy max="50"/>
         </RollingFile>
         <!-- >= warn -->
@@ -49,7 +47,7 @@
     </Appenders>
     <Loggers>
         <logger name="org.redisson" level="WARN"/>
-        <Root level="ERROR">
+        <Root level="TRACE">
             <AppenderRef ref="Console"/>
             <AppenderRef ref="RollingFileAll"/>
             <AppenderRef ref="RollingFileInfo"/>
