@@ -9,7 +9,11 @@ import java.util.List;
 public class Redisx {
 
     public static void main(String[] args) {
-        Config config = YamlUtil.parseYamlParam();
+        String fileName = null;
+        if (args != null && args.length != 0) {
+            fileName = args[0];
+        }
+        Config config = YamlUtil.parseYamlParam(fileName);
         Controller controller = new Controller(config.getRedisVersion(), config.fromIsCluster(), config.getFromPassword(),
                 config.toIsCluster(), config.getToPassword(), config.isImmediate(), config.getImmediateResendTimes(), config.getSwitchFlag());
         controller.start(config.getFromAddresses(), config.getToAddresses(), config.consoleEnable(),

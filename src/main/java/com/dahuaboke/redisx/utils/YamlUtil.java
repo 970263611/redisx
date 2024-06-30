@@ -6,6 +6,8 @@ import org.slf4j.Logger;
 import org.slf4j.LoggerFactory;
 import org.yaml.snakeyaml.Yaml;
 
+import java.io.FileInputStream;
+import java.io.FileNotFoundException;
 import java.net.InetSocketAddress;
 import java.util.ArrayList;
 import java.util.HashMap;
@@ -21,9 +23,9 @@ public class YamlUtil {
 
     private static final Logger logger = LoggerFactory.getLogger(YamlUtil.class);
 
-    public static Redisx.Config parseYamlParam() {
+    public static Redisx.Config parseYamlParam(String fileName) {
         try {
-            Map<String, Object> paramMap = parseConfig();
+            Map<String, Object> paramMap = parseConfig(fileName);
             boolean fromIsCluster = paramMap.get("redisx.from.isCluster") == null ? false : (boolean) paramMap.get("redisx.from.isCluster");
             String fromPassword = (String) paramMap.get("redisx.from.password");
             List<String> fromAddressStrList = (List<String>) paramMap.get("redisx.from.address");
@@ -59,8 +61,7 @@ public class YamlUtil {
                 throw new IllegalArgumentException("redisx.from.redis.version");
             }
             String switchFlag = paramMap.get("redisx.switchFlag") == null ? Constant.SWITCH_FLAG : (String) paramMap.get("redisx.switchFlag");
-            return new Redisx.Config(fromIsCluster, fromPassword, fromAddresses, toIsCluster, toPassword, toAddresses,
-                    consoleEnable, consolePort, consoleTimeout, immediate, alwaysFullSync, immediateResendTimes, redisVersion, switchFlag);
+            return new Redisx.Config(fromIsCluster, fromPassword, fromAddresses, toIsCluster, toPassword, toAddresses, consoleEnable, consolePort, consoleTimeout, immediate, alwaysFullSync, immediateResendTimes, redisVersion, switchFlag);
         } catch (Exception e) {
             logger.error("Config param error", e);
             System.exit(0);
@@ -68,9 +69,18 @@ public class YamlUtil {
         return null;
     }
 
-    private static Map<String, Object> parseConfig() {
+    private static Map<String, Object> parseConfig(String fileName) {
         Yaml yaml = new Yaml();
-        Map<String, Object> map = yaml.load(Redisx.class.getClassLoader().getResourceAsStream(Constant.CONFIG_FILE_NAME));
+        Map<String, Object> map;
+        if (fileName == null) {
+            map = yaml.load(Redisx.class.getClassLoader().getResourceAsStream(Constant.CONFIG_FILE_NAME));
+        } else {
+            try {
+                map = yaml.load(new FileInputStream(fileName));
+            } catch (FileNotFoundException e) {
+                throw new RuntimeException(e);
+            }
+        }
         Map<String, Object> config = new HashMap();
         parseConfig(null, map, config);
         return config;
