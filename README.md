@@ -16,15 +16,15 @@ To：需要被同步数据的Redis集群对应Redis-x中的节点。
 
 ### 建设思路
 
-![](images\redis-x.png)
+![](images/redis-x.png)
 
 ### 性能测试
 
 CPU为13600KF、内存为DDR5 64G（32G双通道）的电脑上搭建3主3从两套redis集群，发压工具（30并发）和redis-x同时运行，在redis-x没有特殊指定启动内存大小、没有-server启动、jdk为1.8的形况下，测试结果如下：
 
-![](images\sendtest.png)
+![](images/sendtest.png)
 
-![](images\recvtest.png)
+![](images/recvtest.png)
 
 ### 准确性测试
 
