@@ -1,32 +1,60 @@
 ## Redis流复制工具Redis-x
 
+### 作者
+
+大花团队（详见github提交者）
+
 ### 名词解释
 
 From：数据来源的Redis集群对应Redis-x中的节点。
 
-To：需要被同步数据的Redis集群对应Redis-x中的节点。
+To：需要被同步数据的Redis集群对应Redis-x中的节点。 	
 
 ### 启动环境
 
-Jdk1.8+
+环境需求为Jdk1.8+，启动指令为java -jar redis-x.jar
 
 ### 建设思路
 
-![](https://raw.githubusercontent.com/970263611/redis-x/main/images/redis-x.png)
+![](images\redis-x.png)
 
 ### 性能测试
 
 CPU为13600KF、内存为DDR5 64G（32G双通道）的电脑上搭建3主3从两套redis集群，发压工具（30并发）和redis-x同时运行，在redis-x没有特殊指定启动内存大小、没有-server启动、jdk为1.8的形况下，测试结果如下：
 
-![](https://raw.githubusercontent.com/970263611/redis-x/main/images/sendtest.png)
+![](images\sendtest.png)
 
-![](https://raw.githubusercontent.com/970263611/redis-x/main/images/recvtest.png)
+![](images\recvtest.png)
 
 ### 准确性测试
 
-在默认模式下：
+### 准确性测试
 
-Redis 2.8/3.0/4.0/5.0/6.0/7.0双端集群，Redis-x在多次主从切换场景下依然保证一条数据不丢失。
+在默认模式下（笔记本中测试，因为反复测试切换场景，所以数据传递落后于发布数量）：
+
+Redis：2.8.0（双端单机，此版本Redis不支持集群。Redis-x组件2节点）
+
+![](images/2.8.0.png)
+
+Redis：3.0.3（双端集群，3主3从。Redis-x组件2节点）
+
+![](images/3.0.0.png)
+
+Redis：4.0.11（双端集群，3主3从。Redis-x组件2节点）
+
+![](images/4.0.11.png)
+
+Redis：5.0.0（双端集群，3主3从。Redis-x组件2节点）
+
+![](images/5.0.0.png)
+
+Redis：6.0.9（双端集群，3主3从。Redis-x组件2节点）
+
+![](images/6.0.9.png)
+
+Redis：7.2.4（双端集群，3主3从。Redis-x组件2节点）
+
+![](images/7.2.4.png)
 
 ### 模式支持
 
@@ -55,6 +83,14 @@ Redis 2.8/3.0/4.0/5.0/6.0/7.0双端集群，Redis-x在多次主从切换场景�
 强制全量同步数据模式为每次启动都会强制全量同步主/从所有数据信息，大数据量下初始会存在延迟，但是可以保证数据幂等性，此模式不与其他模式互斥。
 
 ### 配置介绍
+
+项目启动如无指定配置文件时会自动扫描resources目录下的redisx.yml，如果需要指定配置文件需要在启动指令后添加配置文件地址。如：
+
+```shell
+java -jar redisx.jar redisx.yml
+```
+
+配置文件中参数：
 
 ```yaml
 redisx:         
