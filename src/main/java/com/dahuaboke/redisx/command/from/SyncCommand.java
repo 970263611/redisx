@@ -91,11 +91,15 @@ public class SyncCommand extends Command {
     }
 
     public String getKey() {
-        String s = command.get(0);
-        if (specialCommandPrefix.contains(s.toUpperCase())) {
-            return command.get(2);
+        try {
+            String s = command.get(0);
+            if (specialCommandPrefix.contains(s.toUpperCase())) {
+                return command.get(2);
+            }
+            return command.get(1);
+        } catch (Exception e) {
+            throw new RuntimeException(command.toString());
         }
-        return command.get(1);
     }
 
     public boolean isNeedAddLengthToOffset() {
