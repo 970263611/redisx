@@ -87,7 +87,7 @@ public class CommandParser {
                 throw new IllegalArgumentException("Rdb type error");
         }
         long expireTime = rdbData.getExpireTime();
-        long lastTime = System.currentTimeMillis() - expireTime;
+        long lastTime = expireTime - System.currentTimeMillis();
         ExpiredType expiredType = rdbData.getExpiredType();
         if (ExpiredType.NONE != expiredType) {
             StringBuilder sb = new StringBuilder();
