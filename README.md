@@ -117,6 +117,7 @@ redisx:
     resendTimes: 3            #强一致模式下写入失败重试次数
   alwaysFullSync: false       #全局是否强制全量同步数据模式
   switchFlag: REDIS-X-AUTHOR:DAHUA&CHANGDONGLIANG&ZHANGHUIHAO&ZHANGSHUHAN      #redis-x主从切换标志，在纵向扩展时需要配置
+  syncRdb: false              #是否同步rdb文件，否：只进行增量同步
 ```
 
 ### 高可用
