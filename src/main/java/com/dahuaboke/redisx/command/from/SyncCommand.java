@@ -92,7 +92,7 @@ public class SyncCommand extends Command {
 
     public String getKey() {
         String s = command.get(0);
-        if (specialCommandPrefix.contains(s.toLowerCase())) {
+        if (specialCommandPrefix.contains(s.toUpperCase())) {
             return command.get(2);
         }
         return command.get(1);
