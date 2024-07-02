@@ -47,7 +47,7 @@ public class Controller {
     }
 
     public void start(List<InetSocketAddress> fromNodeAddresses, List<InetSocketAddress> toNodeAddresses, boolean startConsole,
-                      int consolePort, int consoleTimeout, boolean alwaysFullSync) {
+                      int consolePort, int consoleTimeout, boolean alwaysFullSync, boolean syncRdb) {
         closeLog4jShutdownHook();
         logger.info("Application global id is {}", cacheManager.getId());
         Thread shutdownHookThread = new Thread(() -> {
@@ -113,7 +113,7 @@ public class Controller {
                 fromNodeAddresses.forEach(address -> {
                     String host = address.getHostString();
                     int port = address.getPort();
-                    FromNode fromNode = new FromNode("Sync", cacheManager, host, port, false, alwaysFullSync);
+                    FromNode fromNode = new FromNode("Sync", cacheManager, host, port, false, alwaysFullSync, syncRdb);
                     fromNode.start();
                     if (fromNode.isStarted(5000)) {
                         cacheManager.register(fromNode.getContext());
@@ -211,13 +211,13 @@ public class Controller {
         private int port;
         private FromContext fromContext;
 
-        public FromNode(String threadNamePrefix, CacheManager cacheManager, String host, int port, boolean isConsole, boolean alwaysFullSync) {
+        public FromNode(String threadNamePrefix, CacheManager cacheManager, String host, int port, boolean isConsole, boolean alwaysFullSync, boolean syncRdb) {
             this.name = Constant.PROJECT_NAME + "-" + threadNamePrefix + "-FromNode - " + host + " - " + port;
             this.setName(name);
             this.host = host;
             this.port = port;
             //放在构造方法而不是run，因为兼容console模式，需要收集console，否则可能收集到null
-            this.fromContext = new FromContext(cacheManager, host, port, isConsole, fromIsCluster, toIsCluster, alwaysFullSync);
+            this.fromContext = new FromContext(cacheManager, host, port, isConsole, fromIsCluster, toIsCluster, alwaysFullSync, syncRdb);
         }
 
         @Override
@@ -268,7 +268,7 @@ public class Controller {
             fromNodeAddresses.forEach(address -> {
                 String host = address.getHostString();
                 int port = address.getPort();
-                FromNode fromNode = new FromNode("Console", cacheManager, host, port, false, true);
+                FromNode fromNode = new FromNode("Console", cacheManager, host, port, false, true, false);
                 consoleContext.setFromContext((FromContext) fromNode.getContext());
                 fromNode.start();
             });

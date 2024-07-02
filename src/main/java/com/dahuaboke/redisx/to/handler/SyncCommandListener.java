@@ -2,7 +2,7 @@ package com.dahuaboke.redisx.to.handler;
 
 import com.dahuaboke.redisx.Constant;
 import com.dahuaboke.redisx.Context;
-import com.dahuaboke.redisx.cache.CacheManager;
+import com.dahuaboke.redisx.command.from.SyncCommand;
 import com.dahuaboke.redisx.from.FromContext;
 import com.dahuaboke.redisx.to.ToContext;
 import io.netty.channel.Channel;
@@ -10,6 +10,8 @@ import io.netty.channel.ChannelHandlerContext;
 import io.netty.channel.ChannelInboundHandlerAdapter;
 import org.slf4j.Logger;
 import org.slf4j.LoggerFactory;
+
+import java.util.List;
 
 /**
  * 2024/5/13 10:37
@@ -34,14 +36,14 @@ public class SyncCommandListener extends ChannelInboundHandlerAdapter {
             while (!toContext.isClose()) {
                 if (channel.pipeline().get(Constant.SLOT_HANDLER_NAME) == null &&
                         channel.isActive() && channel.isWritable()) {
-                    CacheManager.CommandReference reference = toContext.listen();
+                    SyncCommand syncCommand = toContext.listen();
                     boolean immediate = toContext.isImmediate();
-                    if (reference != null) {
-                        FromContext fromContext = reference.getFromContext();
-                        Integer length = reference.getLength();
-                        String command = reference.getContent();
+                    if (syncCommand != null) {
+                        FromContext fromContext = (FromContext) syncCommand.getContext();
+                        int length = syncCommand.getSyncLength();
+                        List<String> command = syncCommand.getCommand();
                         long offset = fromContext.getOffset();
-                        if (length != null) {
+                        if (syncCommand.isNeedAddLengthToOffset()) {
                             offset += length;
                             fromContext.setOffset(offset);
                         }
@@ -56,7 +58,7 @@ public class SyncCommandListener extends ChannelInboundHandlerAdapter {
                             ctx.write(command);
                             flushThreshold++;
                         }
-                        logger.debug("Write command [{}] length [{}], now offset [{}]", command, length, offset);
+                        logger.debug("Write command {} length [{}], now offset [{}]", command, length, offset);
                     }
                     if (!immediate && (flushThreshold > 100 || (System.currentTimeMillis() - timeThreshold > 100))) {
                         ctx.flush();
@@ -71,7 +73,7 @@ public class SyncCommandListener extends ChannelInboundHandlerAdapter {
         thread.start();
     }
 
-    private boolean immediateSend(ChannelHandlerContext ctx, String command, int length, int times) {
+    private boolean immediateSend(ChannelHandlerContext ctx, List<String> command, int length, int times) {
         if (!ctx.writeAndFlush(command).isSuccess() || toContext.preemptMasterCompulsoryWithCheckId()) {
             logger.error("Write command [{}] length [{}] error times: [" + times + "]", command, length);
             return false;

@@ -2,6 +2,7 @@ package com.dahuaboke.redisx.from.handler;
 
 import com.dahuaboke.redisx.Constant;
 import com.dahuaboke.redisx.command.from.RdbCommand;
+import com.dahuaboke.redisx.command.from.SyncCommand;
 import com.dahuaboke.redisx.from.FromContext;
 import com.dahuaboke.redisx.from.rdb.CommandParser;
 import com.dahuaboke.redisx.from.rdb.RdbData;
@@ -17,6 +18,7 @@ import org.slf4j.Logger;
 import org.slf4j.LoggerFactory;
 
 import java.nio.charset.Charset;
+import java.util.ArrayList;
 import java.util.List;
 import java.util.concurrent.CompletableFuture;
 
@@ -116,26 +118,28 @@ public class RdbByteStreamDecoder extends ChannelInboundHandlerAdapter {
                     eofEnd = null;
                     rdbType = RdbType.START;
                     ctx.channel().attr(Constant.RDB_STREAM_NEXT).set(false);
-                    fromContext.setRdbAckOffset(true);
-                    ByteBuf finalRdbBuf = rdbBuf;
-                    CompletableFuture<Void> future = CompletableFuture.supplyAsync(() -> {
-                        String threadName = Constant.PROJECT_NAME + "-RdbParseThread-" + fromContext.getHost() + ":" + fromContext.getPort();
-                        Thread.currentThread().setName(threadName);
-                        parse(finalRdbBuf);
-                        return null;
-                    });
-                    future.exceptionally(e -> {
-                        logger.error("Parse rdb stream error", e);
-                        return null;
-                    });
-                    while (!future.isDone()) {
-                        if (!fromContext.isClose()) {
-                            fromContext.ackOffset();
+                    if (fromContext.isSyncRdb()) {
+                        fromContext.setRdbAckOffset(true);
+                        ByteBuf finalRdbBuf = rdbBuf;
+                        CompletableFuture<Void> future = CompletableFuture.supplyAsync(() -> {
+                            String threadName = Constant.PROJECT_NAME + "-RdbParseThread-" + fromContext.getHost() + ":" + fromContext.getPort();
+                            Thread.currentThread().setName(threadName);
+                            parse(finalRdbBuf);
+                            return null;
+                        });
+                        future.exceptionally(e -> {
+                            logger.error("Parse rdb stream error", e);
+                            return null;
+                        });
+                        while (!future.isDone()) {
+                            if (!fromContext.isClose()) {
+                                fromContext.ackOffset();
+                            }
+                            Thread.sleep(1000);
                         }
-                        Thread.sleep(1000);
+                        fromContext.setRdbAckOffset(false);
+                        logger.info("The RDB stream has been processed");
                     }
-                    fromContext.setRdbAckOffset(false);
-                    logger.info("The RDB stream has been processed");
                 }
                 if (commondBuf != null && commondBuf.isReadable()) {//命令如何有内容，继续往下走
                     ctx.fireChannelRead(commondBuf);
@@ -156,13 +160,14 @@ public class RdbByteStreamDecoder extends ChannelInboundHandlerAdapter {
         RdbParser parser = new RdbParser(byteBuf);
         parser.parseHeader();
         logger.debug(parser.getRdbInfo().getRdbHeader().toString());
-        List<String> commands = commandParser.parser(parser.getRdbInfo().getRdbHeader());
-        for (String command : commands) {
-            boolean success = fromContext.publish(command, null);
+        List<List<String>> commands = commandParser.parser(parser.getRdbInfo().getRdbHeader());
+        for (List<String> command : commands) {
+            SyncCommand syncCommand = new SyncCommand(fromContext, command, false);
+            boolean success = fromContext.publish(syncCommand);
             if (success) {
-                logger.debug("Success rdb data [{}]", command);
+                logger.debug("Success rdb header [{}]", commands);
             } else {
-                logger.error("Sync rdb data [{}] failed", command);
+                logger.error("Sync rdb header [{}] failed", commands);
             }
         }
         while (!parser.getRdbInfo().isEnd()) {
@@ -171,20 +176,25 @@ public class RdbByteStreamDecoder extends ChannelInboundHandlerAdapter {
             if (rdbData != null) {
                 if (rdbData.getDataNum() == 1) {
                     long selectDB = rdbData.getSelectDB();
-                    boolean success = fromContext.publish(Constant.SELECT_PREFIX + selectDB, null);
-                    if (success) {
+                    SyncCommand syncCommand2 = new SyncCommand(fromContext, new ArrayList<String>() {{
+                        add(Constant.SELECT);
+                        add(String.valueOf(selectDB));
+                    }}, false);
+                    boolean success2 = fromContext.publish(syncCommand2);
+                    if (success2) {
                         logger.debug("Select db success [{}]", selectDB);
                     } else {
                         logger.error("Select db failed [{}]", selectDB);
                     }
                 }
                 commands = commandParser.parser(rdbData);
-                for (String command : commands) {
-                    boolean success = fromContext.publish(command, null);
-                    if (success) {
-                        logger.debug("Success rdb data [{}]", command);
+                for (List<String> command : commands) {
+                    SyncCommand syncCommand1 = new SyncCommand(fromContext, command, false);
+                    boolean success1 = fromContext.publish(syncCommand1);
+                    if (success1) {
+                        logger.debug("Success rdb data [{}]", commands);
                     } else {
-                        logger.error("Sync rdb data [{}] failed", command);
+                        logger.error("Sync rdb data [{}] failed", commands);
                     }
                 }
             }

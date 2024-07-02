@@ -3,6 +3,7 @@ package com.dahuaboke.redisx.to;
 import com.dahuaboke.redisx.Constant;
 import com.dahuaboke.redisx.Context;
 import com.dahuaboke.redisx.cache.CacheManager;
+import com.dahuaboke.redisx.command.from.SyncCommand;
 import org.slf4j.Logger;
 import org.slf4j.LoggerFactory;
 
@@ -58,7 +59,7 @@ public class ToContext extends Context {
         return port;
     }
 
-    public CacheManager.CommandReference listen() {
+    public SyncCommand listen() {
         return cacheManager.listen(this);
     }
 
@@ -183,7 +184,7 @@ public class ToContext extends Context {
     }
 
     public void preemptMasterCompulsory() {
-        this.sendCommand(buildPreemptMasterCompulsoryCommand(), 1000);
+        this.sendCommand(buildPreemptMasterCompulsoryCommand(), 1000, switchFlag);
     }
 
     public boolean preemptMasterCompulsoryWithCheckId() {
