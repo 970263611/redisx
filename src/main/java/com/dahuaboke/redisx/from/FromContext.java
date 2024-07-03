@@ -61,6 +61,7 @@ public class FromContext extends Context {
 
     public boolean publish(SyncCommand command) {
         if (!isConsole) {
+            command.buildCommand();
             return cacheManager.publish(command);
         } else {
             if (replyQueue == null) {

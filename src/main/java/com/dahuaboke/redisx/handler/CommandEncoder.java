@@ -45,13 +45,13 @@ public class CommandEncoder extends ChannelOutboundHandlerAdapter {
             String[] split = command.split("\\s+");
             ByteBuf buffer = ByteBufAllocator.DEFAULT.buffer();
             buffer.writeByte('*');
-            buffer.writeBytes(String.valueOf(split.length).getBytes(StandardCharsets.UTF_8));
+            buffer.writeBytes(String.valueOf(split.length).getBytes());
             buffer.writeBytes(new byte[]{'\r', '\n'});
             for (String s : split) {
                 buffer.writeByte('$');
-                buffer.writeBytes(String.valueOf(s.length()).getBytes(StandardCharsets.UTF_8));
+                buffer.writeBytes(String.valueOf(s.length()).getBytes());
                 buffer.writeBytes(new byte[]{'\r', '\n'});
-                buffer.writeBytes(s.getBytes(StandardCharsets.UTF_8));
+                buffer.writeBytes(s.getBytes());
                 buffer.writeBytes(new byte[]{'\r', '\n'});
             }
             ctx.write(buffer, promise);
@@ -63,6 +63,8 @@ public class CommandEncoder extends ChannelOutboundHandlerAdapter {
             RedisMessage request = new ArrayRedisMessage(children);
             ctx.write(request, promise);
         } else if (msg instanceof RedisMessage) {
+            ctx.write(msg, promise);
+        } else if (msg instanceof ByteBuf) {
             ctx.write(msg, promise);
         }
     }

@@ -41,7 +41,7 @@ public class Context {
     }
 
     protected int calculateHash(String command) {
-        return CRC16.crc16(command.getBytes(StandardCharsets.UTF_8));
+        return CRC16.crc16(command.getBytes());
     }
 
     public boolean isClose() {

@@ -40,8 +40,7 @@ public class SyncCommandListener extends ChannelInboundHandlerAdapter {
                     if (syncCommand != null) {
                         FromContext fromContext = (FromContext) syncCommand.getContext();
                         int length = syncCommand.getSyncLength();
-                        RedisMessage redisMessage = syncCommand.getRedisMessage();
-//                        List<String> command = syncCommand.getCommand();
+                        RedisMessage redisMessage = syncCommand.getCommand();
                         long offset = fromContext.getOffset();
                         if (syncCommand.isNeedAddLengthToOffset()) {
                             offset += length;
@@ -58,12 +57,12 @@ public class SyncCommandListener extends ChannelInboundHandlerAdapter {
                             ctx.write(redisMessage);
                             flushThreshold++;
                         }
-                        logger.debug("Write length [{}], now offset [{}]", length, offset);
+                        logger.trace("Write command [{}] length [{}], now offset [{}]", syncCommand.getStringCommand(), length, offset);
                     }
                     if (!immediate && (flushThreshold > flushSize || (System.currentTimeMillis() - timeThreshold > 100))) {
                         if (flushThreshold > 0) {
                             ctx.flush();
-                            logger.trace("Flush data success [{}]", flushThreshold);
+                            logger.debug("Flush data success [{}]", flushThreshold);
                             flushThreshold = 0;
                             timeThreshold = System.currentTimeMillis();
                         }

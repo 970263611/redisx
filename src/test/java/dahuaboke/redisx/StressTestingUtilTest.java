@@ -152,12 +152,16 @@ public class StressTestingUtilTest {
         switch (i1) {
             case 1:
                 creatMap();
+                break;
             case 2:
                 creatList();
+                break;
             case 3:
                 creatSet();
+                break;
             case 4:
                 creatZSet();
+                break;
             default:
                 creatString();
         }

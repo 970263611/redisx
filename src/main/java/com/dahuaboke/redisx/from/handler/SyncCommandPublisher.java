@@ -33,12 +33,11 @@ public class SyncCommandPublisher extends SimpleChannelInboundHandler<SyncComman
                 unSyncCommandLength = 0;
             }
             command.setSyncLength(commandLength);
-            command.buildRedisMessage();
             boolean success = fromContext.publish(command);
             if (success) {
-                logger.debug("Success sync command [{}], length [{}]", command, commandLength);
+                logger.debug("Success sync command [{}], length [{}]", command.getStringCommand(), commandLength);
             } else {
-                logger.error("Sync command [{}] failed, length [{}]", command, commandLength);
+                logger.error("Sync command [{}] failed, length [{}]", command.getStringCommand(), commandLength);
             }
         }
     }

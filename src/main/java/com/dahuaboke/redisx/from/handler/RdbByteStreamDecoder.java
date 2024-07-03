@@ -192,7 +192,7 @@ public class RdbByteStreamDecoder extends ChannelInboundHandlerAdapter {
                     SyncCommand syncCommand1 = new SyncCommand(fromContext, command, false);
                     boolean success1 = fromContext.publish(syncCommand1);
                     if (success1) {
-                        logger.debug("Success rdb data [{}]", commands);
+                        logger.trace("Success rdb data [{}]", commands);
                     } else {
                         logger.error("Sync rdb data [{}] failed", commands);
                     }

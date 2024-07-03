@@ -1,5 +1,6 @@
 package com.dahuaboke.redisx.from.rdb;
 
+import com.dahuaboke.redisx.from.rdb.base.Parser;
 import io.netty.buffer.ByteBuf;
 import io.netty.buffer.ByteBufUtil;
 import io.netty.buffer.Unpooled;
@@ -59,16 +60,16 @@ public class RdbParser {
                     rdbInfo.setEnd(true);
                     rdbInfo.setRdbData(null);
                 default:
-                    int index = ByteBufUtil.indexOf(Unpooled.copiedBuffer(new byte[]{(byte) 0xfb}),byteBuf);
-                    if(index != -1){
-                        if(index >= byteBuf.readerIndex()){
+                    int index = ByteBufUtil.indexOf(Unpooled.copiedBuffer(new byte[]{(byte) 0xfb}), byteBuf);
+                    if (index != -1) {
+                        if (index >= byteBuf.readerIndex()) {
                             byteBuf.readBytes(index - byteBuf.readerIndex());
                             continue;
                         }
                     }
-                    index = ByteBufUtil.indexOf(Unpooled.copiedBuffer(new byte[]{(byte) 0xff}),byteBuf);
-                    if(index != -1){
-                        if(index >= byteBuf.readerIndex()){
+                    index = ByteBufUtil.indexOf(Unpooled.copiedBuffer(new byte[]{(byte) 0xff}), byteBuf);
+                    if (index != -1) {
+                        if (index >= byteBuf.readerIndex()) {
                             byteBuf.readBytes(index - byteBuf.readerIndex());
                             continue;
                         }
@@ -117,7 +118,10 @@ public class RdbParser {
                 default:
                     rdbData().setRdbType(b);
                     rdbData().setKey(ParserManager.STRING_00.parse(byteBuf));
-                    rdbData().setValue(ParserManager.getParser(b).parse(byteBuf));
+                    Parser parser = ParserManager.getParser(b);
+                    if (parser != null) {
+                        rdbData().setValue(parser.parse(byteBuf));
+                    }
                     return;
             }
         }
@@ -173,11 +177,11 @@ public class RdbParser {
         return rdbInfo;
     }
 
-    private RdbData rdbData(){
+    private RdbData rdbData() {
         return rdbInfo.getRdbData();
     }
 
-    private RdbHeader rdbHeader(){
+    private RdbHeader rdbHeader() {
         return rdbInfo.getRdbHeader();
     }
 

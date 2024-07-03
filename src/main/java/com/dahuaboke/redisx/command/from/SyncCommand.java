@@ -4,10 +4,12 @@ import com.dahuaboke.redisx.Constant;
 import com.dahuaboke.redisx.Context;
 import com.dahuaboke.redisx.command.Command;
 import io.netty.buffer.ByteBuf;
-import io.netty.buffer.Unpooled;
+import io.netty.buffer.ByteBufAllocator;
 import io.netty.handler.codec.redis.ArrayRedisMessage;
 import io.netty.handler.codec.redis.FullBulkStringRedisMessage;
 import io.netty.handler.codec.redis.RedisMessage;
+import org.slf4j.Logger;
+import org.slf4j.LoggerFactory;
 
 import java.util.ArrayList;
 import java.util.LinkedList;
@@ -20,12 +22,15 @@ import java.util.List;
  */
 public class SyncCommand extends Command {
 
+    private static final Logger logger = LoggerFactory.getLogger(SyncCommand.class);
     private List<String> command = new LinkedList<>();
     private Context context;
     private int length = 0;
     private int syncLength;
     private boolean needAddLengthToOffset;
     private RedisMessage redisMessage;
+    private String stringCommand;
+    String key;
     private static List<String> specialCommandPrefix = new ArrayList<String>() {{
         add("BITOP");
         add("MEMORY");
@@ -53,21 +58,31 @@ public class SyncCommand extends Command {
         this.needAddLengthToOffset = needAddLengthToOffset;
     }
 
-    public List<String> getCommand() {
-        return command;
-    }
-
-    public RedisMessage getRedisMessage() {
+    public RedisMessage getCommand() {
         return redisMessage;
     }
 
-    public void buildRedisMessage() {
-        List<RedisMessage> children = new ArrayList();
+    public void buildCommand() {
+        List<RedisMessage> children = new LinkedList<>();
         for (String c : command) {
-            ByteBuf buffer = Unpooled.copiedBuffer(c.getBytes());
+            ByteBuf buffer = ByteBufAllocator.DEFAULT.buffer();
+            buffer.writeBytes(c.getBytes());
             children.add(new FullBulkStringRedisMessage(buffer));
         }
         redisMessage = new ArrayRedisMessage(children);
+        String s = command.get(0);
+        if (command.size() > 1) {
+            if (specialCommandPrefix.contains(s.toUpperCase())) {
+                key = command.get(2);
+            } else {
+                key = command.get(1);
+            }
+        } else {
+            logger.warn("Command not has key [{}]", command);
+            key = s;
+        }
+        getStringCommand();
+        command = null;
     }
 
     public int getSyncLength() {
@@ -91,14 +106,17 @@ public class SyncCommand extends Command {
     }
 
     public String getStringCommand() {
-        StringBuilder sb = new StringBuilder();
-        for (String s : command) {
-            if (sb.length() != 0) {
-                sb.append(" ");
+        if (stringCommand == null) {
+            StringBuilder sb = new StringBuilder();
+            for (String s : command) {
+                if (sb.length() != 0) {
+                    sb.append(" ");
+                }
+                sb.append(s);
             }
-            sb.append(s);
+            stringCommand = new String(sb);
         }
-        return new String(sb);
+        return stringCommand;
     }
 
     public boolean isIgnore() {
@@ -106,21 +124,11 @@ public class SyncCommand extends Command {
         if (stringCommand.toUpperCase().startsWith(Constant.SELECT)) {
             return context.isFromIsCluster() || context.isToIsCluster();
         }
-        return Constant.PING_COMMAND.equalsIgnoreCase(stringCommand)
-                || Constant.MULTI.equalsIgnoreCase(stringCommand)
-                || Constant.EXEC.equalsIgnoreCase(stringCommand);
+        return Constant.PING_COMMAND.equalsIgnoreCase(stringCommand) || Constant.MULTI.equalsIgnoreCase(stringCommand) || Constant.EXEC.equalsIgnoreCase(stringCommand);
     }
 
     public String getKey() {
-        try {
-            String s = command.get(0);
-            if (specialCommandPrefix.contains(s.toUpperCase())) {
-                return command.get(2);
-            }
-            return command.get(1);
-        } catch (Exception e) {
-            throw new RuntimeException(command.toString());
-        }
+        return key;
     }
 
     public boolean isNeedAddLengthToOffset() {
@@ -129,10 +137,5 @@ public class SyncCommand extends Command {
 
     public Context getContext() {
         return context;
-    }
-
-    @Override
-    public String toString() {
-        return command.toString();
     }
 }

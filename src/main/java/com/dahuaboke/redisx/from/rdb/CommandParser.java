@@ -60,46 +60,49 @@ public class CommandParser {
 
     public List<List<String>> parser(RdbData rdbData) {
         List<List<String>> result = new LinkedList();
-        switch (typeMap.get(rdbData.getRdbType())) {
-            case STRING:
-                string(result, rdbData.getKey(), (byte[]) rdbData.getValue());
-                break;
-            case LIST:
-                list(result, rdbData.getKey(), (List<byte[]>) rdbData.getValue());
-                break;
-            case SET:
-                set(result, rdbData.getKey(), (Set<byte[]>) rdbData.getValue());
-                break;
-            case ZSET:
-                zet(result, rdbData.getKey(), (Set<ZSetEntry>) rdbData.getValue());
-                break;
-            case HASH:
-                hash(result, rdbData.getKey(), (Map<byte[], byte[]>) rdbData.getValue());
-                break;
-            case MOUDULE:
-                moudule(result, rdbData.getKey(), rdbData.getValue());
-                break;
-            case STREAM:
-                stream(result, rdbData.getKey(), (Stream) rdbData.getValue());
-                break;
-            default:
-                throw new IllegalArgumentException("Rdb type error");
-        }
-        long expireTime = rdbData.getExpireTime();
-        long lastTime = expireTime - System.currentTimeMillis();
-        ExpiredType expiredType = rdbData.getExpiredType();
-        if (ExpiredType.NONE != expiredType) {
-            List<String> sb = new LinkedList<>();
-            sb.add("expire");
-            sb.add(new String(rdbData.getKey()));
-            if (ExpiredType.SECOND == expiredType) {
-                sb.add(String.valueOf(lastTime));
-            } else if (ExpiredType.MS == expiredType) {
-                sb.add(String.valueOf(lastTime / 1000));
-            } else {
-                throw new IllegalArgumentException("Rdb type error");
+        Type type = typeMap.get(rdbData.getRdbType());
+        if (type!=null) {
+            switch (type) {
+                case STRING:
+                    string(result, rdbData.getKey(), (byte[]) rdbData.getValue());
+                    break;
+                case LIST:
+                    list(result, rdbData.getKey(), (List<byte[]>) rdbData.getValue());
+                    break;
+                case SET:
+                    set(result, rdbData.getKey(), (Set<byte[]>) rdbData.getValue());
+                    break;
+                case ZSET:
+                    zet(result, rdbData.getKey(), (Set<ZSetEntry>) rdbData.getValue());
+                    break;
+                case HASH:
+                    hash(result, rdbData.getKey(), (Map<byte[], byte[]>) rdbData.getValue());
+                    break;
+                case MOUDULE:
+                    moudule(result, rdbData.getKey(), rdbData.getValue());
+                    break;
+                case STREAM:
+                    stream(result, rdbData.getKey(), (Stream) rdbData.getValue());
+                    break;
+                default:
+                    throw new IllegalArgumentException("Rdb type error");
             }
-            result.add(sb);
+            long expireTime = rdbData.getExpireTime();
+            long lastTime = expireTime - System.currentTimeMillis();
+            ExpiredType expiredType = rdbData.getExpiredType();
+            if (ExpiredType.NONE != expiredType) {
+                List<String> sb = new LinkedList<>();
+                sb.add("expire");
+                sb.add(new String(rdbData.getKey()));
+                if (ExpiredType.SECOND == expiredType) {
+                    sb.add(String.valueOf(lastTime));
+                } else if (ExpiredType.MS == expiredType) {
+                    sb.add(String.valueOf(lastTime / 1000));
+                } else {
+                    throw new IllegalArgumentException("Rdb type error");
+                }
+                result.add(sb);
+            }
         }
         return result;
     }
