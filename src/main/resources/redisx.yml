@@ -15,6 +15,7 @@ redisx:
       - 192.168.208.26:16101
       - 192.168.208.26:16102
       - 192.168.208.26:16103
+    flushSize: 20
   console:
     enable: false
     port: 9999
@@ -24,3 +25,4 @@ redisx:
     resendTimes: 3
   alwaysFullSync: false
   switchFlag: REDIS-X-AUTHOR:DAHUA&CHANGDONGLIANG&ZHANGHUIHAO&ZHANGSHUHAN
+  syncRdb: true
