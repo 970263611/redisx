@@ -3,6 +3,11 @@ package com.dahuaboke.redisx.command.from;
 import com.dahuaboke.redisx.Constant;
 import com.dahuaboke.redisx.Context;
 import com.dahuaboke.redisx.command.Command;
+import io.netty.buffer.ByteBuf;
+import io.netty.buffer.Unpooled;
+import io.netty.handler.codec.redis.ArrayRedisMessage;
+import io.netty.handler.codec.redis.FullBulkStringRedisMessage;
+import io.netty.handler.codec.redis.RedisMessage;
 
 import java.util.ArrayList;
 import java.util.LinkedList;
@@ -20,6 +25,7 @@ public class SyncCommand extends Command {
     private int length = 0;
     private int syncLength;
     private boolean needAddLengthToOffset;
+    private RedisMessage redisMessage;
     private static List<String> specialCommandPrefix = new ArrayList<String>() {{
         add("BITOP");
         add("MEMORY");
@@ -49,6 +55,19 @@ public class SyncCommand extends Command {
 
     public List<String> getCommand() {
         return command;
+    }
+
+    public RedisMessage getRedisMessage() {
+        return redisMessage;
+    }
+
+    public void buildRedisMessage() {
+        List<RedisMessage> children = new ArrayList();
+        for (String c : command) {
+            ByteBuf buffer = Unpooled.copiedBuffer(c.getBytes());
+            children.add(new FullBulkStringRedisMessage(buffer));
+        }
+        redisMessage = new ArrayRedisMessage(children);
     }
 
     public int getSyncLength() {

@@ -62,7 +62,8 @@ public class CommandEncoder extends ChannelOutboundHandlerAdapter {
             }
             RedisMessage request = new ArrayRedisMessage(children);
             ctx.write(request, promise);
+        } else if (msg instanceof RedisMessage) {
+            ctx.write(msg, promise);
         }
-
     }
 }
