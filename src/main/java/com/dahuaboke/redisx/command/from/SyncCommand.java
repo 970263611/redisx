@@ -20,7 +20,7 @@ public class SyncCommand extends Command {
     private int length = 0;
     private int syncLength;
     private boolean needAddLengthToOffset;
-    private List<String> specialCommandPrefix = new ArrayList<String>() {{
+    private static List<String> specialCommandPrefix = new ArrayList<String>() {{
         add("BITOP");
         add("MEMORY");
         add("BZMPOP");
