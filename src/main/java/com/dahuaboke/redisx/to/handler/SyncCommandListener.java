@@ -60,7 +60,7 @@ public class SyncCommandListener extends ChannelInboundHandlerAdapter {
                         }
                         logger.debug("Write command {} length [{}], now offset [{}]", command, length, offset);
                     }
-                    if (!immediate && (flushThreshold > 100 || (System.currentTimeMillis() - timeThreshold > 100))) {
+                    if (!immediate && (flushThreshold > 20 || (System.currentTimeMillis() - timeThreshold > 100))) {
                         ctx.flush();
                         logger.trace("Flush data success");
                         flushThreshold = 0;
