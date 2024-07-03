@@ -29,6 +29,7 @@ public class SyncCommandListener extends ChannelInboundHandlerAdapter {
 
     @Override
     public void handlerAdded(ChannelHandlerContext ctx) throws Exception {
+        int flushSize = toContext.getFlushSize();
         Thread thread = new Thread(() -> {
             Channel channel = ctx.channel();
             int flushThreshold = 0;
@@ -59,11 +60,13 @@ public class SyncCommandListener extends ChannelInboundHandlerAdapter {
                         }
                         logger.debug("Write command {} length [{}], now offset [{}]", command, length, offset);
                     }
-                    if (!immediate && (flushThreshold > 100 || (System.currentTimeMillis() - timeThreshold > 100))) {
-                        ctx.flush();
-                        logger.trace("Flush data success [{}]", flushThreshold);
-                        flushThreshold = 0;
-                        timeThreshold = System.currentTimeMillis();
+                    if (!immediate && (flushThreshold > flushSize || (System.currentTimeMillis() - timeThreshold > 100))) {
+                        if (flushThreshold > 0) {
+                            ctx.flush();
+                            logger.trace("Flush data success [{}]", flushThreshold);
+                            flushThreshold = 0;
+                            timeThreshold = System.currentTimeMillis();
+                        }
                     }
                 }
             }

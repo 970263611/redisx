@@ -47,7 +47,7 @@ public class Controller {
     }
 
     public void start(List<InetSocketAddress> fromNodeAddresses, List<InetSocketAddress> toNodeAddresses, boolean startConsole,
-                      int consolePort, int consoleTimeout, boolean alwaysFullSync, boolean syncRdb) {
+                      int consolePort, int consoleTimeout, boolean alwaysFullSync, boolean syncRdb, int toFlushSize) {
         closeLog4jShutdownHook();
         logger.info("Application global id is {}", cacheManager.getId());
         Thread shutdownHookThread = new Thread(() -> {
@@ -89,7 +89,7 @@ public class Controller {
         toNodeAddresses.forEach(address -> {
             String host = address.getHostString();
             int port = address.getPort();
-            ToNode toNode = new ToNode("Sync", cacheManager, host, port, toIsCluster, false, immediate, immediateResendTimes, switchFlag);
+            ToNode toNode = new ToNode("Sync", cacheManager, host, port, toIsCluster, false, immediate, immediateResendTimes, switchFlag, toFlushSize);
             toNode.start();
             if (toNode.isStarted(10000)) {
                 cacheManager.register(toNode.getContext());
@@ -176,14 +176,14 @@ public class Controller {
         private int port;
         private ToContext toContext;
 
-        public ToNode(String threadNamePrefix, CacheManager cacheManager, String host, int port, boolean toIsCluster, boolean isConsole, boolean immediate, int immediateResendTimes, String switchFlag) {
+        public ToNode(String threadNamePrefix, CacheManager cacheManager, String host, int port, boolean toIsCluster, boolean isConsole, boolean immediate, int immediateResendTimes, String switchFlag, int flushSize) {
             this.name = Constant.PROJECT_NAME + "-" + threadNamePrefix + "-ToNode-" + host + "-" + port;
             this.setName(name);
             this.cacheManager = cacheManager;
             this.host = host;
             this.port = port;
             //放在构造方法而不是run，因为兼容console模式，需要收集context，否则可能收集到null
-            this.toContext = new ToContext(cacheManager, host, port, fromIsCluster, toIsCluster, isConsole, immediate, immediateResendTimes, switchFlag);
+            this.toContext = new ToContext(cacheManager, host, port, fromIsCluster, toIsCluster, isConsole, immediate, immediateResendTimes, switchFlag, flushSize);
         }
 
         @Override
@@ -261,7 +261,7 @@ public class Controller {
             toNodeAddresses.forEach(address -> {
                 String host = address.getHostString();
                 int port = address.getPort();
-                ToNode toNode = new ToNode("Console", cacheManager, host, port, toIsCluster, true, immediate, 0, switchFlag);
+                ToNode toNode = new ToNode("Console", cacheManager, host, port, toIsCluster, true, immediate, 0, switchFlag, 0);
                 consoleContext.setToContext((ToContext) toNode.getContext());
                 toNode.start();
             });

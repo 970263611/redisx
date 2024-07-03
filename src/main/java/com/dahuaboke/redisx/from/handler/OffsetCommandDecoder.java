@@ -30,6 +30,8 @@ public class OffsetCommandDecoder extends SimpleChannelInboundHandler<OffsetComm
         String masterId = msg.getMasterId();
         if (masterId != null) {
             channel.attr(Constant.MASTER_ID).set(masterId);
+        } else {
+            logger.error("MasterId is null");
         }
         long offset = msg.getOffset();
         if (offset != 0) {

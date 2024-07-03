@@ -32,8 +32,9 @@ public class ToContext extends Context {
     private boolean immediate;
     private int immediateResendTimes;
     private String switchFlag;
+    private int flushSize;
 
-    public ToContext(CacheManager cacheManager, String host, int port, boolean fromIsCluster, boolean toIsCluster, boolean isConsole, boolean immediate, int immediateResendTimes, String switchFlag) {
+    public ToContext(CacheManager cacheManager, String host, int port, boolean fromIsCluster, boolean toIsCluster, boolean isConsole, boolean immediate, int immediateResendTimes, String switchFlag, int flushSize) {
         super(fromIsCluster, toIsCluster);
         this.cacheManager = cacheManager;
         this.host = host;
@@ -45,6 +46,7 @@ public class ToContext extends Context {
         this.immediate = immediate;
         this.immediateResendTimes = immediateResendTimes;
         this.switchFlag = switchFlag;
+        this.flushSize = flushSize;
     }
 
     public String getId() {
@@ -232,5 +234,9 @@ public class ToContext extends Context {
 
     public int getImmediateResendTimes() {
         return immediateResendTimes;
+    }
+
+    public int getFlushSize() {
+        return flushSize;
     }
 }

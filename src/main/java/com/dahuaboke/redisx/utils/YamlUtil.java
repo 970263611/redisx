@@ -61,8 +61,9 @@ public class YamlUtil {
                 throw new IllegalArgumentException("redisx.from.redis.version");
             }
             String switchFlag = paramMap.get("redisx.switchFlag") == null ? Constant.SWITCH_FLAG : (String) paramMap.get("redisx.switchFlag");
-            boolean syncRdb = paramMap.get("redisx.syncRdb") == null ? false : (boolean) paramMap.get("redisx.syncRdb");
-            return new Redisx.Config(fromIsCluster, fromPassword, fromAddresses, toIsCluster, toPassword, toAddresses, consoleEnable, consolePort, consoleTimeout, immediate, alwaysFullSync, immediateResendTimes, redisVersion, switchFlag, syncRdb);
+            boolean syncRdb = paramMap.get("redisx.syncRdb") == null ? true : (boolean) paramMap.get("redisx.syncRdb");
+            int toFlushSize = paramMap.get("redisx.to.flushSize") == null ? 50 : (int) paramMap.get("redisx.to.flushSize");
+            return new Redisx.Config(fromIsCluster, fromPassword, fromAddresses, toIsCluster, toPassword, toAddresses, consoleEnable, consolePort, consoleTimeout, immediate, alwaysFullSync, immediateResendTimes, redisVersion, switchFlag, syncRdb, toFlushSize);
         } catch (Exception e) {
             logger.error("Config param error", e);
             System.exit(0);
