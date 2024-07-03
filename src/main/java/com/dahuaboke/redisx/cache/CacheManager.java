@@ -88,6 +88,10 @@ public final class CacheManager {
             BlockingQueue<SyncCommand> v = entry.getValue();
             if (k.isAdapt(toIsCluster, key)) {
                 boolean offer = v.offer(command);
+                int size = v.size();
+                if (size > 10000) {
+                    logger.warn("Cache has command size [{}]", size);
+                }
                 if (!offer) {
                     logger.error("Publish command error, queue size [{}]", v.size());
                 }
