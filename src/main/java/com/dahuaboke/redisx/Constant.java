@@ -79,6 +79,10 @@ public class Constant {
 
     public static final String ERROR_REPLY_PREFIX = "ERROR:";
 
+    public static final String MULTI = "MULTI";
+
+    public static final String EXEC = "EXEC";
+
 
     //RDB
 

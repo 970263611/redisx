@@ -87,7 +87,9 @@ public class SyncCommand extends Command {
         if (stringCommand.toUpperCase().startsWith(Constant.SELECT)) {
             return context.isFromIsCluster() || context.isToIsCluster();
         }
-        return Constant.PING_COMMAND.equalsIgnoreCase(stringCommand);
+        return Constant.PING_COMMAND.equalsIgnoreCase(stringCommand)
+                || Constant.MULTI.equalsIgnoreCase(stringCommand)
+                || Constant.EXEC.equalsIgnoreCase(stringCommand);
     }
 
     public String getKey() {
