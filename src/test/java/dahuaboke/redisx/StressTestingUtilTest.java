@@ -10,19 +10,21 @@ import org.redisson.config.Config;
 
 import java.security.NoSuchAlgorithmException;
 import java.security.SecureRandom;
+import java.text.SimpleDateFormat;
 import java.util.*;
 import java.util.concurrent.CountDownLatch;
 
 public class StressTestingUtilTest {
 
+    //*********** 配置项 始 ***********//
     //配置单点地址，或者集群服务器中任一地址,哨兵模式下需配置哨兵节点的ip端口
-    private String address = "redis://192.168.56.128:16001";
+    private String address = "redis://xxx.xxx.xxx.xxx:port";
 
     //是否集群
     private ServerType serverType = ServerType.CLUSTER;
 
     //并发数
-    private int threadCount = 20;
+    private int threadCount = 5;
 
     //测试时间，秒
     private int second = 310;
@@ -35,6 +37,7 @@ public class StressTestingUtilTest {
 
     //是否要保证生成的key唯一
     private boolean onlyKey = true;
+    //*********** 配置项 终 ***********//
 
     private RedissonClient redisson;
 
@@ -218,9 +221,9 @@ public class StressTestingUtilTest {
         }
         StringBuilder sb = new StringBuilder();
         sb.append(countMap.get("num")).append("-");
-        sb.append(count);
-        sb.append(",").append(countMap.get("maxTps"));
-        sb.append(",").append(count - countMap.get("lastCount"));
+        sb.append("入库总量:").append(count);
+        sb.append(",").append("maxTps=").append(countMap.get("maxTps"));
+        sb.append(",").append("tps=").append(count - countMap.get("lastCount"));
         System.out.println(sb.toString());
         countMap.put("maxTps", Math.max(countMap.get("maxTps"), count - countMap.get("lastCount")));
         countMap.put("num", countMap.get("num") + 1);
@@ -234,7 +237,7 @@ public class StressTestingUtilTest {
 //                count += entry.getValue();
 //            }
 //        }
-//        SimpleDateFormat format = new SimpleDateFormat("mm:ss");
+//        SimpleDateFormat format = new SimpleDateFormat("HH:mm:ss");
 //        System.out.println(format.format(new Date()) + "-" + (count - countMap.get("lastCount")));
 //        countMap.put("maxTps", Math.max(countMap.get("maxTps"), count - countMap.get("lastCount")));
 //        countMap.put("num", countMap.get("num") + 1);
