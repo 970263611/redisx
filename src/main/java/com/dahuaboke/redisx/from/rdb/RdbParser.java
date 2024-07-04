@@ -23,70 +23,51 @@ public class RdbParser {
     private ByteBuf byteBuf;
 
     public RdbParser(ByteBuf byteBuf) {
-        this.rdbInfo = new RdbInfo(byteBuf);
+        //---  为了方便观察Rdb内容状况，打印前后各9位 跟业务无关---
+        ByteBuf start9 = Unpooled.buffer();
+        ByteBuf end9 = Unpooled.buffer();
+        if (byteBuf.writerIndex() >= 9) {
+            start9 = byteBuf.slice(0, 9);
+            end9 = byteBuf.slice(byteBuf.writerIndex() - 9, 9);
+        }
+        logger.info("Rdb prase start,rdbBuf length is = " + byteBuf.readableBytes()
+                + ",\r\n the start 9 byte is \r\n" + ByteBufUtil.prettyHexDump(start9)
+                + "',\r\n the end 9 byte is \r\n" + ByteBufUtil.prettyHexDump(end9));
+        //---  为了方便观察Rdb内容状况，打印前后各9位 跟业务无关---
+        this.rdbInfo = new RdbInfo();
+        if (!RdbConstants.START.equals(byteBuf.readBytes(5).toString(Charset.defaultCharset()))) {
+            logger.error("rdb file format error");
+            throw new RuntimeException("rdb file format error");
+        }
+        rdbHeader().setVer(byteBuf.readBytes(4).toString(Charset.defaultCharset()));
         this.byteBuf = byteBuf;
     }
 
-    /**
-     * 获取文件描述信息
-     */
-    public void parseHeader() {
-        //必须已REDIS开头
-        if (!RdbConstants.START.equals(byteBuf.readBytes(5).toString(Charset.defaultCharset()))) {
-            return;
-        }
-        //后面四位是版本
-        rdbHeader().setVer(byteBuf.readBytes(4).toString(Charset.defaultCharset()));
-        boolean flag = true;
-        while (flag) {
-            byteBuf.markReaderIndex();
-            int b = byteBuf.readByte() & 0xff;
-            switch (b) {
-                //各类信息解析
-                case RdbConstants.AUX:
-                    auxParse();
-                    break;
-                case RdbConstants.MODULE_AUX:
-                    moduleParse();
-                    break;
-                case RdbConstants.FUNCTION:
-                    functionParse();
-                    break;
-                case RdbConstants.DBSELECT:
-                    byteBuf.resetReaderIndex();
-                    flag = false;
-                    break;
-                case RdbConstants.EOF:
-                    rdbInfo.setEnd(true);
-                    rdbInfo.setRdbData(null);
-                default:
-                    int index = ByteBufUtil.indexOf(Unpooled.copiedBuffer(new byte[]{(byte) 0xfb}), byteBuf);
-                    if (index != -1) {
-                        if (index >= byteBuf.readerIndex()) {
-                            byteBuf.readBytes(index - byteBuf.readerIndex());
-                            continue;
-                        }
-                    }
-                    index = ByteBufUtil.indexOf(Unpooled.copiedBuffer(new byte[]{(byte) 0xff}), byteBuf);
-                    if (index != -1) {
-                        if (index >= byteBuf.readerIndex()) {
-                            byteBuf.readBytes(index - byteBuf.readerIndex());
-                            continue;
-                        }
-                    }
-                    flag = false;
-            }
-        }
-    }
 
     /**
-     * 解析具体数据，每次生产一条
+     * 文件解析
      */
-    public void parseData() {
+    public void parse() {
         clear();
         while (true) {
             int b = byteBuf.readByte() & 0xff;
             switch (b) {
+                case RdbConstants.EOF:
+                    rdbInfo.setEnd(true);
+                    rdbInfo.setRdbData(null);
+                    return;
+                //头部分
+                case RdbConstants.AUX:
+                    auxParse();
+                    return;
+                case RdbConstants.MODULE_AUX:
+                    moduleParse();
+                    return;
+                case RdbConstants.FUNCTION:
+                    functionParse();
+                    rdbInfo.setFunctionReady(true);
+                    return;
+                //数据部分
                 case RdbConstants.DBSELECT:
                     rdbData().setSelectDB(ParserManager.LENGTH.parse(byteBuf).len);
                     rdbData().setDataNum(1);
@@ -111,10 +92,6 @@ public class RdbParser {
                     rdbData().setEvictType(EvictType.LFU);
                     rdbData().setEvictValue((long) (byteBuf.readByte() & 0xff));
                     break;
-                case RdbConstants.EOF:
-                    rdbInfo.setEnd(true);
-                    rdbInfo.setRdbData(null);
-                    return;
                 default:
                     rdbData().setRdbType(b);
                     rdbData().setKey(ParserManager.STRING_00.parse(byteBuf));
@@ -122,6 +99,8 @@ public class RdbParser {
                     if (parser != null) {
                         rdbData().setValue(parser.parse(byteBuf));
                     }
+                    rdbData().setDataNum(rdbData().getDataNum() + 1);
+                    rdbInfo.setDataReady(true);
                     return;
             }
         }
@@ -169,10 +148,6 @@ public class RdbParser {
         rdbHeader().getFunction().add(ParserManager.STRING_00.parse(byteBuf));
     }
 
-    private void readOneByte() {
-        byteBuf.readByte();
-    }
-
     public RdbInfo getRdbInfo() {
         return rdbInfo;
     }
@@ -186,13 +161,14 @@ public class RdbParser {
     }
 
     private void clear() {
+        rdbInfo.setDataReady(false);//数据就绪标识位置位false
+        rdbInfo.setFunctionReady(false);
         rdbData().setExpiredType(ExpiredType.NONE);
+        rdbData().setEvictType(EvictType.NONE);
+        rdbData().setEvictValue(-1l);
         rdbData().setExpireTime(-1);
-        rdbData().setDataNum(rdbData().getDataNum() + 1);
         rdbData().setRdbType(-1);
         rdbData().setKey(null);
         rdbData().setValue(null);
-        rdbData().setEvictType(EvictType.NONE);
-        rdbData().setEvictValue(-1l);
     }
 }

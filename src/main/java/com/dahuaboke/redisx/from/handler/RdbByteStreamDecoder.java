@@ -6,6 +6,7 @@ import com.dahuaboke.redisx.command.from.SyncCommand;
 import com.dahuaboke.redisx.from.FromContext;
 import com.dahuaboke.redisx.from.rdb.CommandParser;
 import com.dahuaboke.redisx.from.rdb.RdbData;
+import com.dahuaboke.redisx.from.rdb.RdbInfo;
 import com.dahuaboke.redisx.from.rdb.RdbParser;
 import io.netty.buffer.ByteBuf;
 import io.netty.buffer.ByteBufAllocator;
@@ -103,17 +104,6 @@ public class RdbByteStreamDecoder extends ChannelInboundHandlerAdapter {
                 }
 
                 if (RdbType.END == rdbType) {//开始解析Rdb
-                    //---  为了方便观察Rdb内容状况，打印前后各9位 跟业务无关---
-                    ByteBuf start9 = Unpooled.buffer();
-                    ByteBuf end9 = Unpooled.buffer();
-                    if (rdbBuf.writerIndex() >= 9) {
-                        start9 = rdbBuf.slice(0, 9);
-                        end9 = rdbBuf.slice(rdbBuf.writerIndex() - 9, 9);
-                    }
-                    logger.info("RdbType is " + rdbType.name() + ",Rdb prase start " + ",current data length is = " + rdbBuf.readableBytes()
-                            + ",\r\n the start 9 byte is \r\n" + ByteBufUtil.prettyHexDump(start9)
-                            + "',\r\n the end 9 byte is \r\n" + ByteBufUtil.prettyHexDump(end9));
-                    //---  为了方便观察Rdb内容状况，打印前后各9位 跟业务无关---
                     length = -1;
                     eofEnd = null;
                     rdbType = RdbType.START;
@@ -158,24 +148,16 @@ public class RdbByteStreamDecoder extends ChannelInboundHandlerAdapter {
 
     private void parse(ByteBuf byteBuf) {
         RdbParser parser = new RdbParser(byteBuf);
-        parser.parseHeader();
-        logger.debug(parser.getRdbInfo().getRdbHeader().toString());
-        List<List<String>> commands = commandParser.parser(parser.getRdbInfo().getRdbHeader());
-        for (List<String> command : commands) {
-            SyncCommand syncCommand = new SyncCommand(fromContext, command, false);
-            boolean success = fromContext.publish(syncCommand);
-            if (success) {
-                logger.debug("Success rdb header [{}]", commands);
-            } else {
-                logger.error("Sync rdb header [{}] failed", commands);
+        RdbInfo info = parser.getRdbInfo();
+        while (true) {
+            parser.parse();
+            if(info.isEnd()){
+                break;
             }
-        }
-        while (!parser.getRdbInfo().isEnd()) {
-            parser.parseData();
-            RdbData rdbData = parser.getRdbInfo().getRdbData();
-            if (rdbData != null) {
-                if (rdbData.getDataNum() == 1) {
-                    long selectDB = rdbData.getSelectDB();
+            if(info.isDataReady()){
+                RdbData data = info.getRdbData();
+                if (data.getDataNum() == 1) {
+                    long selectDB = data.getSelectDB();
                     SyncCommand syncCommand2 = new SyncCommand(fromContext, new ArrayList<String>() {{
                         add(Constant.SELECT);
                         add(String.valueOf(selectDB));
@@ -187,7 +169,7 @@ public class RdbByteStreamDecoder extends ChannelInboundHandlerAdapter {
                         logger.error("Select db failed [{}]", selectDB);
                     }
                 }
-                commands = commandParser.parser(rdbData);
+                List<List<String>> commands = commandParser.parser(data);
                 for (List<String> command : commands) {
                     SyncCommand syncCommand1 = new SyncCommand(fromContext, command, false);
                     boolean success1 = fromContext.publish(syncCommand1);
