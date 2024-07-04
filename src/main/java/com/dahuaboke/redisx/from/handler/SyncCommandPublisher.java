@@ -16,7 +16,6 @@ public class SyncCommandPublisher extends SimpleChannelInboundHandler<SyncComman
 
     private static final Logger logger = LoggerFactory.getLogger(SyncCommandPublisher.class);
     private FromContext fromContext;
-    private long unSyncCommandLength = 0;
 
     public SyncCommandPublisher(FromContext fromContext) {
         this.fromContext = fromContext;
@@ -26,11 +25,12 @@ public class SyncCommandPublisher extends SimpleChannelInboundHandler<SyncComman
     protected void channelRead0(ChannelHandlerContext ctx, SyncCommand command) throws Exception {
         int commandLength = command.getCommandLength();
         if (command.isIgnore()) {
-            unSyncCommandLength += commandLength;
+            fromContext.appendUnSyncCommandLength(commandLength);
         } else {
+            int unSyncCommandLength = fromContext.getUnSyncCommandLength();
             if (unSyncCommandLength > 0) {
                 commandLength += unSyncCommandLength;
-                unSyncCommandLength = 0;
+                fromContext.clearUnSyncCommandLength();
             }
             command.setSyncLength(commandLength);
             boolean success = fromContext.publish(command);
