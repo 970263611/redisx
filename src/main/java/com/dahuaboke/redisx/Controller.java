@@ -268,7 +268,7 @@ public class Controller {
             fromNodeAddresses.forEach(address -> {
                 String host = address.getHostString();
                 int port = address.getPort();
-                FromNode fromNode = new FromNode("Console", cacheManager, host, port, false, true, false);
+                FromNode fromNode = new FromNode("Console", cacheManager, host, port, true, false, false);
                 consoleContext.setFromContext((FromContext) fromNode.getContext());
                 fromNode.start();
             });
