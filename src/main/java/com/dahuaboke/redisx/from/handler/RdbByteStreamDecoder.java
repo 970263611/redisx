@@ -2,9 +2,11 @@ package com.dahuaboke.redisx.from.handler;
 
 import com.dahuaboke.redisx.Constant;
 import com.dahuaboke.redisx.command.from.RdbCommand;
+import com.dahuaboke.redisx.command.from.SyncCommand;
 import com.dahuaboke.redisx.from.FromContext;
 import com.dahuaboke.redisx.from.rdb.CommandParser;
 import com.dahuaboke.redisx.from.rdb.RdbData;
+import com.dahuaboke.redisx.from.rdb.RdbInfo;
 import com.dahuaboke.redisx.from.rdb.RdbParser;
 import io.netty.buffer.ByteBuf;
 import io.netty.buffer.ByteBufAllocator;
@@ -17,6 +19,7 @@ import org.slf4j.Logger;
 import org.slf4j.LoggerFactory;
 
 import java.nio.charset.Charset;
+import java.util.ArrayList;
 import java.util.List;
 import java.util.concurrent.CompletableFuture;
 
@@ -101,41 +104,32 @@ public class RdbByteStreamDecoder extends ChannelInboundHandlerAdapter {
                 }
 
                 if (RdbType.END == rdbType) {//开始解析Rdb
-                    //---  为了方便观察Rdb内容状况，打印前后各9位 跟业务无关---
-                    ByteBuf start9 = Unpooled.buffer();
-                    ByteBuf end9 = Unpooled.buffer();
-                    if (rdbBuf.writerIndex() >= 9) {
-                        start9 = rdbBuf.slice(0, 9);
-                        end9 = rdbBuf.slice(rdbBuf.writerIndex() - 9, 9);
-                    }
-                    logger.info("RdbType is " + rdbType.name() + ",Rdb prase start " + ",current data length is = " + rdbBuf.readableBytes()
-                            + ",\r\n the start 9 byte is \r\n" + ByteBufUtil.prettyHexDump(start9)
-                            + "',\r\n the end 9 byte is \r\n" + ByteBufUtil.prettyHexDump(end9));
-                    //---  为了方便观察Rdb内容状况，打印前后各9位 跟业务无关---
                     length = -1;
                     eofEnd = null;
                     rdbType = RdbType.START;
                     ctx.channel().attr(Constant.RDB_STREAM_NEXT).set(false);
-                    fromContext.setRdbAckOffset(true);
-                    ByteBuf finalRdbBuf = rdbBuf;
-                    CompletableFuture<Void> future = CompletableFuture.supplyAsync(() -> {
-                        String threadName = Constant.PROJECT_NAME + "-RdbParseThread-" + fromContext.getHost() + ":" + fromContext.getPort();
-                        Thread.currentThread().setName(threadName);
-                        parse(finalRdbBuf);
-                        return null;
-                    });
-                    future.exceptionally(e -> {
-                        logger.error("Parse rdb stream error", e);
-                        return null;
-                    });
-                    while (!future.isDone()) {
-                        if (!fromContext.isClose()) {
-                            fromContext.ackOffset();
+                    if (fromContext.isSyncRdb()) {
+                        fromContext.setRdbAckOffset(true);
+                        ByteBuf finalRdbBuf = rdbBuf;
+                        CompletableFuture<Void> future = CompletableFuture.supplyAsync(() -> {
+                            String threadName = Constant.PROJECT_NAME + "-RdbParseThread-" + fromContext.getHost() + ":" + fromContext.getPort();
+                            Thread.currentThread().setName(threadName);
+                            parse(finalRdbBuf);
+                            return null;
+                        });
+                        future.exceptionally(e -> {
+                            logger.error("Parse rdb stream error", e);
+                            return null;
+                        });
+                        while (!future.isDone()) {
+                            if (!fromContext.isClose()) {
+                                fromContext.ackOffset();
+                            }
+                            Thread.sleep(1000);
                         }
-                        Thread.sleep(1000);
+                        fromContext.setRdbAckOffset(false);
+                        logger.info("The RDB stream has been processed");
                     }
-                    fromContext.setRdbAckOffset(false);
-                    logger.info("The RDB stream has been processed");
                 }
                 if (commondBuf != null && commondBuf.isReadable()) {//命令如何有内容，继续往下走
                     ctx.fireChannelRead(commondBuf);
@@ -154,37 +148,35 @@ public class RdbByteStreamDecoder extends ChannelInboundHandlerAdapter {
 
     private void parse(ByteBuf byteBuf) {
         RdbParser parser = new RdbParser(byteBuf);
-        parser.parseHeader();
-        logger.debug(parser.getRdbInfo().getRdbHeader().toString());
-        List<String> commands = commandParser.parser(parser.getRdbInfo().getRdbHeader());
-        for (String command : commands) {
-            boolean success = fromContext.publish(command, null);
-            if (success) {
-                logger.debug("Success rdb data [{}]", command);
-            } else {
-                logger.error("Sync rdb data [{}] failed", command);
+        RdbInfo info = parser.getRdbInfo();
+        while (true) {
+            parser.parse();
+            if(info.isEnd()){
+                break;
             }
-        }
-        while (!parser.getRdbInfo().isEnd()) {
-            parser.parseData();
-            RdbData rdbData = parser.getRdbInfo().getRdbData();
-            if (rdbData != null) {
-                if (rdbData.getDataNum() == 1) {
-                    long selectDB = rdbData.getSelectDB();
-                    boolean success = fromContext.publish(Constant.SELECT_PREFIX + selectDB, null);
-                    if (success) {
+            if(info.isDataReady()){
+                RdbData data = info.getRdbData();
+                if (data.getDataNum() == 1) {
+                    long selectDB = data.getSelectDB();
+                    SyncCommand syncCommand2 = new SyncCommand(fromContext, new ArrayList<String>() {{
+                        add(Constant.SELECT);
+                        add(String.valueOf(selectDB));
+                    }}, false);
+                    boolean success2 = fromContext.publish(syncCommand2);
+                    if (success2) {
                         logger.debug("Select db success [{}]", selectDB);
                     } else {
                         logger.error("Select db failed [{}]", selectDB);
                     }
                 }
-                commands = commandParser.parser(rdbData);
-                for (String command : commands) {
-                    boolean success = fromContext.publish(command, null);
-                    if (success) {
-                        logger.debug("Success rdb data [{}]", command);
+                List<List<String>> commands = commandParser.parser(data);
+                for (List<String> command : commands) {
+                    SyncCommand syncCommand1 = new SyncCommand(fromContext, command, false);
+                    boolean success1 = fromContext.publish(syncCommand1);
+                    if (success1) {
+                        logger.trace("Success rdb data [{}]", commands);
                     } else {
-                        logger.error("Sync rdb data [{}] failed", command);
+                        logger.error("Sync rdb data [{}] failed", commands);
                     }
                 }
             }

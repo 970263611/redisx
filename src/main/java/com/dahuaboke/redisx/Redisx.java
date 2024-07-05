@@ -17,7 +17,7 @@ public class Redisx {
         Controller controller = new Controller(config.getRedisVersion(), config.fromIsCluster(), config.getFromPassword(),
                 config.toIsCluster(), config.getToPassword(), config.isImmediate(), config.getImmediateResendTimes(), config.getSwitchFlag());
         controller.start(config.getFromAddresses(), config.getToAddresses(), config.consoleEnable(),
-                config.getConsolePort(), config.getConsoleTimeout(), config.isAlwaysFullSync());
+                config.getConsolePort(), config.getConsoleTimeout(), config.isAlwaysFullSync(), config.isSyncRdb(), config.getToFlushSize());
     }
 
     public static class Config {
@@ -29,17 +29,19 @@ public class Redisx {
         private int immediateResendTimes;
         private String redisVersion;
         private String switchFlag;
+        private boolean syncRdb;
 
         public Config(boolean fromIsCluster, String fromPassword, List<InetSocketAddress> fromAddresses, boolean toIsCluster, String toPassword,
-                      List<InetSocketAddress> toAddresses, boolean consoleEnable, int consolePort, int consoleTimeout, boolean immediate, boolean alwaysFullSync, int immediateResendTimes, String redisVersion, String switchFlag) {
+                      List<InetSocketAddress> toAddresses, boolean consoleEnable, int consolePort, int consoleTimeout, boolean immediate, boolean alwaysFullSync, int immediateResendTimes, String redisVersion, String switchFlag, boolean syncRdb, int toFlushSize) {
             this.from = new From(fromIsCluster, fromAddresses, fromPassword);
-            this.to = new To(toIsCluster, toAddresses, toPassword);
+            this.to = new To(toIsCluster, toAddresses, toPassword, toFlushSize);
             this.console = new Console(consoleEnable, consolePort, consoleTimeout);
             this.immediate = immediate;
             this.alwaysFullSync = alwaysFullSync;
             this.immediateResendTimes = immediateResendTimes;
             this.redisVersion = redisVersion;
             this.switchFlag = switchFlag;
+            this.syncRdb = syncRdb;
         }
 
         public boolean fromIsCluster() {
@@ -98,6 +100,14 @@ public class Redisx {
             return switchFlag;
         }
 
+        public boolean isSyncRdb() {
+            return syncRdb;
+        }
+
+        public int getToFlushSize() {
+            return this.to.flushSize;
+        }
+
         private static class From {
             private boolean isCluster;
             private List<InetSocketAddress> addresses;
@@ -114,11 +124,13 @@ public class Redisx {
             private boolean isCluster;
             private List<InetSocketAddress> addresses;
             private String password;
+            private int flushSize;
 
-            public To(boolean isCluster, List<InetSocketAddress> addresses, String password) {
+            public To(boolean isCluster, List<InetSocketAddress> addresses, String password, int flushSize) {
                 this.isCluster = isCluster;
                 this.addresses = addresses;
                 this.password = password;
+                this.flushSize = flushSize;
             }
         }
 

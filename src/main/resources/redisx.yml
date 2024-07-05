@@ -12,9 +12,10 @@ redisx:
     #password: 1a.2B*
     isCluster: true
     address:
-      - localhost:16379
-      - localhost:16380
-      - localhost:16381
+      - localhost:7379
+      - localhost:7380
+      - localhost:7381
+    flushSize: 20
   console:
     enable: false
     port: 9999
@@ -24,3 +25,4 @@ redisx:
     resendTimes: 3
   alwaysFullSync: false
   switchFlag: REDIS-X-AUTHOR:DAHUA&CHANGDONGLIANG&ZHANGHUIHAO&ZHANGSHUHAN
+  syncRdb: true

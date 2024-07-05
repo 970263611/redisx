@@ -2,12 +2,13 @@ package com.dahuaboke.redisx.to.handler;
 
 import com.dahuaboke.redisx.Constant;
 import com.dahuaboke.redisx.Context;
-import com.dahuaboke.redisx.cache.CacheManager;
+import com.dahuaboke.redisx.command.from.SyncCommand;
 import com.dahuaboke.redisx.from.FromContext;
 import com.dahuaboke.redisx.to.ToContext;
 import io.netty.channel.Channel;
 import io.netty.channel.ChannelHandlerContext;
 import io.netty.channel.ChannelInboundHandlerAdapter;
+import io.netty.handler.codec.redis.RedisMessage;
 import org.slf4j.Logger;
 import org.slf4j.LoggerFactory;
 
@@ -27,42 +28,44 @@ public class SyncCommandListener extends ChannelInboundHandlerAdapter {
 
     @Override
     public void handlerAdded(ChannelHandlerContext ctx) throws Exception {
+        int flushSize = toContext.getFlushSize();
         Thread thread = new Thread(() -> {
             Channel channel = ctx.channel();
             int flushThreshold = 0;
             long timeThreshold = System.currentTimeMillis();
             while (!toContext.isClose()) {
-                if (channel.pipeline().get(Constant.SLOT_HANDLER_NAME) == null &&
-                        channel.isActive() && channel.isWritable()) {
-                    CacheManager.CommandReference reference = toContext.listen();
+                if (channel.pipeline().get(Constant.SLOT_HANDLER_NAME) == null && channel.isActive()) {
+                    SyncCommand syncCommand = toContext.listen();
                     boolean immediate = toContext.isImmediate();
-                    if (reference != null) {
-                        FromContext fromContext = reference.getFromContext();
-                        Integer length = reference.getLength();
-                        String command = reference.getContent();
+                    if (syncCommand != null) {
+                        FromContext fromContext = (FromContext) syncCommand.getContext();
+                        int length = syncCommand.getSyncLength();
+                        RedisMessage redisMessage = syncCommand.getCommand();
                         long offset = fromContext.getOffset();
-                        if (length != null) {
+                        if (syncCommand.isNeedAddLengthToOffset()) {
                             offset += length;
                             fromContext.setOffset(offset);
                         }
                         if (immediate) { //强一致模式
                             for (int i = 0; i < toContext.getImmediateResendTimes(); i++) {
-                                boolean success = immediateSend(ctx, command, length, i + 1);
+                                boolean success = immediateSend(ctx, redisMessage, length, i + 1);
                                 if (success) {
                                     break;
                                 }
                             }
                         } else {
-                            ctx.write(command);
+                            ctx.write(redisMessage);
                             flushThreshold++;
                         }
-                        logger.debug("Write command [{}] length [{}], now offset [{}]", command, length, offset);
+                        logger.trace("Write command [{}] length [{}], now offset [{}]", syncCommand.getStringCommand(), length, offset);
                     }
-                    if (!immediate && (flushThreshold > 100 || (System.currentTimeMillis() - timeThreshold > 100))) {
-                        ctx.flush();
-                        logger.trace("Flush data success");
-                        flushThreshold = 0;
-                        timeThreshold = System.currentTimeMillis();
+                    if (!immediate && (flushThreshold > flushSize || (System.currentTimeMillis() - timeThreshold > 100))) {
+                        if (flushThreshold > 0) {
+                            ctx.flush();
+                            logger.debug("Flush data success [{}]", flushThreshold);
+                            flushThreshold = 0;
+                            timeThreshold = System.currentTimeMillis();
+                        }
                     }
                 }
             }
@@ -71,9 +74,9 @@ public class SyncCommandListener extends ChannelInboundHandlerAdapter {
         thread.start();
     }
 
-    private boolean immediateSend(ChannelHandlerContext ctx, String command, int length, int times) {
-        if (!ctx.writeAndFlush(command).isSuccess() || toContext.preemptMasterCompulsoryWithCheckId()) {
-            logger.error("Write command [{}] length [{}] error times: [" + times + "]", command, length);
+    private boolean immediateSend(ChannelHandlerContext ctx, RedisMessage redisMessage, int length, int times) {
+        if (!ctx.writeAndFlush(redisMessage).isSuccess() || toContext.preemptMasterCompulsoryWithCheckId()) {
+            logger.error("Write length [{}] error times: [" + times + "]", length);
             return false;
         }
         return true;

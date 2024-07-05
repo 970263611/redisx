@@ -1,6 +1,5 @@
 package com.dahuaboke.redisx.from.rdb;
 
-import com.dahuaboke.redisx.Constant;
 import com.dahuaboke.redisx.from.rdb.stream.Stream;
 import com.dahuaboke.redisx.from.rdb.zset.ZSetEntry;
 import org.slf4j.Logger;
@@ -51,169 +50,183 @@ public class CommandParser {
         FUNCTION;
     }
 
-    public List<String> parser(RdbHeader rdbHeader) {
-        List<String> result = new LinkedList();
+    public List<List<String>> parser(RdbHeader rdbHeader) {
+        List<List<String>> result = new LinkedList();
         if (rdbHeader.getFunction() != null && rdbHeader.getFunction().size() > 0) {
             function(result, rdbHeader.getFunction());
         }
         return result;
     }
 
-    public List<String> parser(RdbData rdbData) {
-        List<String> result = new LinkedList();
-        switch (typeMap.get(rdbData.getRdbType())) {
-            case STRING:
-                string(result, rdbData.getKey(), (byte[]) rdbData.getValue());
-                break;
-            case LIST:
-                list(result, rdbData.getKey(), (List<byte[]>) rdbData.getValue());
-                break;
-            case SET:
-                set(result, rdbData.getKey(), (Set<byte[]>) rdbData.getValue());
-                break;
-            case ZSET:
-                zet(result, rdbData.getKey(), (Set<ZSetEntry>) rdbData.getValue());
-                break;
-            case HASH:
-                hash(result, rdbData.getKey(), (Map<byte[], byte[]>) rdbData.getValue());
-                break;
-            case MOUDULE:
-                moudule(result, rdbData.getKey(), rdbData.getValue());
-                break;
-            case STREAM:
-                stream(result, rdbData.getKey(), (Stream) rdbData.getValue());
-                break;
-            default:
-                throw new IllegalArgumentException("Rdb type error");
-        }
-        long expireTime = rdbData.getExpireTime();
-        long lastTime = expireTime - System.currentTimeMillis();
-        ExpiredType expiredType = rdbData.getExpiredType();
-        if (ExpiredType.NONE != expiredType) {
-            StringBuilder sb = new StringBuilder();
-            sb.append("expire");
-            sb.append(Constant.STR_SPACE).append(new String(rdbData.getKey()));
-            if (ExpiredType.SECOND == expiredType) {
-                sb.append(Constant.STR_SPACE).append(lastTime);
-            } else if (ExpiredType.MS == expiredType) {
-                sb.append(Constant.STR_SPACE).append(lastTime / 1000);
-            } else {
-                throw new IllegalArgumentException("Rdb type error");
+    public List<List<String>> parser(RdbData rdbData) {
+        List<List<String>> result = new LinkedList();
+        Type type = typeMap.get(rdbData.getRdbType());
+        if (type!=null) {
+            switch (type) {
+                case STRING:
+                    string(result, rdbData.getKey(), (byte[]) rdbData.getValue());
+                    break;
+                case LIST:
+                    list(result, rdbData.getKey(), (List<byte[]>) rdbData.getValue());
+                    break;
+                case SET:
+                    set(result, rdbData.getKey(), (Set<byte[]>) rdbData.getValue());
+                    break;
+                case ZSET:
+                    zet(result, rdbData.getKey(), (Set<ZSetEntry>) rdbData.getValue());
+                    break;
+                case HASH:
+                    hash(result, rdbData.getKey(), (Map<byte[], byte[]>) rdbData.getValue());
+                    break;
+                case MOUDULE:
+                    moudule(result, rdbData.getKey(), rdbData.getValue());
+                    break;
+                case STREAM:
+                    stream(result, rdbData.getKey(), (Stream) rdbData.getValue());
+                    break;
+                default:
+                    throw new IllegalArgumentException("Rdb type error");
             }
-            result.add(new String(sb));
+            long expireTime = rdbData.getExpireTime();
+            long lastTime = expireTime - System.currentTimeMillis();
+            ExpiredType expiredType = rdbData.getExpiredType();
+            if (ExpiredType.NONE != expiredType) {
+                List<String> sb = new LinkedList<>();
+                sb.add("expire");
+                sb.add(new String(rdbData.getKey()));
+                if (ExpiredType.SECOND == expiredType) {
+                    sb.add(String.valueOf(lastTime));
+                } else if (ExpiredType.MS == expiredType) {
+                    sb.add(String.valueOf(lastTime / 1000));
+                } else {
+                    throw new IllegalArgumentException("Rdb type error");
+                }
+                result.add(sb);
+            }
         }
         return result;
     }
 
-    private void string(List<String> list, byte[] key, byte[] value) {
-        StringBuilder sb = new StringBuilder();
-        sb.append("SET");
-        sb.append(Constant.STR_SPACE).append(new String(key));
-        sb.append(Constant.STR_SPACE).append(new String(value));
-        list.add(sb.toString());
+    private void string(List<List<String>> list, byte[] key, byte[] value) {
+        List<String> sb = new LinkedList<String>() {{
+            add("SET");
+            add(new String(key));
+            add(new String(value));
+        }};
+        list.add(sb);
     }
 
-    private void list(List<String> list, byte[] key, List<byte[]> value) {
-        StringBuilder sb = new StringBuilder();
-        sb.append("LPUSH");
-        sb.append(Constant.STR_SPACE).append(new String(key));
+    private void list(List<List<String>> list, byte[] key, List<byte[]> value) {
+        List<String> sb = new LinkedList<String>() {{
+            add("LPUSH");
+            add(new String(key));
+        }};
         for (byte[] bytes : value) {
-            sb.append(Constant.STR_SPACE).append(new String(bytes));
+            sb.add(new String(bytes));
         }
-        list.add(sb.toString());
+        list.add(sb);
     }
 
-    private void set(List<String> list, byte[] key, Set<byte[]> value) {
-        StringBuilder sb = new StringBuilder();
-        sb.append("SADD");
-        sb.append(Constant.STR_SPACE).append(new String(key));
+    private void set(List<List<String>> list, byte[] key, Set<byte[]> value) {
+        List<String> sb = new LinkedList<String>() {{
+            add("SADD");
+            add(new String(key));
+        }};
         for (byte[] bytes : value) {
-            sb.append(Constant.STR_SPACE).append(new String(bytes));
+            sb.add(new String(bytes));
         }
-        list.add(sb.toString());
+        list.add(sb);
     }
 
-    private void zet(List<String> list, byte[] key, Set<ZSetEntry> value) {
-        StringBuilder sb = new StringBuilder();
-        sb.append("ZADD");
-        sb.append(Constant.STR_SPACE).append(new String(key));
+    private void zet(List<List<String>> list, byte[] key, Set<ZSetEntry> value) {
+        List<String> sb = new LinkedList<String>() {{
+            add("ZADD");
+            add(new String(key));
+        }};
         for (ZSetEntry zSetEntry : value) {
             String score = String.valueOf(zSetEntry.getScore());
             byte[] element = zSetEntry.getElement();
-            sb.append(Constant.STR_SPACE).append(score);
-            sb.append(Constant.STR_SPACE).append(new String(element));
+            sb.add(score);
+            sb.add(new String(element));
         }
-        list.add(sb.toString());
+        list.add(sb);
     }
 
-    private void hash(List<String> list, byte[] key, Map<byte[], byte[]> value) {
-        StringBuilder sb = new StringBuilder();
-        sb.append("HSET");
-        sb.append(Constant.STR_SPACE).append(new String(key));
+    private void hash(List<List<String>> list, byte[] key, Map<byte[], byte[]> value) {
+        List<String> sb = new LinkedList<String>() {{
+            add("HSET");
+            add(new String(key));
+        }};
         for (Map.Entry<byte[], byte[]> kAbdV : value.entrySet()) {
             byte[] key1 = kAbdV.getKey();
             byte[] value1 = kAbdV.getValue();
-            sb.append(Constant.STR_SPACE).append(new String(key1));
-            sb.append(Constant.STR_SPACE).append(new String(value1));
+            sb.add(new String(key1));
+            sb.add(new String(value1));
         }
-        list.add(sb.toString());
+        list.add(sb);
     }
 
-    private void stream(List<String> list, byte[] key, Stream value) {
+    private void stream(List<List<String>> list, byte[] key, Stream value) {
         String streamName = new String(key);
         if (!value.getEntries().isEmpty()) {
             for (Map.Entry<Stream.ID, Stream.Entry> kandv : value.getEntries().entrySet()) {
                 if (kandv.getValue().isDeleted()) {
                     continue;
                 }
-                StringBuilder sb = new StringBuilder();
-                sb.append("XADD");
-                sb.append(Constant.STR_SPACE).append(streamName);
-                sb.append(Constant.STR_SPACE).append(kandv.getKey().getMs()).append("-").append(kandv.getKey().getSeq());
+                List<String> sb = new LinkedList<String>() {{
+                    add("XADD");
+                    add(streamName);
+                    add(kandv.getKey().getMs() + "-" + kandv.getKey().getSeq());
+                }};
                 for (Map.Entry<byte[], byte[]> entry : kandv.getValue().getFields().entrySet()) {
-                    sb.append(Constant.STR_SPACE).append(new String(entry.getKey()));
-                    sb.append(Constant.STR_SPACE).append(new String(entry.getValue()));
+                    sb.add(new String(entry.getKey()));
+                    sb.add(new String(entry.getValue()));
                 }
-                list.add(sb.toString());
+                list.add(sb);
             }
         }
         if (!value.getGroups().isEmpty()) {
             for (int i = 0; i < value.getGroups().size(); i++) {
                 Stream.Group group = value.getGroups().get(i);
-                StringBuilder sb = new StringBuilder();
-                sb.append("XGROUP CREATE");
-                sb.append(Constant.STR_SPACE).append(streamName);
-                sb.append(Constant.STR_SPACE).append(new String(group.getName()));
-                sb.append(Constant.STR_SPACE).append(group.getLastId().getMs()).append("-").append(group.getLastId().getSeq());
-                sb.append(Constant.STR_SPACE).append("ENTRIESREAD").append(Constant.STR_SPACE).append(group.getEntriesRead());
-                list.add(sb.toString());
+                List<String> sb = new LinkedList<String>() {{
+                    add("XGROUP");
+                    add("CREATE");
+                    add(streamName);
+                    add(new String(group.getName()));
+                    add(group.getLastId().getMs() + "-" + group.getLastId().getSeq());
+                    add("ENTRIESREAD");
+                    add(String.valueOf(group.getEntriesRead()));
+                }};
+                list.add(sb);
                 if (group.getConsumers() != null && group.getConsumers().size() > 0) {
                     for (int m = 0; m < group.getConsumers().size(); m++) {
-                        sb = new StringBuilder();
-                        sb.append("XGROUP CREATECONSUMER");
-                        sb.append(Constant.STR_SPACE).append(streamName);
-                        sb.append(Constant.STR_SPACE).append(new String(group.getName()));
-                        sb.append(Constant.STR_SPACE).append(new String(group.getConsumers().get(m).getName()));
-                        list.add(sb.toString());
+                        sb.clear();
+                        sb.add("XGROUP");
+                        sb.add("CREATECONSUMER");
+                        sb.add(streamName);
+                        sb.add(new String(group.getName()));
+                        sb.add(new String(group.getConsumers().get(m).getName()));
+                        list.add(sb);
                     }
                 }
             }
         }
     }
 
-    private void moudule(List<String> list, byte[] key, Object data) {
+    private void moudule(List<List<String>> list, byte[] key, Object data) {
 
     }
 
-    private void function(List<String> list, List<byte[]> value) {
+    private void function(List<List<String>> list, List<byte[]> value) {
         if (value != null && value.size() > 0) {
             value.forEach(v -> {
-                StringBuilder sb = new StringBuilder();
-                sb.append("FUNCTION LOAD");
-                sb.append(Constant.STR_SPACE).append(new String(v));
-                list.add(sb.toString());
+                List<String> sb = new LinkedList<String>() {{
+                    add("FUNCTION");
+                    add("LOAD");
+                    add(new String(v));
+                }};
+                list.add(sb);
             });
         }
     }
-
 }

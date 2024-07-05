@@ -90,9 +90,9 @@ public class StreamListPacksParser implements Parser {
      */
     public void parseEntry(ByteBuf listPackBuf, NavigableMap<Stream.ID, Stream.Entry> entries, Stream.ID baseId) {
         //Master entry
-        long count = Long.parseLong(new String(listPackParser.getListPackEntry(listPackBuf), StandardCharsets.UTF_8));
-        long deleted = Long.parseLong(new String(listPackParser.getListPackEntry(listPackBuf), StandardCharsets.UTF_8));
-        int numFields = Integer.parseInt(new String(listPackParser.getListPackEntry(listPackBuf), StandardCharsets.UTF_8));
+        long count = Long.parseLong(new String(listPackParser.getListPackEntry(listPackBuf)));
+        long deleted = Long.parseLong(new String(listPackParser.getListPackEntry(listPackBuf)));
+        int numFields = Integer.parseInt(new String(listPackParser.getListPackEntry(listPackBuf)));
         byte[][] tempFields = new byte[numFields][];
         for (int j = 0; j < numFields; j++) {
             tempFields[j] = listPackParser.getListPackEntry(listPackBuf);
@@ -103,9 +103,9 @@ public class StreamListPacksParser implements Parser {
         while (total-- > 0) {
             Map<byte[], byte[]> fields = new HashMap<>();
             //FLAG
-            int flag = Integer.parseInt(new String(listPackParser.getListPackEntry(listPackBuf), StandardCharsets.UTF_8));
-            long ms = Long.parseLong(new String(listPackParser.getListPackEntry(listPackBuf), StandardCharsets.UTF_8));
-            long seq = Long.parseLong(new String(listPackParser.getListPackEntry(listPackBuf), StandardCharsets.UTF_8));
+            int flag = Integer.parseInt(new String(listPackParser.getListPackEntry(listPackBuf)));
+            long ms = Long.parseLong(new String(listPackParser.getListPackEntry(listPackBuf)));
+            long seq = Long.parseLong(new String(listPackParser.getListPackEntry(listPackBuf)));
             Stream.ID id = baseId.delta(ms, seq);
             boolean delete = (flag & STREAM_ITEM_FLAG_DELETED) != 0;
             if ((flag & STREAM_ITEM_FLAG_SAMEFIELDS) != 0) {
@@ -118,7 +118,7 @@ public class StreamListPacksParser implements Parser {
                 entries.put(id, new Stream.Entry(id, delete, fields));
             } else {
                 //NONEFIELD
-                numFields = Integer.parseInt(new String(listPackParser.getListPackEntry(listPackBuf), StandardCharsets.UTF_8));
+                numFields = Integer.parseInt(new String(listPackParser.getListPackEntry(listPackBuf)));
                 for (int j = 0; j < numFields; j++) {
                     byte[] field = listPackParser.getListPackEntry(listPackBuf);
                     byte[] value = listPackParser.getListPackEntry(listPackBuf);

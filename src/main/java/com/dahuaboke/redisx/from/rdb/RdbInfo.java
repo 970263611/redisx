@@ -12,7 +12,10 @@ public class RdbInfo {
     //文件解析完成时，该值改为true
     private boolean end;
 
-    private ByteBuf byteBuf;
+
+    private boolean dataReady;
+
+    private boolean functionReady;
 
     //文件描述信息
     private RdbHeader rdbHeader;
@@ -20,8 +23,7 @@ public class RdbInfo {
     //文件数据信息，单条
     private RdbData rdbData;
 
-    public RdbInfo(ByteBuf byteBuf) {
-        this.byteBuf = byteBuf;
+    public RdbInfo() {
         this.rdbHeader = new RdbHeader();
         this.rdbData = new RdbData();
     }
@@ -42,15 +44,27 @@ public class RdbInfo {
         this.rdbData = rdbData;
     }
 
-    public ByteBuf getByteBuf() {
-        return byteBuf;
-    }
-
     public boolean isEnd() {
         return end;
     }
 
     public void setEnd(boolean end) {
         this.end = end;
+    }
+
+    public boolean isDataReady() {
+        return dataReady;
+    }
+
+    public void setDataReady(boolean dataReady) {
+        this.dataReady = dataReady;
+    }
+
+    public boolean isFunctionReady() {
+        return functionReady;
+    }
+
+    public void setFunctionReady(boolean functionReady) {
+        this.functionReady = functionReady;
     }
 }

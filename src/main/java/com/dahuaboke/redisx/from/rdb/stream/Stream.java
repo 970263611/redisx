@@ -253,7 +253,7 @@ public class Stream implements Serializable {
 
         @Override
         public String toString() {
-            String r = "Group{" + "name='" + new String(name, StandardCharsets.UTF_8) + '\'' + ", lastId=" + lastId + ", entriesRead=" + entriesRead;
+            String r = "Group{" + "name='" + new String(name) + '\'' + ", lastId=" + lastId + ", entriesRead=" + entriesRead;
             if (consumers != null && !consumers.isEmpty()) r += ", consumers=" + consumers;
             if (pendingEntries != null && !pendingEntries.isEmpty()) r += ", gpel=" + pendingEntries.size();
             return r + '}';
@@ -311,7 +311,7 @@ public class Stream implements Serializable {
 
         @Override
         public String toString() {
-            String r = "Consumer{" + "name='" + new String(name, StandardCharsets.UTF_8) + '\'' + ", seenTime=" + seenTime + ", activeTime=" + activeTime;
+            String r = "Consumer{" + "name='" + new String(name) + '\'' + ", seenTime=" + seenTime + ", activeTime=" + activeTime;
             if (pendingEntries != null && !pendingEntries.isEmpty()) r += ", cpel=" + pendingEntries.size();
             return r + '}';
         }

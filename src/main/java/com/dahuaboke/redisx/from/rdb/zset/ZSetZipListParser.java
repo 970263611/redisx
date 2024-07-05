@@ -31,7 +31,7 @@ public class ZSetZipListParser implements Parser {
             if (i + 1 < list.size()) {
                 byte[] element = list.get(i);
                 byte[] score = list.get(i + 1);
-                zset.add(new ZSetEntry(element, Double.valueOf(new String(score, StandardCharsets.UTF_8))));
+                zset.add(new ZSetEntry(element, Double.valueOf(new String(score))));
             } else {
                 break;
             }

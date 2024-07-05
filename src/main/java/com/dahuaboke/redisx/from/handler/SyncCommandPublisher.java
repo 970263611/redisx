@@ -22,14 +22,23 @@ public class SyncCommandPublisher extends SimpleChannelInboundHandler<SyncComman
     }
 
     @Override
-    protected void channelRead0(ChannelHandlerContext ctx, SyncCommand msg) throws Exception {
-        String command = msg.getCommand();
-        int length = msg.getLength();
-        boolean success = fromContext.publish(command, length);
-        if (success) {
-            logger.debug("Success sync command [{}], length [{}]", command, length);
+    protected void channelRead0(ChannelHandlerContext ctx, SyncCommand command) throws Exception {
+        int commandLength = command.getCommandLength();
+        if (command.isIgnore()) {
+            fromContext.appendUnSyncCommandLength(commandLength);
         } else {
-            logger.error("Sync command [{}] failed, length [{}]", command, length);
+            int unSyncCommandLength = fromContext.getUnSyncCommandLength();
+            if (unSyncCommandLength > 0) {
+                commandLength += unSyncCommandLength;
+                fromContext.clearUnSyncCommandLength();
+            }
+            command.setSyncLength(commandLength);
+            boolean success = fromContext.publish(command);
+            if (success) {
+                logger.debug("Success sync command [{}], length [{}]", command.getStringCommand(), commandLength);
+            } else {
+                logger.error("Sync command [{}] failed, length [{}]", command.getStringCommand(), commandLength);
+            }
         }
     }
 }
