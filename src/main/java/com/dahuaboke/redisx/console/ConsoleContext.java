@@ -7,6 +7,7 @@ import org.slf4j.Logger;
 import org.slf4j.LoggerFactory;
 
 import java.util.ArrayList;
+import java.util.Arrays;
 import java.util.List;
 
 /**
@@ -51,24 +52,20 @@ public class ConsoleContext extends Context {
     }
 
     public String sendCommand(String command, String type) {
+        List<String> list = Arrays.asList(command.split(" "));
+        if (list.size() < 2 || list.get(0).equalsIgnoreCase("keys")) {
+            return "Unsupported command: " + list;
+        }
         if ("from".equalsIgnoreCase(type)) {
-//            int fromSize = fromContexts.size();
-//            if (fromSize > 1) {
-//                logger.warn("Master size should 1,but {}", fromSize);
-//            }
             for (FromContext fromContext : fromContexts) {
-                if (fromContext.isAdapt(fromIsCluster, command)) {
+                if (fromContext.isAdapt(fromIsCluster, list.get(1))) {
                     return fromContext.sendCommand(command, timeout);
                 }
             }
             return null;
         } else if ("to".equalsIgnoreCase(type)) {
-//            int toSize = toContexts.size();
-//            if (toSize > 1) {
-//                logger.warn("To size should 1,but {}", toSize);
-//            }
             for (ToContext toContext : toContexts) {
-                if (toContext.isAdapt(toIsCluster, command)) {
+                if (toContext.isAdapt(toIsCluster, list.get(1))) {
                     return toContext.sendCommand(command, timeout);
                 }
             }
