@@ -3,6 +3,7 @@ package com.dahuaboke.redisx.from;
 import com.dahuaboke.redisx.Constant;
 import com.dahuaboke.redisx.Context;
 import com.dahuaboke.redisx.cache.CacheManager;
+import com.dahuaboke.redisx.command.from.SyncCommand;
 import io.netty.channel.Channel;
 import org.slf4j.Logger;
 import org.slf4j.LoggerFactory;
@@ -23,16 +24,17 @@ public class FromContext extends Context {
     private String host;
     private int port;
     private Channel fromChannel;
-    private String localHost;
-    private int localPort;
     private int slotBegin;
     private int slotEnd;
     private FromClient fromClient;
     private boolean isConsole;
     private boolean rdbAckOffset = false;
     private boolean alwaysFullSync;
+    private boolean syncRdb;
+    private int unSyncCommandLength = 0;
+    private String masterId;
 
-    public FromContext(CacheManager cacheManager, String host, int port, boolean isConsole, boolean fromIsCluster, boolean toIsCluster, boolean alwaysFullSync) {
+    public FromContext(CacheManager cacheManager, String host, int port, boolean isConsole, boolean fromIsCluster, boolean toIsCluster, boolean alwaysFullSync, boolean syncRdb) {
         super(fromIsCluster, toIsCluster);
         this.cacheManager = cacheManager;
         this.host = host;
@@ -42,6 +44,7 @@ public class FromContext extends Context {
             replyQueue = new LinkedBlockingDeque();
         }
         this.alwaysFullSync = alwaysFullSync;
+        this.syncRdb = syncRdb;
     }
 
     public String getId() {
@@ -56,14 +59,15 @@ public class FromContext extends Context {
         return port;
     }
 
-    public boolean publish(String msg, Integer length) {
+    public boolean publish(SyncCommand command) {
         if (!isConsole) {
-            return cacheManager.publish(msg, length, this);
+            command.buildCommand();
+            return cacheManager.publish(command);
         } else {
             if (replyQueue == null) {
                 throw new IllegalStateException("By console mode replyQueue need init");
             } else {
-                return replyQueue.offer(msg);
+                return replyQueue.offer(command.getStringCommand());
             }
         }
     }
@@ -133,7 +137,6 @@ public class FromContext extends Context {
     }
 
     public void setOffset(long offset) {
-        String masterId = this.fromChannel.attr(Constant.MASTER_ID).get();
         cacheManager.setNodeMessage(this.host, this.port, masterId, offset);
     }
 
@@ -152,7 +155,7 @@ public class FromContext extends Context {
                 fromChannel.attr(Constant.OFFSET).set(-1L);
             }
             if (nodeMessage != null) {
-                long offset = getOffset();
+                long offset = getOffset() + unSyncCommandLength;
                 fromChannel.writeAndFlush(Constant.ACK_COMMAND_PREFIX + offset);
                 logger.trace("Ack offset [{}]", offset);
             }
@@ -177,5 +180,25 @@ public class FromContext extends Context {
 
     public boolean redisVersionBeyond3() {
         return cacheManager.getRedisVersion().charAt(0) > '3';
+    }
+
+    public boolean isSyncRdb() {
+        return syncRdb;
+    }
+
+    public int getUnSyncCommandLength() {
+        return unSyncCommandLength;
+    }
+
+    public void appendUnSyncCommandLength(int length) {
+        this.unSyncCommandLength += length;
+    }
+
+    public void clearUnSyncCommandLength() {
+        this.unSyncCommandLength = 0;
+    }
+
+    public void setMasterId(String masterId) {
+        this.masterId = masterId;
     }
 }

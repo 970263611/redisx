@@ -1,6 +1,7 @@
 package dahuaboke.redisx;
 
 import com.dahuaboke.redisx.from.rdb.RdbData;
+import com.dahuaboke.redisx.from.rdb.RdbInfo;
 import com.dahuaboke.redisx.from.rdb.RdbParser;
 import com.dahuaboke.redisx.from.rdb.base.ListPackParser;
 import com.dahuaboke.redisx.from.rdb.base.StringParser;
@@ -252,12 +253,15 @@ public class RdbParserTest {
 
     private void parse(ByteBuf byteBuf) {
         RdbParser parser = new RdbParser(byteBuf);
-        parser.parseHeader();
-        System.out.println(parser.getRdbInfo().getRdbHeader());
-        while (!parser.getRdbInfo().isEnd()) {
-            parser.parseData();
-            RdbData rdbData = parser.getRdbInfo().getRdbData();
-            System.out.println(rdbData);
+        RdbInfo info = parser.getRdbInfo();
+        while (!info.isEnd()) {
+            parser.parse();
+            if(info.isEnd()){
+                break;
+            }
+            if(info.isDataReady()){
+                System.out.println(parser.getRdbInfo().getRdbData());
+            }
         }
     }
 

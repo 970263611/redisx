@@ -2,6 +2,8 @@ package com.dahuaboke.redisx.handler;
 
 import com.dahuaboke.redisx.Constant;
 import com.dahuaboke.redisx.Context;
+import com.dahuaboke.redisx.command.from.SyncCommand;
+import io.netty.buffer.ByteBuf;
 import io.netty.channel.ChannelHandlerContext;
 import io.netty.channel.SimpleChannelInboundHandler;
 import io.netty.handler.codec.CodecException;
@@ -9,6 +11,8 @@ import io.netty.handler.codec.redis.*;
 import io.netty.util.CharsetUtil;
 import org.slf4j.Logger;
 import org.slf4j.LoggerFactory;
+
+import java.util.List;
 
 /**
  * 2024/5/13 15:58
@@ -24,72 +28,45 @@ public abstract class RedisChannelInboundHandler extends SimpleChannelInboundHan
         this.context = context;
     }
 
-    private long notSyncCommandLength;
-
     @Override
     protected void channelRead0(ChannelHandlerContext ctx, RedisMessage msg) throws Exception {
-        String[] replys = parseRedisMessage(msg);
-        if (replys != null) {
-            channelRead1(ctx, replys);
-        }
+        SyncCommand syncCommand = new SyncCommand(context, true);
+        parseRedisMessage(msg, syncCommand);
+        channelRead1(ctx, syncCommand);
     }
 
-    protected void channelRead1(ChannelHandlerContext ctx, String[] replys) throws Exception {
-        channelRead2(ctx, replys[0]);
+    public void channelRead1(ChannelHandlerContext ctx, SyncCommand syncCommand) throws Exception {
+        channelRead2(ctx, syncCommand.getStringCommand());
     }
 
     public abstract void channelRead2(ChannelHandlerContext ctx, String reply) throws Exception;
 
-    private String[] parseRedisMessage(RedisMessage msg) {
-        String[] result = new String[1];
+    private void parseRedisMessage(RedisMessage msg, SyncCommand syncCommand) {
         if (msg instanceof SimpleStringRedisMessage) {
-            result[0] = ((SimpleStringRedisMessage) msg).content();
-            return result;
+            String content = ((SimpleStringRedisMessage) msg).content();
+            syncCommand.appendCommand(content);
+            syncCommand.appendLength(1 + String.valueOf(content.length()).length() + 2 + content.getBytes().length + 2);
         } else if (msg instanceof ErrorRedisMessage) {
-            logger.warn("Receive error message [{}]", ((ErrorRedisMessage) msg).content());
-            result[0] = Constant.ERROR_REPLY_PREFIX + ((ErrorRedisMessage) msg).content();
-            return result;
+            String err = ((ErrorRedisMessage) msg).content();
+            logger.warn("Receive error message [{}]", err);
+            syncCommand.appendCommand(Constant.ERROR_REPLY_PREFIX + err);
         } else if (msg instanceof IntegerRedisMessage) {
-            result[0] = String.valueOf(((IntegerRedisMessage) msg).value());
-            return result;
+            syncCommand.appendCommand(String.valueOf(((IntegerRedisMessage) msg).value()));
         } else if (msg instanceof FullBulkStringRedisMessage) {
             FullBulkStringRedisMessage fullMsg = (FullBulkStringRedisMessage) msg;
             if (fullMsg.isNull()) {
-                return null;
+                syncCommand.appendCommand("(null)");
+                return;
             }
-            result[0] = fullMsg.content().toString(CharsetUtil.UTF_8);
-            return result;
+            ByteBuf content = fullMsg.content();
+            syncCommand.appendCommand(content.toString(CharsetUtil.UTF_8));
+            syncCommand.appendLength(1 + String.valueOf(content.readableBytes()).length() + 2 + content.readableBytes() + 2);
         } else if (msg instanceof ArrayRedisMessage) {
-            Integer size = 0, length = 3;
-            StringBuilder sb = new StringBuilder();
+            List<RedisMessage> children = ((ArrayRedisMessage) msg).children();
+            syncCommand.appendLength(1 + String.valueOf(children.size()).length() + 2);
             for (RedisMessage child : ((ArrayRedisMessage) msg).children()) {
-                String[] c = parseRedisMessage(child);
-                sb.append(c[0]);
-                sb.append(" ");
-                size++;
-                length += c[0].length() + String.valueOf(c[0].length()).length();
+                parseRedisMessage(child, syncCommand);
             }
-            length += String.valueOf(size).length() + 5 * size;
-            result = new String[2];
-            result[0] = sb.delete(sb.length() - 1, sb.length()).toString();
-            if (result[0].toUpperCase().startsWith(Constant.SELECT)) {
-                if (!context.isFromIsCluster() && !context.isToIsCluster()) {
-                    result[1] = String.valueOf(length + notSyncCommandLength);
-                    notSyncCommandLength = 0;
-                    return result;
-                } else {
-                    notSyncCommandLength += length;
-                    return null;
-                }
-            }
-            if (Constant.PING_COMMAND.equalsIgnoreCase(result[0]) ||
-                    result[0].toUpperCase().startsWith(Constant.SELECT)) {
-                notSyncCommandLength += length;
-                return null;
-            }
-            result[1] = String.valueOf(length + notSyncCommandLength);
-            notSyncCommandLength = 0;
-            return result;
         } else {
             throw new CodecException("Unknown message type: " + msg);
         }

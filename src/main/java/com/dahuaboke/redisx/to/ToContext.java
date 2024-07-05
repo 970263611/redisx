@@ -3,6 +3,7 @@ package com.dahuaboke.redisx.to;
 import com.dahuaboke.redisx.Constant;
 import com.dahuaboke.redisx.Context;
 import com.dahuaboke.redisx.cache.CacheManager;
+import com.dahuaboke.redisx.command.from.SyncCommand;
 import org.slf4j.Logger;
 import org.slf4j.LoggerFactory;
 
@@ -31,8 +32,9 @@ public class ToContext extends Context {
     private boolean immediate;
     private int immediateResendTimes;
     private String switchFlag;
+    private int flushSize;
 
-    public ToContext(CacheManager cacheManager, String host, int port, boolean fromIsCluster, boolean toIsCluster, boolean isConsole, boolean immediate, int immediateResendTimes, String switchFlag) {
+    public ToContext(CacheManager cacheManager, String host, int port, boolean fromIsCluster, boolean toIsCluster, boolean isConsole, boolean immediate, int immediateResendTimes, String switchFlag, int flushSize) {
         super(fromIsCluster, toIsCluster);
         this.cacheManager = cacheManager;
         this.host = host;
@@ -44,6 +46,7 @@ public class ToContext extends Context {
         this.immediate = immediate;
         this.immediateResendTimes = immediateResendTimes;
         this.switchFlag = switchFlag;
+        this.flushSize = flushSize;
     }
 
     public String getId() {
@@ -58,7 +61,7 @@ public class ToContext extends Context {
         return port;
     }
 
-    public CacheManager.CommandReference listen() {
+    public SyncCommand listen() {
         return cacheManager.listen(this);
     }
 
@@ -183,7 +186,7 @@ public class ToContext extends Context {
     }
 
     public void preemptMasterCompulsory() {
-        this.sendCommand(buildPreemptMasterCompulsoryCommand(), 1000);
+        this.sendCommand(buildPreemptMasterCompulsoryCommand(), 1000, switchFlag);
     }
 
     public boolean preemptMasterCompulsoryWithCheckId() {
@@ -209,12 +212,15 @@ public class ToContext extends Context {
         sb.append(this.getId());
         sb.append("|");
         getAllNodeMessages().forEach((k, v) -> {
-            sb.append(k);
-            sb.append("&");
-            sb.append(v.getMasterId());
-            sb.append("&");
-            sb.append(v.getOffset());
-            sb.append(";");
+            String masterId = v.getMasterId();
+            if (masterId != null) {
+                sb.append(k);
+                sb.append("&");
+                sb.append(v.getMasterId());
+                sb.append("&");
+                sb.append(v.getOffset());
+                sb.append(";");
+            }
         });
         sb.append("|");
         sb.append(System.currentTimeMillis());
@@ -231,5 +237,9 @@ public class ToContext extends Context {
 
     public int getImmediateResendTimes() {
         return immediateResendTimes;
+    }
+
+    public int getFlushSize() {
+        return flushSize;
     }
 }

@@ -97,7 +97,7 @@ Redis：7.2.4（双端集群，3主3从。Redis-x组件2节点）
 java -jar redisx.jar redisx.yml
 ```
 
-配置文件中参数：
+连接配置文件中参数：
 
 ```yaml
 redisx:         
@@ -126,7 +126,10 @@ redisx:
     resendTimes: 3            #强一致模式下写入失败重试次数
   alwaysFullSync: false       #全局是否强制全量同步数据模式
   switchFlag: REDIS-X-AUTHOR:DAHUA&CHANGDONGLIANG&ZHANGHUIHAO&ZHANGSHUHAN      #redis-x主从切换标志，在纵向扩展时需要配置
+  syncRdb: false              #是否同步rdb文件，否：只进行增量同步
 ```
+
+from端希望配置从节点，主节点也可以，但是不要同时连接，会造成数据多次写入。to端只能配置主节点，否则会造成数据丢失。
 
 ### 高可用
 

@@ -41,12 +41,7 @@ public class Context {
     }
 
     protected int calculateHash(String command) {
-        String[] ary = command.split(" ");
-        if (ary.length > 1) {
-            return CRC16.crc16(ary[1].getBytes(StandardCharsets.UTF_8));
-        } else {
-            return CRC16.crc16(command.getBytes(StandardCharsets.UTF_8));
-        }
+        return CRC16.crc16(command.getBytes());
     }
 
     public boolean isClose() {

@@ -13,17 +13,17 @@ import org.slf4j.LoggerFactory;
  * auth: dahua
  * desc:
  */
-public class PostDistributeHandler extends SimpleChannelInboundHandler<String[]> {
+public class PostDistributeHandler extends SimpleChannelInboundHandler<SyncCommand> {
 
     private static final Logger logger = LoggerFactory.getLogger(PostDistributeHandler.class);
 
     @Override
-    public void channelRead0(ChannelHandlerContext ctx, String[] msg) throws Exception {
+    public void channelRead0(ChannelHandlerContext ctx, SyncCommand msg) throws Exception {
         Channel channel = ctx.channel();
         if (channel.isActive() && channel.pipeline().get(Constant.INIT_SYNC_HANDLER_NAME) != null) {
-            ctx.channel().attr(Constant.SYNC_REPLY).set(msg[0]);
+            ctx.channel().attr(Constant.SYNC_REPLY).set(msg.getStringCommand());
         } else {
-            ctx.fireChannelRead(new SyncCommand(msg[0], Integer.parseInt(msg[1])));
+            ctx.fireChannelRead(msg);
         }
     }
 }

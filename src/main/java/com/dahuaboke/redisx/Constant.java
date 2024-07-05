@@ -25,8 +25,6 @@ public class Constant {
 
     public static final String FULLRESYNC = "+FULLRESYNC";
 
-    public static final AttributeKey<String> MASTER_ID = AttributeKey.valueOf("masterId");
-
     public static final AttributeKey<Long> OFFSET = AttributeKey.valueOf("offset");
 
     public static final AttributeKey<String> SYNC_REPLY = AttributeKey.valueOf("syncReply");
@@ -78,6 +76,10 @@ public class Constant {
     public static final String SELECT = "SELECT";
 
     public static final String ERROR_REPLY_PREFIX = "ERROR:";
+
+    public static final String MULTI = "MULTI";
+
+    public static final String EXEC = "EXEC";
 
 
     //RDB
