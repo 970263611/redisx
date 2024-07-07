@@ -1,5 +1,7 @@
 ## Redis流复制工具Redis-x
 
+[![996.icu](https://img.shields.io/badge/link-996.icu-red.svg)](https://996.icu)
+
 ### 作者
 
 大花团队（详见github提交者），redis相关材料请关注[material项目](https://github.com/970263611/redis-x-material)
@@ -182,7 +184,5 @@ http://localhost:9999/console?command=get testKey&type=to
 排查：程序中兜底设置了每100毫秒刷新缓冲区一次，但是刷新缓冲区间隔远超100毫秒。通过使用arthas及断点排查等方式，未发现写入及刷新过程耗时。继续排查外层方法，最终发现是channel.isWritable的条件判断导致的，当写入大量数据时，会导isWritable长期处于false阶段，所以无法进行下一次刷新缓冲区操作。
 
 注：Netty对于写入缓冲区设置了高水位（默认64k）和低水位（默认32k），在缓冲区写入数据大小达到了高水位，isWritable就会返回false，这时需要执行刷新缓冲区方法将缓冲区数据大小发送出去降低到低水位后，isWritable才会返回true，由于程序中使用了isWritable判断条件，就导致了程序在发送数据时无法进行缓冲区写入，所以导致tps触底。在减小单词写入指令数量后，可以让缓冲区更快进行刷新，同时水位下降的更快，就可以升高tps，符合表象。
-
-[![996.icu](https://img.shields.io/badge/link-996.icu-red.svg)](https://996.icu)
 
 [![LICENSE](https://img.shields.io/badge/license-Anti%20996-blue.svg)](https://github.com/996icu/996.ICU/blob/master/LICENSE)
