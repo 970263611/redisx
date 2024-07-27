@@ -124,7 +124,7 @@ public class ToContext extends Context {
             } else {
                 List<Context> allContexts = cacheManager.getAllContexts();
                 for (Context context : allContexts) {
-                    if (context instanceof ToContext && command instanceof String) {
+                    if (context instanceof ToContext) {
                         ToContext toContext = (ToContext) context;
                         String flag;
                         if (key != null) {
@@ -137,7 +137,8 @@ public class ToContext extends Context {
                         }
                     }
                 }
-                throw new IllegalArgumentException(String.valueOf(command));
+                logger.error("Command adapt error {}", command);
+                return "false";
             }
         }
     }
@@ -241,5 +242,23 @@ public class ToContext extends Context {
 
     public int getFlushSize() {
         return flushSize;
+    }
+
+    @Override
+    public String toString() {
+        return "ToContext{" +
+                "host='" + host + '\'' +
+                ", port=" + port +
+                ", slotBegin=" + slotBegin +
+                ", slotEnd=" + slotEnd +
+                ", immediate=" + immediate +
+                ", immediateResendTimes=" + immediateResendTimes +
+                ", switchFlag='" + switchFlag + '\'' +
+                ", flushSize=" + flushSize +
+                ", isClose=" + isClose +
+                ", isConsole=" + isConsole +
+                ", toIsCluster=" + toIsCluster +
+                ", fromIsCluster=" + fromIsCluster +
+                '}';
     }
 }

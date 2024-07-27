@@ -6,6 +6,7 @@ import com.dahuaboke.redisx.command.from.SyncCommand;
 import com.dahuaboke.redisx.from.FromContext;
 import com.dahuaboke.redisx.to.ToContext;
 import io.netty.channel.Channel;
+import io.netty.channel.ChannelFuture;
 import io.netty.channel.ChannelHandlerContext;
 import io.netty.channel.ChannelInboundHandlerAdapter;
 import io.netty.handler.codec.redis.RedisMessage;
@@ -38,26 +39,41 @@ public class SyncCommandListener extends ChannelInboundHandlerAdapter {
                     SyncCommand syncCommand = toContext.listen();
                     boolean immediate = toContext.isImmediate();
                     if (syncCommand != null) {
-                        FromContext fromContext = (FromContext) syncCommand.getContext();
-                        int length = syncCommand.getSyncLength();
                         RedisMessage redisMessage = syncCommand.getCommand();
-                        long offset = fromContext.getOffset();
-                        if (syncCommand.isNeedAddLengthToOffset()) {
-                            offset += length;
-                            fromContext.setOffset(offset);
-                        }
                         if (immediate) { //强一致模式
-                            for (int i = 0; i < toContext.getImmediateResendTimes(); i++) {
-                                boolean success = immediateSend(ctx, redisMessage, length, i + 1);
-                                if (success) {
-                                    break;
+                            boolean messageWrited = false;
+                            boolean offsetWrited = false;
+                            int retryTimes = 0;
+                            int immediateResendTimes = toContext.getImmediateResendTimes();
+                            while (retryTimes < immediateResendTimes && (!messageWrited || !offsetWrited)) {
+                                try {
+                                    retryTimes++;
+                                    if (!messageWrited) {
+                                        ChannelFuture channelFuture = ctx.writeAndFlush(redisMessage);
+                                        channelFuture.await();
+                                        boolean channelFutureIsSuccess = channelFuture.isSuccess();
+                                        if (channelFutureIsSuccess) {
+                                            messageWrited = true;
+                                            updateOffset(syncCommand);
+                                        } else {
+                                            continue;
+                                        }
+                                    }
+                                    if (!offsetWrited) {
+                                        if (toContext.preemptMasterCompulsoryWithCheckId()) {
+                                            offsetWrited = true;
+                                            logger.trace("[immediate] write success");
+                                        }
+                                    }
+                                } catch (InterruptedException e) {
+                                    logger.error("Write command or offset awaiter error", e);
                                 }
                             }
                         } else {
+                            updateOffset(syncCommand);
                             ctx.write(redisMessage);
                             flushThreshold++;
                         }
-                        logger.trace("Write command [{}] length [{}], now offset [{}]", syncCommand.getStringCommand(), length, offset);
                     }
                     if (!immediate && (flushThreshold > flushSize || (System.currentTimeMillis() - timeThreshold > 100))) {
                         if (flushThreshold > 0) {
@@ -74,11 +90,14 @@ public class SyncCommandListener extends ChannelInboundHandlerAdapter {
         thread.start();
     }
 
-    private boolean immediateSend(ChannelHandlerContext ctx, RedisMessage redisMessage, int length, int times) {
-        if (!ctx.writeAndFlush(redisMessage).isSuccess() || toContext.preemptMasterCompulsoryWithCheckId()) {
-            logger.error("Write length [{}] error times: [" + times + "]", length);
-            return false;
+    private void updateOffset(SyncCommand syncCommand) {
+        FromContext fromContext = (FromContext) syncCommand.getContext();
+        int length = syncCommand.getSyncLength();
+        long offset = fromContext.getOffset();
+        if (syncCommand.isNeedAddLengthToOffset()) {
+            offset += length;
+            fromContext.setOffset(offset);
+            logger.trace("Write command [{}] length [{}], now offset [{}]", syncCommand.getStringCommand(), length, offset);
         }
-        return true;
     }
 }

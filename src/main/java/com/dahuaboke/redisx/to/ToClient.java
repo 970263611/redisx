@@ -95,6 +95,11 @@ public class ToClient {
         if (channel.isActive()) {
             if (needIsSuccess) {
                 ChannelFuture channelFuture = channel.writeAndFlush(command);
+                try {
+                    channelFuture.await();
+                } catch (InterruptedException e) {
+                    return false;
+                }
                 return channelFuture.isSuccess();
             } else {
                 channel.writeAndFlush(command);
