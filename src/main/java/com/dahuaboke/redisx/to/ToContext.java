@@ -163,6 +163,14 @@ public class ToContext extends Context {
         cacheManager.setIsMaster(isMaster);
     }
 
+    public boolean toStarted() {
+        return cacheManager.getToStarted();
+    }
+
+    public void setToStarted(boolean started) {
+        cacheManager.setToStarted(started);
+    }
+
     public Map<String, CacheManager.NodeMessage> getAllNodeMessages() {
         return cacheManager.getAllNodeMessages();
     }

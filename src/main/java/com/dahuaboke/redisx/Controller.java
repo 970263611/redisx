@@ -28,8 +28,7 @@ import java.util.concurrent.*;
 public class Controller {
 
     private static final Logger logger = LoggerFactory.getLogger(Controller.class);
-    private static ScheduledExecutorService controllerPool = Executors.newScheduledThreadPool(1,
-            new RedisxThreadFactory(Constant.PROJECT_NAME + "-Controller"));
+    private static ScheduledExecutorService controllerPool = Executors.newScheduledThreadPool(1, new RedisxThreadFactory(Constant.PROJECT_NAME + "-Controller"));
     private boolean toIsCluster;
     private boolean fromIsCluster;
     private CacheManager cacheManager;
@@ -46,20 +45,15 @@ public class Controller {
         cacheManager = new CacheManager(redisVersion, fromIsCluster, fromPassword, toIsCluster, toPassword);
     }
 
-    public void start(List<InetSocketAddress> fromNodeAddresses, List<InetSocketAddress> toNodeAddresses, boolean startConsole,
-                      int consolePort, int consoleTimeout, boolean alwaysFullSync, boolean syncRdb, int toFlushSize) {
+    public void start(List<InetSocketAddress> fromNodeAddresses, List<InetSocketAddress> toNodeAddresses, boolean startConsole, int consolePort, int consoleTimeout, boolean alwaysFullSync, boolean syncRdb, int toFlushSize) {
         closeLog4jShutdownHook();
         logger.info("Application global id is {}", cacheManager.getId());
         Thread shutdownHookThread = new Thread(() -> {
             logger.info("Shutdown hook thread is starting");
             controllerPool.shutdown();
             logger.info("Update offset thread shutdown");
+            cacheManager.closeAllFrom();
             List<Context> allContexts = cacheManager.getAllContexts();
-            for (Context cont : allContexts) {
-                if (cont instanceof FromContext) {
-                    ((FromContext) cont).close();
-                }
-            }
             while (true) {
                 boolean allowClose = true;
                 for (Context cont : allContexts) {
@@ -86,55 +80,41 @@ public class Controller {
         if (!immediate) {
             Runtime.getRuntime().addShutdownHook(shutdownHookThread);
         }
-        toNodeAddresses.forEach(address -> {
-            String host = address.getHostString();
-            int port = address.getPort();
-            ToNode toNode = new ToNode("Sync", cacheManager, host, port, toIsCluster, false, immediate, immediateResendTimes, switchFlag, toFlushSize);
-            toNode.start();
-            if (toNode.isStarted(10000)) {
-                cacheManager.register(toNode.getContext());
-            }
-        });
-        ////scheduleWithFixedDelay not scheduleAtFixedRate，无需关心异常
-        controllerPool.scheduleWithFixedDelay(() -> {
-            List<Context> allContexts = cacheManager.getAllContexts();
-            for (Context cont : allContexts) {
-                if (cont instanceof ToContext) {
-                    ToContext toContext = (ToContext) cont;
-                    if (toContext.isAdapt(toIsCluster, switchFlag)) {
-                        toContext.preemptMaster();
-                    }
-                }
-            }
+        //scheduleWithFixedDelay not scheduleAtFixedRate，无需关心异常
+        controllerPool.scheduleAtFixedRate(() -> {
             boolean isMaster = cacheManager.isMaster();
             boolean fromIsStarted = cacheManager.fromIsStarted();
+            List<Context> allContexts = cacheManager.getAllContexts();
+            if (cacheManager.getToStarted()) {
+                for (Context cont : allContexts) {
+                    if (cont instanceof ToContext) {
+                        ToContext toContext = (ToContext) cont;
+                        if (toContext.isAdapt(toIsCluster, switchFlag)) {
+                            //如果本身是主节点则同时写入偏移量
+                            toContext.preemptMaster();
+                        }
+                    }
+                }
+            } else {
+                //识别to集群中存在节点宕机则全部关闭to
+                isMaster = false;
+                cacheManager.closeAllTo();
+            }
             if (isMaster && !fromIsStarted) { //抢占到主节点，from未启动
                 logger.info("Upgrade master and starting from clients");
-                fromNodeAddresses.forEach(address -> {
-                    String host = address.getHostString();
-                    int port = address.getPort();
-                    FromNode fromNode = new FromNode("Sync", cacheManager, host, port, false, alwaysFullSync, syncRdb);
-                    fromNode.start();
-                    if (fromNode.isStarted(5000)) {
-                        cacheManager.register(fromNode.getContext());
-                    }
-                });
+                startAllFrom(fromNodeAddresses, alwaysFullSync, syncRdb);
                 cacheManager.setFromIsStarted(true);
             } else if (isMaster && fromIsStarted) { //抢占到主节点，from已经启动
                 //do nothing
                 logger.trace("state: master");
             } else if (!isMaster && fromIsStarted) { //未抢占到主节点，from已经启动
                 logger.info("Downgrade slave and closing from clients");
-                for (Context cont : allContexts) {
-                    if (cont instanceof FromContext) {
-                        FromContext fromContext = (FromContext) cont;
-                        fromContext.close();
-                    }
-                }
+                cacheManager.closeAllFrom();
                 cacheManager.setFromIsStarted(false);
             } else if (!isMaster && !fromIsStarted) { //未抢占到主节点，from未启动
-                //do nothing
-                logger.trace("state: slave");
+                if (!cacheManager.getToStarted()) {
+                    startAllTo(toNodeAddresses, toFlushSize);
+                }
             } else {
                 //bug do nothing
                 logger.warn("Unknown application state");
@@ -164,7 +144,6 @@ public class Controller {
             try {
                 return flag.await(timeout, TimeUnit.MILLISECONDS);
             } catch (InterruptedException e) {
-                logger.error("Node start error", e);
                 return false;
             }
         }
@@ -189,8 +168,7 @@ public class Controller {
         @Override
         public void run() {
             cacheManager.registerTo(this.toContext);
-            ToClient toClient = new ToClient(this.toContext,
-                    getExecutor("ToEventLoop-" + host + ":" + port));
+            ToClient toClient = new ToClient(this.toContext, getExecutor("ToEventLoop-" + host + ":" + port));
             this.toContext.setClient(toClient);
             toClient.start(flag);
         }
@@ -294,5 +272,36 @@ public class Controller {
             Log4jContextFactory contextFactory = (Log4jContextFactory) factory;
             ((DefaultShutdownCallbackRegistry) contextFactory.getShutdownCallbackRegistry()).stop();
         }
+    }
+
+    private void startAllFrom(List<InetSocketAddress> fromNodeAddresses, boolean alwaysFullSync, boolean syncRdb) {
+        fromNodeAddresses.forEach(address -> {
+            String host = address.getHostString();
+            int port = address.getPort();
+            FromNode fromNode = new FromNode("Sync", cacheManager, host, port, false, alwaysFullSync, syncRdb);
+            fromNode.start();
+            if (fromNode.isStarted(5000)) {
+                cacheManager.register(fromNode.getContext());
+            }
+        });
+    }
+
+    private void startAllTo(List<InetSocketAddress> toNodeAddresses, int toFlushSize) {
+        boolean success = true;
+        for (InetSocketAddress address : toNodeAddresses) {
+            String host = address.getHostString();
+            int port = address.getPort();
+            ToNode toNode = new ToNode("Sync", cacheManager, host, port, toIsCluster, false, immediate, immediateResendTimes, switchFlag, toFlushSize);
+            toNode.start();
+            if (toNode.isStarted(5000)) {
+                cacheManager.register(toNode.getContext());
+            } else {
+                logger.error("[{}:{}] node start failed, close all [to] node", host, port);
+                success = false;
+                cacheManager.closeAllTo();
+                break;
+            }
+        }
+        cacheManager.setToStarted(success);
     }
 }

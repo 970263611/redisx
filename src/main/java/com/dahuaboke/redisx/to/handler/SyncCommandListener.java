@@ -35,54 +35,62 @@ public class SyncCommandListener extends ChannelInboundHandlerAdapter {
             int flushThreshold = 0;
             long timeThreshold = System.currentTimeMillis();
             while (!toContext.isClose()) {
-                if (channel.pipeline().get(Constant.SLOT_HANDLER_NAME) == null && channel.isActive()) {
-                    SyncCommand syncCommand = toContext.listen();
-                    boolean immediate = toContext.isImmediate();
-                    if (syncCommand != null) {
-                        RedisMessage redisMessage = syncCommand.getCommand();
-                        if (immediate) { //强一致模式
-                            boolean messageWrited = false;
-                            boolean offsetWrited = false;
-                            int retryTimes = 0;
-                            int immediateResendTimes = toContext.getImmediateResendTimes();
-                            while (retryTimes < immediateResendTimes && (!messageWrited || !offsetWrited)) {
-                                try {
-                                    retryTimes++;
-                                    if (!messageWrited) {
-                                        ChannelFuture channelFuture = ctx.writeAndFlush(redisMessage);
-                                        channelFuture.await();
-                                        boolean channelFutureIsSuccess = channelFuture.isSuccess();
-                                        if (channelFutureIsSuccess) {
-                                            messageWrited = true;
-                                            updateOffset(syncCommand);
-                                        } else {
-                                            continue;
+                try {
+                    if (channel.isActive()) {
+                        if (channel.pipeline().get(Constant.SLOT_HANDLER_NAME) == null) {
+                            SyncCommand syncCommand = toContext.listen();
+                            boolean immediate = toContext.isImmediate();
+                            if (syncCommand != null) {
+                                RedisMessage redisMessage = syncCommand.getCommand();
+                                if (immediate) { //强一致模式
+                                    boolean messageWrited = false;
+                                    boolean offsetWrited = false;
+                                    int retryTimes = 0;
+                                    int immediateResendTimes = toContext.getImmediateResendTimes();
+                                    while (retryTimes < immediateResendTimes && (!messageWrited || !offsetWrited)) {
+                                        try {
+                                            retryTimes++;
+                                            if (!messageWrited) {
+                                                ChannelFuture channelFuture = ctx.writeAndFlush(redisMessage);
+                                                channelFuture.await();
+                                                boolean channelFutureIsSuccess = channelFuture.isSuccess();
+                                                if (channelFutureIsSuccess) {
+                                                    messageWrited = true;
+                                                    updateOffset(syncCommand);
+                                                } else {
+                                                    continue;
+                                                }
+                                            }
+                                            if (!offsetWrited) {
+                                                if (toContext.preemptMasterCompulsoryWithCheckId()) {
+                                                    offsetWrited = true;
+                                                    logger.trace("[immediate] write success");
+                                                }
+                                            }
+                                        } catch (InterruptedException e) {
+                                            logger.error("Write command or offset awaiter error", e);
                                         }
                                     }
-                                    if (!offsetWrited) {
-                                        if (toContext.preemptMasterCompulsoryWithCheckId()) {
-                                            offsetWrited = true;
-                                            logger.trace("[immediate] write success");
-                                        }
-                                    }
-                                } catch (InterruptedException e) {
-                                    logger.error("Write command or offset awaiter error", e);
+                                } else {
+                                    updateOffset(syncCommand);
+                                    ctx.write(redisMessage);
+                                    flushThreshold++;
                                 }
                             }
-                        } else {
-                            updateOffset(syncCommand);
-                            ctx.write(redisMessage);
-                            flushThreshold++;
+                            if (!immediate && (flushThreshold > flushSize || (System.currentTimeMillis() - timeThreshold > 100))) {
+                                if (flushThreshold > 0) {
+                                    ctx.flush();
+                                    logger.debug("Flush data success [{}]", flushThreshold);
+                                    flushThreshold = 0;
+                                    timeThreshold = System.currentTimeMillis();
+                                }
+                            }
                         }
+                    } else {
+                        toContext.setToStarted(false);
                     }
-                    if (!immediate && (flushThreshold > flushSize || (System.currentTimeMillis() - timeThreshold > 100))) {
-                        if (flushThreshold > 0) {
-                            ctx.flush();
-                            logger.debug("Flush data success [{}]", flushThreshold);
-                            flushThreshold = 0;
-                            timeThreshold = System.currentTimeMillis();
-                        }
-                    }
+                } catch (Exception e) {
+                    logger.error("Sync command thread find error", e);
                 }
             }
         });

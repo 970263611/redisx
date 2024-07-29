@@ -2,6 +2,8 @@ package com.dahuaboke.redisx.cache;
 
 import com.dahuaboke.redisx.Context;
 import com.dahuaboke.redisx.command.from.SyncCommand;
+import com.dahuaboke.redisx.from.FromContext;
+import com.dahuaboke.redisx.to.ToContext;
 import org.slf4j.Logger;
 import org.slf4j.LoggerFactory;
 
@@ -28,6 +30,8 @@ public final class CacheManager {
     private String toPassword;
     private AtomicBoolean isMaster = new AtomicBoolean(false);
     private AtomicBoolean fromStarted = new AtomicBoolean(false);
+
+    private AtomicBoolean toStarted = new AtomicBoolean(false);
     private String id = UUID.randomUUID().toString().replaceAll("-", "");
     private Map<String, NodeMessage> nodeMessages = new ConcurrentHashMap();
     private String redisVersion;
@@ -110,6 +114,14 @@ public final class CacheManager {
         this.isMaster.set(isMaster);
     }
 
+    public boolean getToStarted() {
+        return toStarted.get();
+    }
+
+    public void setToStarted(boolean toStarted) {
+        this.toStarted.set(toStarted);
+    }
+
     public boolean fromIsStarted() {
         return fromStarted.get();
     }
@@ -155,6 +167,24 @@ public final class CacheManager {
 
     public String getRedisVersion() {
         return redisVersion;
+    }
+
+    public void closeAllFrom() {
+        List<Context> allContexts = getAllContexts();
+        for (Context cont : allContexts) {
+            if (cont instanceof FromContext) {
+                ((FromContext) cont).close();
+            }
+        }
+    }
+
+    public void closeAllTo() {
+        List<Context> allContexts = getAllContexts();
+        for (Context cont : allContexts) {
+            if (cont instanceof ToContext) {
+                ((ToContext) cont).close();
+            }
+        }
     }
 
     public static class NodeMessage {
