@@ -26,3 +26,9 @@ redisx:
   alwaysFullSync: false
   switchFlag: REDIS-X-AUTHOR:DAHUA&CHANGDONGLIANG&ZHANGHUIHAO&ZHANGSHUHAN
   syncRdb: true
+
+jasypt:
+  encryptor:
+    password: KU1aBcAit9x
+    algorithm: PBEWithMD5AndDES
+    ivGeneratorClassName: org.jasypt.iv.NoIvGenerator

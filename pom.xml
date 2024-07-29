@@ -17,6 +17,7 @@
         <log4j-slf4j2-impl.ver>2.23.1</log4j-slf4j2-impl.ver>
         <log4j-core.ver>2.23.1</log4j-core.ver>
         <snakeyaml.ver>1.29</snakeyaml.ver>
+        <jasypt.ver>1.9.3</jasypt.ver>
         <junit.ver>4.13.1</junit.ver>
         <redisson.ver>3.16.8</redisson.ver>
     </properties>
@@ -46,6 +47,11 @@
             <groupId>org.yaml</groupId>
             <artifactId>snakeyaml</artifactId>
             <version>${snakeyaml.ver}</version>
+        </dependency>
+        <dependency>
+            <groupId>org.jasypt</groupId>
+            <artifactId>jasypt</artifactId>
+            <version>${jasypt.ver}</version>
         </dependency>
         <dependency>
             <groupId>junit</groupId>

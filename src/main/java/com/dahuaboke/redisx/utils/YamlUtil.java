@@ -84,8 +84,32 @@ public class YamlUtil {
             }
         }
         Map<String, Object> config = new HashMap();
+        decryptMap(config);
         parseConfig(null, map, config);
         return config;
+    }
+
+    /**
+     * enc解密
+     * @param map
+     */
+    private static void decryptMap(Map<String,Object> map){
+        String password = (String) map.get("jasypt.encryptor.password");
+        String algorithm = (String) map.get("jasypt.encryptor.algorithm");
+        String ivGeneratorClassName = (String) map.get("jasypt.encryptor.ivGeneratorClassName");
+        if(password == null || password.length() == 0){
+            return;
+        }
+        JasyptUtil jasyptUtil = StringUtils.isNotEmpty(algorithm) ? new JasyptUtil(password,algorithm,ivGeneratorClassName) : new JasyptUtil(password);
+        for(Map.Entry<String,Object> entry : map.entrySet()){
+            if(entry.getValue() instanceof String){
+                String s = (String) entry.getValue();
+                if(s.startsWith("ENC(") && s.startsWith(")")){
+                    s = s.substring(4,s.length() - 1);
+                    map.put(entry.getKey(),jasyptUtil.decrypt(s));
+                }
+            }
+        }
     }
 
     private static void parseConfig(String startKey, Object obj, Map<String, Object> config) {
