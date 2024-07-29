@@ -10,7 +10,6 @@ import org.redisson.config.Config;
 
 import java.security.NoSuchAlgorithmException;
 import java.security.SecureRandom;
-import java.text.SimpleDateFormat;
 import java.util.*;
 import java.util.concurrent.CountDownLatch;
 
@@ -198,8 +197,8 @@ public class StressTestingUtilTest {
 
     public void creatZSet() throws NoSuchAlgorithmException {
         RScoredSortedSet<Object> scoredSortedSet = redisson.getScoredSortedSet(onlyKey ? String.valueOf(idWorker.nextId()) : getStr());
-        scoredSortedSet.add(1.0,"v5   #$%^hjk&*……&*《》？：{}|“'' &*Uv5");
-        scoredSortedSet.add(2.0,"v5 <>??_+{“：》%^*&JNJj j：” v5");
+        scoredSortedSet.add(1.0, "v5   #$%^hjk&*……&*《》？：{}|“'' &*Uv5");
+        scoredSortedSet.add(2.0, "v5 <>??_+{“：》%^*&JNJj j：” v5");
     }
 
 

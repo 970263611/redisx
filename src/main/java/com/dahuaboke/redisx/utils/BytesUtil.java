@@ -2,8 +2,8 @@ package com.dahuaboke.redisx.utils;
 
 public class BytesUtil {
 
-    public static int byteArrayToInt(byte[] byteArray){
-        if(byteArray.length < 1 || byteArray.length > 4){
+    public static int byteArrayToInt(byte[] byteArray) {
+        if (byteArray.length < 1 || byteArray.length > 4) {
             return -1;
         }
         int result = 0;
@@ -13,8 +13,8 @@ public class BytesUtil {
         return result;
     }
 
-    public static int byteArrayToIntLE(byte[] byteArray){
-        if(byteArray.length < 1 || byteArray.length > 4){
+    public static int byteArrayToIntLE(byte[] byteArray) {
+        if (byteArray.length < 1 || byteArray.length > 4) {
             return -1;
         }
         int result = 0;

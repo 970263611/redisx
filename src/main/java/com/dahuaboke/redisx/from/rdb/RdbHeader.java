@@ -112,7 +112,7 @@ public class RdbHeader {
 
     @Override
     public String toString() {
-        StringBuilder sb = new StringBuilder( "RdbHeader{" +
+        StringBuilder sb = new StringBuilder("RdbHeader{" +
                 "ver='" + ver + '\'' +
                 ", redisVer='" + redisVer + '\'' +
                 ", redisBits='" + redisBits + '\'' +
@@ -121,8 +121,8 @@ public class RdbHeader {
                 ", replStreamDb='" + replStreamDb + '\'' +
                 ", replId='" + replId + '\'' +
                 ", replOffset='" + replOffset + '\'' +
-                ", aofBase='" + aofBase + '\'' );
-        if(function.size() > 0) {
+                ", aofBase='" + aofBase + '\'');
+        if (function.size() > 0) {
             sb.append(",function=[");
             for (byte[] bytes : function) {
                 sb.append("{ ").append(new String(bytes)).append(" }");

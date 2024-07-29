@@ -24,7 +24,7 @@ public class RdbConstants {
 
     public static final int RDB_OPCODE_IDLE = 0xf8 & 0xff;
 
-    public static final int RDB_OPCODE_FREQ = 0xf9 & 0xff;;
+    public static final int RDB_OPCODE_FREQ = 0xf9 & 0xff;
 
     public static final int EXPIRED_FC = 0xfc & 0xff;
 
@@ -33,7 +33,6 @@ public class RdbConstants {
     public static final int FREQ = 0xf9 & 0xff;
 
     public static final int EOF = 0xff & 0xff;
-
 
 
     /**

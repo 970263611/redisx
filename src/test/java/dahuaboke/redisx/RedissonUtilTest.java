@@ -4,7 +4,6 @@ import org.junit.After;
 import org.junit.Before;
 import org.junit.Test;
 import org.redisson.Redisson;
-import org.redisson.api.RBucket;
 import org.redisson.api.RKeys;
 import org.redisson.api.RedissonClient;
 import org.redisson.client.codec.StringCodec;
@@ -12,7 +11,6 @@ import org.redisson.config.Config;
 
 import java.text.SimpleDateFormat;
 import java.util.Date;
-import java.util.Iterator;
 import java.util.concurrent.CountDownLatch;
 import java.util.concurrent.Executors;
 import java.util.concurrent.ScheduledExecutorService;
@@ -40,7 +38,7 @@ public class RedissonUtilTest {
 
     private RedissonClient fromClient;
 
-    enum ServerType{
+    enum ServerType {
         SINGLE,
         CLUSTER,
         SENTINEL;
@@ -55,10 +53,10 @@ public class RedissonUtilTest {
         if (ServerType.CLUSTER == serverType) {
             toConfig.useClusterServers().addNodeAddress(toAddress);
             fromConfig.useClusterServers().addNodeAddress(fromAddress);
-        } else if(ServerType.SINGLE == serverType) {
+        } else if (ServerType.SINGLE == serverType) {
             toConfig.useSingleServer().setAddress(toAddress);
             fromConfig.useSingleServer().setAddress(fromAddress);
-        } else{
+        } else {
             toConfig.useSentinelServers().addSentinelAddress(toAddress).setCheckSentinelsList(false).setMasterName("mymaster");
             fromConfig.useSentinelServers().addSentinelAddress(fromAddress).setCheckSentinelsList(false).setMasterName("mymaster");
         }
@@ -90,25 +88,25 @@ public class RedissonUtilTest {
             RKeys key2 = fromClient.getKeys();
             long to = key1.count();
             long from = key2.count();
-            long toC =  to - toLast.get();
-            long formC =  from - fromLast.get();
-            if(first.get()){
+            long toC = to - toLast.get();
+            long formC = from - fromLast.get();
+            if (first.get()) {
                 toC = 0;
                 formC = 0;
                 first.set(false);
             }
-            sb.append("-from:").append(cover(from + "",9)).append(", ");
-            sb.append("-to:").append(cover(to + "",9)).append(", ");
-            sb.append("-fromTps=").append(cover(formC + "",7)).append(", ");
-            sb.append("-toTps=").append(cover(toC + "",7)).append(", ");
-            sb.append("-fromMaxTps=").append(cover(fromMax.get() + "",7)).append(", ");
-            sb.append("-toMaxTps=").append(cover(toMax.get() + "",7));
+            sb.append("-from:").append(cover(from + "", 9)).append(", ");
+            sb.append("-to:").append(cover(to + "", 9)).append(", ");
+            sb.append("-fromTps=").append(cover(formC + "", 7)).append(", ");
+            sb.append("-toTps=").append(cover(toC + "", 7)).append(", ");
+            sb.append("-fromMaxTps=").append(cover(fromMax.get() + "", 7)).append(", ");
+            sb.append("-toMaxTps=").append(cover(toMax.get() + "", 7));
             System.out.println(sb.toString());
             toLast.set(to);
             fromLast.set(from);
-            toMax.set(Math.max(toMax.get(),toC));
-            fromMax.set(Math.max(fromMax.get(),formC));
-        },0,1, TimeUnit.SECONDS);
+            toMax.set(Math.max(toMax.get(), toC));
+            fromMax.set(Math.max(fromMax.get(), formC));
+        }, 0, 1, TimeUnit.SECONDS);
         try {
             countDownLatch.await();
         } catch (InterruptedException e) {
@@ -116,13 +114,13 @@ public class RedissonUtilTest {
         }
     }
 
-    private String cover(String s,int len){
-        if(s == null){
+    private String cover(String s, int len) {
+        if (s == null) {
             s = "";
         }
         StringBuilder sb = new StringBuilder(s);
-        while((len - sb.length()) > 0){
-            sb.insert(0," ");
+        while ((len - sb.length()) > 0) {
+            sb.insert(0, " ");
         }
         return sb.toString();
     }

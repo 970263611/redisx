@@ -1,7 +1,5 @@
 package com.dahuaboke.redisx.from.rdb;
 
-import io.netty.buffer.ByteBuf;
-
 /**
  * @Desc: RDB解析类，差分Header
  * @Author：cdl

@@ -1,6 +1,5 @@
 package dahuaboke.redisx;
 
-import com.dahuaboke.redisx.from.rdb.RdbData;
 import com.dahuaboke.redisx.from.rdb.RdbInfo;
 import com.dahuaboke.redisx.from.rdb.RdbParser;
 import com.dahuaboke.redisx.from.rdb.base.ListPackParser;
@@ -32,7 +31,9 @@ import java.io.*;
 import java.nio.ByteBuffer;
 import java.nio.channels.FileChannel;
 import java.nio.charset.StandardCharsets;
-import java.util.*;
+import java.util.List;
+import java.util.Map;
+import java.util.Set;
 
 
 /**
@@ -75,8 +76,9 @@ public class RdbParserTest {
     Module2Parser module2Parser = new Module2Parser();
 
     ByteBuf byteBuf = null;
+
     @Before
-    public void initByteBuf()  {
+    public void initByteBuf() {
         File file = new File("C:\\Users\\15536\\Desktop\\test.rdb");
         long fileLength = file.length();
         // 创建足够大小的ByteBuf来存储文件内容
@@ -104,22 +106,23 @@ public class RdbParserTest {
     }
 
     @Test
-    public void testLzfString(){
+    public void testLzfString() {
         byte[] bytes = stringParser.parse(byteBuf);
         String str = new String(bytes, StandardCharsets.UTF_8);
         System.out.println(str);
     }
 
     @Test
-    public void testListPack(){
+    public void testListPack() {
         List<byte[]> bytes = listPackParser.parse(byteBuf);
         bytes.forEach(entry -> {
             String str = new String(entry, StandardCharsets.UTF_8);
             System.out.println(str);
         });
     }
+
     @Test
-    public void testZipList(){
+    public void testZipList() {
         List<byte[]> bytes = zipListParser.parse(byteBuf);
         bytes.forEach(entry -> {
             String str = new String(entry, StandardCharsets.UTF_8);
@@ -128,7 +131,7 @@ public class RdbParserTest {
     }
 
     @Test
-    public void testQuickList(){
+    public void testQuickList() {
         List<byte[]> bytes = listQuickListParser.parse(byteBuf);
         bytes.forEach(entry -> {
             String str = new String(entry, StandardCharsets.UTF_8);
@@ -137,23 +140,25 @@ public class RdbParserTest {
     }
 
     @Test
-    public void testQuickList2(){
+    public void testQuickList2() {
         List<byte[]> bytes = listQuickList2Parser.parse(byteBuf);
         bytes.forEach(entry -> {
             String str = new String(entry, StandardCharsets.UTF_8);
             System.out.println(str);
         });
     }
+
     @Test
-    public void testSet(){
+    public void testSet() {
         Set<byte[]> bytes = setParser.parse(byteBuf);
         bytes.forEach(entry -> {
             String str = new String(entry, StandardCharsets.UTF_8);
             System.out.println(str);
         });
     }
+
     @Test
-    public void testSetIntSet(){
+    public void testSetIntSet() {
         Set<byte[]> bytes = setIntSetParser.parse(byteBuf);
         bytes.forEach(entry -> {
             String str = new String(entry, StandardCharsets.UTF_8);
@@ -162,72 +167,76 @@ public class RdbParserTest {
     }
 
     @Test
-    public void testSetListPack(){
+    public void testSetListPack() {
         Set<byte[]> bytes = setListPackParser.parse(byteBuf);
         bytes.forEach(entry -> {
             String str = new String(entry, StandardCharsets.UTF_8);
             System.out.println(str);
         });
     }
+
     @Test
-    public void testZSetZipList(){
+    public void testZSetZipList() {
         Set<ZSetEntry> zSetEntries = zSetZipListParser.parse(byteBuf);
         zSetEntries.forEach(entry -> {
-            double score =entry.getScore();
+            double score = entry.getScore();
             String element = new String(entry.getElement(), StandardCharsets.UTF_8);
-            System.out.println(score+":"+element);
-        });
-    }
-    @Test
-    public void testZSetListPack(){
-        Set<ZSetEntry> zSetEntries = zSetListPackParser.parse(byteBuf);
-        zSetEntries.forEach(entry -> {
-            double score =entry.getScore();
-            String element = new String(entry.getElement(), StandardCharsets.UTF_8);
-            System.out.println(score+":"+element);
+            System.out.println(score + ":" + element);
         });
     }
 
     @Test
-    public void testHashZipList(){
+    public void testZSetListPack() {
+        Set<ZSetEntry> zSetEntries = zSetListPackParser.parse(byteBuf);
+        zSetEntries.forEach(entry -> {
+            double score = entry.getScore();
+            String element = new String(entry.getElement(), StandardCharsets.UTF_8);
+            System.out.println(score + ":" + element);
+        });
+    }
+
+    @Test
+    public void testHashZipList() {
         Map<byte[], byte[]> map = hashZipListParser.parse(byteBuf);
         Set<Map.Entry<byte[], byte[]>> entries = map.entrySet();
         entries.forEach(entry -> {
             String key = new String(entry.getKey(), StandardCharsets.UTF_8);
             String value = new String(entry.getValue(), StandardCharsets.UTF_8);
-            System.out.println(key+":"+value);
+            System.out.println(key + ":" + value);
         });
     }
 
     @Test
-    public void testHashListPack(){
+    public void testHashListPack() {
         Map<byte[], byte[]> map = hashListPackParser.parse(byteBuf);
         Set<Map.Entry<byte[], byte[]>> entries = map.entrySet();
         entries.forEach(entry -> {
             String key = new String(entry.getKey(), StandardCharsets.UTF_8);
             String value = new String(entry.getValue(), StandardCharsets.UTF_8);
-            System.out.println(key+":"+value);
+            System.out.println(key + ":" + value);
         });
     }
 
     @Test
-    public void testStreamListPacksParser(){
+    public void testStreamListPacksParser() {
         Stream stream = streamListPacksParser.parse(byteBuf);
         System.out.println(stream.toString());
     }
+
     @Test
-    public void testStreamListPacksParser2(){
+    public void testStreamListPacksParser2() {
         Stream stream = streamListPacks2Parser.parse(byteBuf);
         System.out.println(stream.toString());
     }
+
     @Test
-    public void testStreamListPacksParser3(){
+    public void testStreamListPacksParser3() {
         Stream stream = streamListPacks3Parser.parse(byteBuf);
         System.out.println(stream.toString());
     }
 
     @Test
-    public void testVerseByte(){
+    public void testVerseByte() {
 
         module2Parser.parse(byteBuf);
 
@@ -256,10 +265,10 @@ public class RdbParserTest {
         RdbInfo info = parser.getRdbInfo();
         while (!info.isEnd()) {
             parser.parse();
-            if(info.isEnd()){
+            if (info.isEnd()) {
                 break;
             }
-            if(info.isDataReady()){
+            if (info.isDataReady()) {
                 System.out.println(parser.getRdbInfo().getRdbData());
             }
         }

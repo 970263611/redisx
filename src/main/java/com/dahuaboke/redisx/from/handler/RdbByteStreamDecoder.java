@@ -151,10 +151,10 @@ public class RdbByteStreamDecoder extends ChannelInboundHandlerAdapter {
         RdbInfo info = parser.getRdbInfo();
         while (true) {
             parser.parse();
-            if(info.isEnd()){
+            if (info.isEnd()) {
                 break;
             }
-            if(info.isDataReady()){
+            if (info.isDataReady()) {
                 RdbData data = info.getRdbData();
                 if (data.getDataNum() == 1) {
                     long selectDB = data.getSelectDB();

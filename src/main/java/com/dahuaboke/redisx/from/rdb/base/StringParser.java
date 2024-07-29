@@ -13,7 +13,7 @@ import static com.dahuaboke.redisx.Constant.*;
  */
 public class StringParser implements Parser {
 
-    public byte[] parse(ByteBuf byteBuf){
+    public byte[] parse(ByteBuf byteBuf) {
         Len lenObj = ParserManager.LENGTH.parse(byteBuf);
         long len = (int) lenObj.len;
         boolean isEncoded = lenObj.encoded;
@@ -35,7 +35,7 @@ public class StringParser implements Parser {
         return value;
     }
 
-    private byte[] parseIntegerObject(int enctype, ByteBuf byteBuf){
+    private byte[] parseIntegerObject(int enctype, ByteBuf byteBuf) {
         byte[] value;
         switch (enctype) {
             case RDB_ENC_INT8:
@@ -70,15 +70,15 @@ public class StringParser implements Parser {
 
     private byte[] parseLzfStringObject(ByteBuf byteBuf) {
         //压缩后长度
-        int compressedLen = (int)ParserManager.LENGTH.parse(byteBuf).len;
+        int compressedLen = (int) ParserManager.LENGTH.parse(byteBuf).len;
         //压缩前长度
-        int len = (int)ParserManager.LENGTH.parse(byteBuf).len;
+        int len = (int) ParserManager.LENGTH.parse(byteBuf).len;
         //压缩后字节数组
         byte[] src = new byte[compressedLen];
         byteBuf.readBytes(src);
         //压缩前字节数组
         byte[] dest = new byte[len];
-        Lzf.expand(src,dest);
+        Lzf.expand(src, dest);
         return dest;
     }
 

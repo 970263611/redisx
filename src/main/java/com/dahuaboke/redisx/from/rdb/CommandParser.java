@@ -61,7 +61,7 @@ public class CommandParser {
     public List<List<String>> parser(RdbData rdbData) {
         List<List<String>> result = new LinkedList();
         Type type = typeMap.get(rdbData.getRdbType());
-        if (type!=null) {
+        if (type != null) {
             switch (type) {
                 case STRING:
                     string(result, rdbData.getKey(), (byte[]) rdbData.getValue());

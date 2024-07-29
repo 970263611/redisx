@@ -23,6 +23,6 @@ public class DirtyDataHandler extends ChannelInboundHandlerAdapter {
     @Override
     public void exceptionCaught(ChannelHandlerContext ctx, Throwable cause)
             throws Exception {
-        logger.error("exceptionCaught : ",cause);
+        logger.error("exceptionCaught : ", cause);
     }
 }
