@@ -5,10 +5,7 @@ import com.dahuaboke.redisx.Context;
 import com.dahuaboke.redisx.command.from.SyncCommand;
 import com.dahuaboke.redisx.from.FromContext;
 import com.dahuaboke.redisx.to.ToContext;
-import io.netty.channel.Channel;
-import io.netty.channel.ChannelFuture;
-import io.netty.channel.ChannelHandlerContext;
-import io.netty.channel.ChannelInboundHandlerAdapter;
+import io.netty.channel.*;
 import io.netty.handler.codec.redis.RedisMessage;
 import org.slf4j.Logger;
 import org.slf4j.LoggerFactory;
@@ -42,7 +39,7 @@ public class SyncCommandListener extends ChannelInboundHandlerAdapter {
                             boolean immediate = toContext.isImmediate();
                             if (syncCommand != null) {
                                 RedisMessage redisMessage = syncCommand.getCommand();
-                                if (immediate) { //强一致模式
+                                if (immediate && syncCommand.isNeedAddLengthToOffset()) { //强一致模式 && 需要记录偏移量（非rdb数据）
                                     boolean messageWrited = false;
                                     boolean offsetWrited = false;
                                     int retryTimes = 0;
@@ -77,8 +74,9 @@ public class SyncCommandListener extends ChannelInboundHandlerAdapter {
                                     flushThreshold++;
                                 }
                             }
-                            if (!immediate && (flushThreshold > flushSize || (System.currentTimeMillis() - timeThreshold > 100))) {
-                                if (flushThreshold > 0) {
+                            if (flushThreshold > flushSize || (System.currentTimeMillis() - timeThreshold > 100)) {
+                                ChannelOutboundBuffer buf = channel.unsafe().outboundBuffer();
+                                if (buf != null && buf.size() > 0) {
                                     ctx.flush();
                                     logger.debug("Flush data success [{}]", flushThreshold);
                                     flushThreshold = 0;
