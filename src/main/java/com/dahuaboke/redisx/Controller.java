@@ -294,7 +294,11 @@ public class Controller {
             ToNode toNode = new ToNode("Sync", cacheManager, host, port, toIsCluster, false, immediate, immediateResendTimes, switchFlag, toFlushSize);
             toNode.start();
             if (toNode.isStarted(5000)) {
-                cacheManager.register(toNode.getContext());
+                Context context = toNode.getContext();
+                if (context == null) {
+                    logger.error("[{}:{}] context is null", host, port);
+                }
+                cacheManager.register(context);
             } else {
                 logger.error("[{}:{}] node start failed, close all [to] node", host, port);
                 success = false;

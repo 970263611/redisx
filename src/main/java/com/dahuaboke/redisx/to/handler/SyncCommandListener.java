@@ -34,7 +34,7 @@ public class SyncCommandListener extends ChannelInboundHandlerAdapter {
             while (!toContext.isClose()) {
                 try {
                     if (channel.isActive()) {
-                        if (channel.pipeline().get(Constant.SLOT_HANDLER_NAME) == null) {
+                        if (channel.pipeline().get(Constant.SLOT_HANDLER_NAME) == null && toContext.toStarted()) {
                             SyncCommand syncCommand = toContext.listen();
                             boolean immediate = toContext.isImmediate();
                             if (syncCommand != null) {
