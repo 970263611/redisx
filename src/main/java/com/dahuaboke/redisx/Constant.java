@@ -13,6 +13,8 @@ public class Constant {
 
     public static final String SWITCH_FLAG = "REDIS-X-AUTHOR:DAHUA&CHANGDONGLIANG&ZHANGHUIHAO&ZHANGSHUHAN";
 
+    public static final String CONFIG_PATH = "config.path";
+
     public static final String PROJECT_NAME = "Redis-x";
 
     public static final String PING_COMMAND = "PING";

@@ -8,10 +8,7 @@ import org.yaml.snakeyaml.Yaml;
 
 import java.io.FileInputStream;
 import java.io.FileNotFoundException;
-import java.net.InetSocketAddress;
-import java.util.ArrayList;
 import java.util.HashMap;
-import java.util.List;
 import java.util.Map;
 
 /**
@@ -23,47 +20,27 @@ public class YamlUtil {
 
     private static final Logger logger = LoggerFactory.getLogger(YamlUtil.class);
 
-    public static Redisx.Config parseYamlParam(String fileName) {
+    /**
+     * 解析yaml文件为 map
+     * @param args
+     * @return
+     */
+    public static Map<String, Object> parseYamlParam(String[] args) {
         try {
-            Map<String, Object> paramMap = parseConfig(fileName);
-            boolean fromIsCluster = paramMap.get("redisx.from.isCluster") == null ? false : (boolean) paramMap.get("redisx.from.isCluster");
-            String fromPassword = (String) paramMap.get("redisx.from.password");
-            List<String> fromAddressStrList = (List<String>) paramMap.get("redisx.from.address");
-            if (fromAddressStrList == null || fromAddressStrList.isEmpty()) {
-                throw new IllegalArgumentException("redisx.from.address");
+            Map<String, String> argsMap = new HashMap<>();
+            if (args != null && args.length > 0) {
+                for (String s : args) {
+                    String[] arrs = s.split("=");
+                    if (arrs.length != 2 || StringUtils.isEmpty(arrs[0]) || StringUtils.isEmpty(arrs[1])) {
+                        throw new IllegalArgumentException("The command line parameter is incorrect : " + s);
+                    }
+                    argsMap.put(arrs[0], arrs[1]);
+                }
             }
-            List<InetSocketAddress> fromAddresses = new ArrayList();
-            for (String address : fromAddressStrList) {
-                String[] hostAndPortAry = address.split(":");
-                InetSocketAddress inetSocketAddress = new InetSocketAddress(hostAndPortAry[0], Integer.parseInt(hostAndPortAry[1]));
-                fromAddresses.add(inetSocketAddress);
-            }
-            boolean toIsCluster = paramMap.get("redisx.to.isCluster") == null ? false : (boolean) paramMap.get("redisx.to.isCluster");
-            String toPassword = (String) paramMap.get("redisx.to.password");
-            List<String> toAddressStrList = (List<String>) paramMap.get("redisx.to.address");
-            if (toAddressStrList == null || toAddressStrList.isEmpty()) {
-                throw new IllegalArgumentException("redisx.to.address");
-            }
-            List<InetSocketAddress> toAddresses = new ArrayList();
-            for (String address : toAddressStrList) {
-                String[] hostAndPortAry = address.split(":");
-                InetSocketAddress inetSocketAddress = new InetSocketAddress(hostAndPortAry[0], Integer.parseInt(hostAndPortAry[1]));
-                toAddresses.add(inetSocketAddress);
-            }
-            boolean consoleEnable = paramMap.get("redisx.console.enable") == null ? false : (boolean) paramMap.get("redisx.console.enable");
-            int consolePort = paramMap.get("redisx.console.port") == null ? 18080 : (int) paramMap.get("redisx.console.port");
-            int consoleTimeout = paramMap.get("redisx.console.timeout") == null ? 5000 : (int) paramMap.get("redisx.console.timeout");
-            boolean immediate = paramMap.get("redisx.immediate.enable") == null ? false : (boolean) paramMap.get("redisx.immediate.enable");
-            int immediateResendTimes = paramMap.get("redisx.immediate.resendTimes") == null ? 0 : (int) paramMap.get("redisx.immediate.resendTimes");
-            boolean alwaysFullSync = paramMap.get("redisx.alwaysFullSync") == null ? false : (boolean) paramMap.get("redisx.alwaysFullSync");
-            String redisVersion = (String) paramMap.get("redisx.from.redis.version");
-            if (redisVersion == null) {
-                throw new IllegalArgumentException("redisx.from.redis.version");
-            }
-            String switchFlag = paramMap.get("redisx.switchFlag") == null ? Constant.SWITCH_FLAG : (String) paramMap.get("redisx.switchFlag");
-            boolean syncRdb = paramMap.get("redisx.syncRdb") == null ? true : (boolean) paramMap.get("redisx.syncRdb");
-            int toFlushSize = paramMap.get("redisx.to.flushSize") == null ? 50 : (int) paramMap.get("redisx.to.flushSize");
-            return new Redisx.Config(fromIsCluster, fromPassword, fromAddresses, toIsCluster, toPassword, toAddresses, consoleEnable, consolePort, consoleTimeout, immediate, alwaysFullSync, immediateResendTimes, redisVersion, switchFlag, syncRdb, toFlushSize);
+            Map<String, Object> paramMap = parseConfig(argsMap.get(Constant.CONFIG_PATH));
+            paramMap.putAll(argsMap);
+            decryptMap(paramMap);
+            return paramMap;
         } catch (Exception e) {
             logger.error("Config param error", e);
             System.exit(0);
@@ -87,6 +64,21 @@ public class YamlUtil {
         decryptMap(config);
         parseConfig(null, map, config);
         return config;
+    }
+
+    private static void parseConfig(String startKey, Object obj, Map<String, Object> config) {
+        if (obj instanceof Map) {
+            Map<String, Object> map = (Map<String, Object>) obj;
+            for (Map.Entry<String, Object> entry : map.entrySet()) {
+                if (startKey == null) {
+                    parseConfig(entry.getKey(), entry.getValue(), config);
+                } else {
+                    parseConfig(startKey + "." + entry.getKey(), entry.getValue(), config);
+                }
+            }
+        } else {
+            config.put(startKey, obj);
+        }
     }
 
     /**
@@ -113,18 +105,4 @@ public class YamlUtil {
         }
     }
 
-    private static void parseConfig(String startKey, Object obj, Map<String, Object> config) {
-        if (obj instanceof Map) {
-            Map<String, Object> map = (Map<String, Object>) obj;
-            for (Map.Entry<String, Object> entry : map.entrySet()) {
-                if (startKey == null) {
-                    parseConfig(entry.getKey(), entry.getValue(), config);
-                } else {
-                    parseConfig(startKey + "." + entry.getKey(), entry.getValue(), config);
-                }
-            }
-        } else {
-            config.put(startKey, obj);
-        }
-    }
 }

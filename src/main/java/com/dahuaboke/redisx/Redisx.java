@@ -1,149 +1,214 @@
 package com.dahuaboke.redisx;
 
 
+import com.dahuaboke.redisx.annotation.FieldOrm;
+import com.dahuaboke.redisx.utils.FieldOrmUtil;
 import com.dahuaboke.redisx.utils.YamlUtil;
 
 import java.net.InetSocketAddress;
+import java.util.ArrayList;
 import java.util.List;
 
 public class Redisx {
 
     public static void main(String[] args) {
-        String fileName = null;
-        if (args != null && args.length != 0) {
-            fileName = args[0];
-        }
-        Config config = YamlUtil.parseYamlParam(fileName);
-        Controller controller = new Controller(config.getRedisVersion(), config.fromIsCluster(), config.getFromPassword(),
-                config.toIsCluster(), config.getToPassword(), config.isImmediate(), config.getImmediateResendTimes(), config.getSwitchFlag());
-        controller.start(config.getFromAddresses(), config.getToAddresses(), config.consoleEnable(),
+        Config config = new Config();
+        FieldOrmUtil.MapToBean(YamlUtil.parseYamlParam(args),config);
+        Controller controller = new Controller(config.getRedisVersion(), config.isFromIsCluster(), config.getFromPassword(),
+                config.isToIsCluster(), config.getToPassword(), config.isImmediate(), config.getImmediateResendTimes(), config.getSwitchFlag());
+        controller.start(config.getFromAddresses(), config.getToAddresses(), config.isConsoleEnable(),
                 config.getConsolePort(), config.getConsoleTimeout(), config.isAlwaysFullSync(), config.isSyncRdb(), config.getToFlushSize());
     }
 
     public static class Config {
-        private From from;
-        private To to;
-        private Console console;
+
+        @FieldOrm(value = "redisx.from.isCluster",defaultValue = "false")
+        private boolean fromIsCluster;
+
+        @FieldOrm(value = "redisx.from.address",required = true)
+        private List<InetSocketAddress> fromAddresses;
+
+        @FieldOrm(value = "redisx.from.password")
+        private String fromPassword;
+
+        @FieldOrm(value = "redisx.to.isCluster",defaultValue = "false")
+        private boolean toIsCluster;
+
+        @FieldOrm(value = "redisx.to.address",required = true)
+        private List<InetSocketAddress> toAddresses;
+
+        @FieldOrm(value = "redisx.to.password")
+        private String toPassword;
+
+        @FieldOrm(value = "redisx.to.flushSize",defaultValue = "50")
+        private int toFlushSize;
+
+        @FieldOrm(value = "redisx.console.enable",defaultValue = "false")
+        private boolean consoleEnable;
+
+        @FieldOrm(value = "redisx.console.timeout",defaultValue = "18080")
+        private int consolePort;
+
+        @FieldOrm(value = "redisx.console.timeout",defaultValue = "5000")
+        private int consoleTimeout;
+
+        @FieldOrm(value = "redisx.immediate.enable",defaultValue = "false")
         private boolean immediate;
+
+        @FieldOrm(value = "redisx.alwaysFullSync",defaultValue = "false")
         private boolean alwaysFullSync;
+
+        @FieldOrm(value = "redisx.immediate.resendTimes",defaultValue = "0")
         private int immediateResendTimes;
+
+        @FieldOrm(value = "redisx.from.redis.version",required = true)
         private String redisVersion;
+
+        @FieldOrm(value = "redisx.switchFlag",defaultValue = Constant.SWITCH_FLAG)
         private String switchFlag;
+
+        @FieldOrm(value = "redisx.syncRdb",defaultValue = "true")
         private boolean syncRdb;
 
-        public Config(boolean fromIsCluster, String fromPassword, List<InetSocketAddress> fromAddresses, boolean toIsCluster, String toPassword,
-                      List<InetSocketAddress> toAddresses, boolean consoleEnable, int consolePort, int consoleTimeout, boolean immediate, boolean alwaysFullSync, int immediateResendTimes, String redisVersion, String switchFlag, boolean syncRdb, int toFlushSize) {
-            this.from = new From(fromIsCluster, fromAddresses, fromPassword);
-            this.to = new To(toIsCluster, toAddresses, toPassword, toFlushSize);
-            this.console = new Console(consoleEnable, consolePort, consoleTimeout);
-            this.immediate = immediate;
-            this.alwaysFullSync = alwaysFullSync;
-            this.immediateResendTimes = immediateResendTimes;
-            this.redisVersion = redisVersion;
-            this.switchFlag = switchFlag;
-            this.syncRdb = syncRdb;
+        public boolean isFromIsCluster() {
+            return fromIsCluster;
         }
 
-        public boolean fromIsCluster() {
-            return this.from.isCluster;
+        public void setFromIsCluster(boolean fromIsCluster) {
+            this.fromIsCluster = fromIsCluster;
         }
 
         public List<InetSocketAddress> getFromAddresses() {
-            return this.from.addresses;
+            return fromAddresses;
         }
 
-        public boolean toIsCluster() {
-            return this.to.isCluster;
-        }
-
-        public List<InetSocketAddress> getToAddresses() {
-            return this.to.addresses;
-        }
-
-        public boolean consoleEnable() {
-            return this.console.enable;
-        }
-
-        public int getConsolePort() {
-            return this.console.port;
-        }
-
-        public int getConsoleTimeout() {
-            return this.console.timeout;
+        public void setFromAddresses(List<String> fromAddressesStr) {
+            List<InetSocketAddress> fromAddresses = new ArrayList();
+            for (String address : fromAddressesStr) {
+                String[] hostAndPortAry = address.split(":");
+                InetSocketAddress inetSocketAddress = new InetSocketAddress(hostAndPortAry[0], Integer.parseInt(hostAndPortAry[1]));
+                fromAddresses.add(inetSocketAddress);
+            }
+            this.fromAddresses = fromAddresses;
         }
 
         public String getFromPassword() {
-            return this.from.password;
+            return fromPassword;
+        }
+
+        public void setFromPassword(String fromPassword) {
+            this.fromPassword = fromPassword;
+        }
+
+        public boolean isToIsCluster() {
+            return toIsCluster;
+        }
+
+        public void setToIsCluster(boolean toIsCluster) {
+            this.toIsCluster = toIsCluster;
+        }
+
+        public List<InetSocketAddress> getToAddresses() {
+            return toAddresses;
+        }
+
+        public void setToAddresses(List<String> toAddressesStr) {
+            List<InetSocketAddress> toAddresses = new ArrayList();
+            for (String address : toAddressesStr) {
+                String[] hostAndPortAry = address.split(":");
+                InetSocketAddress inetSocketAddress = new InetSocketAddress(hostAndPortAry[0], Integer.parseInt(hostAndPortAry[1]));
+                toAddresses.add(inetSocketAddress);
+            }
+            this.toAddresses = toAddresses;
         }
 
         public String getToPassword() {
-            return this.to.password;
+            return toPassword;
+        }
+
+        public void setToPassword(String toPassword) {
+            this.toPassword = toPassword;
+        }
+
+        public int getToFlushSize() {
+            return toFlushSize;
+        }
+
+        public void setToFlushSize(int toFlushSize) {
+            this.toFlushSize = toFlushSize;
+        }
+
+        public boolean isConsoleEnable() {
+            return consoleEnable;
+        }
+
+        public void setConsoleEnable(boolean consoleEnable) {
+            this.consoleEnable = consoleEnable;
+        }
+
+        public int getConsolePort() {
+            return consolePort;
+        }
+
+        public void setConsolePort(int consolePort) {
+            this.consolePort = consolePort;
+        }
+
+        public int getConsoleTimeout() {
+            return consoleTimeout;
+        }
+
+        public void setConsoleTimeout(int consoleTimeout) {
+            this.consoleTimeout = consoleTimeout;
         }
 
         public boolean isImmediate() {
             return immediate;
         }
 
+        public void setImmediate(boolean immediate) {
+            this.immediate = immediate;
+        }
+
         public boolean isAlwaysFullSync() {
             return alwaysFullSync;
+        }
+
+        public void setAlwaysFullSync(boolean alwaysFullSync) {
+            this.alwaysFullSync = alwaysFullSync;
         }
 
         public int getImmediateResendTimes() {
             return immediateResendTimes;
         }
 
+        public void setImmediateResendTimes(int immediateResendTimes) {
+            this.immediateResendTimes = immediateResendTimes;
+        }
+
         public String getRedisVersion() {
             return redisVersion;
+        }
+
+        public void setRedisVersion(String redisVersion) {
+            this.redisVersion = redisVersion;
         }
 
         public String getSwitchFlag() {
             return switchFlag;
         }
 
+        public void setSwitchFlag(String switchFlag) {
+            this.switchFlag = switchFlag;
+        }
+
         public boolean isSyncRdb() {
             return syncRdb;
         }
 
-        public int getToFlushSize() {
-            return this.to.flushSize;
-        }
-
-        private static class From {
-            private boolean isCluster;
-            private List<InetSocketAddress> addresses;
-            private String password;
-
-            public From(boolean isCluster, List<InetSocketAddress> addresses, String password) {
-                this.isCluster = isCluster;
-                this.addresses = addresses;
-                this.password = password;
-            }
-        }
-
-        private static class To {
-            private boolean isCluster;
-            private List<InetSocketAddress> addresses;
-            private String password;
-            private int flushSize;
-
-            public To(boolean isCluster, List<InetSocketAddress> addresses, String password, int flushSize) {
-                this.isCluster = isCluster;
-                this.addresses = addresses;
-                this.password = password;
-                this.flushSize = flushSize;
-            }
-        }
-
-        private static class Console {
-            private boolean enable;
-            private int port;
-            private int timeout;
-
-            public Console(boolean enable, int port, int timeout) {
-                this.enable = enable;
-                this.port = port;
-                this.timeout = timeout;
-            }
+        public void setSyncRdb(boolean syncRdb) {
+            this.syncRdb = syncRdb;
         }
     }
+
 }
