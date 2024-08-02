@@ -32,3 +32,7 @@ jasypt:
     password: KU1aBcAit9x
     algorithm: PBEWithMD5AndDES
     ivGeneratorClassName: org.jasypt.iv.NoIvGenerator
+
+logging:
+  level:
+    globle: info

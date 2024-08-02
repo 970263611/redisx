@@ -4,6 +4,10 @@ package com.dahuaboke.redisx;
 import com.dahuaboke.redisx.annotation.FieldOrm;
 import com.dahuaboke.redisx.utils.FieldOrmUtil;
 import com.dahuaboke.redisx.utils.YamlUtil;
+import org.apache.logging.log4j.Level;
+import org.apache.logging.log4j.core.config.Configurator;
+import org.slf4j.Logger;
+import org.slf4j.LoggerFactory;
 
 import java.net.InetSocketAddress;
 import java.util.ArrayList;
@@ -11,9 +15,13 @@ import java.util.List;
 
 public class Redisx {
 
+    private static final Logger logger = LoggerFactory.getLogger(Redisx.class);
+
+
     public static void main(String[] args) {
         Config config = new Config();
         FieldOrmUtil.MapToBean(YamlUtil.parseYamlParam(args),config);
+        Configurator.setRootLevel(Level.getLevel(config.getLogLevelGlobal()));
         Controller controller = new Controller(config.getRedisVersion(), config.isFromIsCluster(), config.getFromPassword(),
                 config.isToIsCluster(), config.getToPassword(), config.isImmediate(), config.getImmediateResendTimes(), config.getSwitchFlag());
         controller.start(config.getFromAddresses(), config.getToAddresses(), config.isConsoleEnable(),
@@ -69,6 +77,9 @@ public class Redisx {
 
         @FieldOrm(value = "redisx.syncRdb",defaultValue = "true")
         private boolean syncRdb;
+
+        @FieldOrm(value = "logging.level.globle",defaultValue = "INFO")
+        private String logLevelGlobal;
 
         public boolean isFromIsCluster() {
             return fromIsCluster;
@@ -208,6 +219,14 @@ public class Redisx {
 
         public void setSyncRdb(boolean syncRdb) {
             this.syncRdb = syncRdb;
+        }
+
+        public String getLogLevelGlobal() {
+            return logLevelGlobal;
+        }
+
+        public void setLogLevelGlobal(String logLevelGlobal) {
+            this.logLevelGlobal = logLevelGlobal;
         }
     }
 
