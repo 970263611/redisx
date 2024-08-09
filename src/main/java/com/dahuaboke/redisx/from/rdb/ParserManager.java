@@ -19,10 +19,7 @@ import com.dahuaboke.redisx.from.rdb.stream.Stream;
 import com.dahuaboke.redisx.from.rdb.stream.StreamListPacks2Parser;
 import com.dahuaboke.redisx.from.rdb.stream.StreamListPacks3Parser;
 import com.dahuaboke.redisx.from.rdb.stream.StreamListPacksParser;
-import com.dahuaboke.redisx.from.rdb.zset.ZSetEntry;
-import com.dahuaboke.redisx.from.rdb.zset.ZSetListPackParser;
-import com.dahuaboke.redisx.from.rdb.zset.ZSetParser;
-import com.dahuaboke.redisx.from.rdb.zset.ZSetZipListParser;
+import com.dahuaboke.redisx.from.rdb.zset.*;
 import org.slf4j.Logger;
 import org.slf4j.LoggerFactory;
 
@@ -64,7 +61,7 @@ public class ParserManager {
 
     public static final Parser<Map<byte[], byte[]>> HASH_04 = new HashParser();
 
-    public static final Parser<Set<ZSetEntry>> ZSET_2_05 = new ZSetParser();
+    public static final Parser<Set<ZSetEntry>> ZSET_2_05 = new ZSet2Parser();
 
     public static final Parser<Module> MODULE_06 = new ModuleParser();
 
