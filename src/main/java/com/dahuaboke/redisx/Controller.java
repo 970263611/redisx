@@ -125,14 +125,14 @@ public class Controller {
         private int port;
         private ToContext toContext;
 
-        public ToNode(String threadNamePrefix, CacheManager cacheManager, String host, int port, boolean toIsCluster, boolean isConsole, boolean immediate, int immediateResendTimes, String switchFlag, int flushSize) {
+        public ToNode(String threadNamePrefix, CacheManager cacheManager, String host, int port, boolean toIsCluster, boolean isConsole, boolean immediate, int immediateResendTimes, String switchFlag, int flushSize, boolean isNodesInfoContext) {
             this.name = Constant.PROJECT_NAME + "-" + threadNamePrefix + "-ToNode-" + host + "-" + port;
             this.setName(name);
             this.cacheManager = cacheManager;
             this.host = host;
             this.port = port;
             //放在构造方法而不是run，因为兼容console模式，需要收集context，否则可能收集到null
-            this.toContext = new ToContext(cacheManager, host, port, fromIsCluster, toIsCluster, isConsole, immediate, immediateResendTimes, switchFlag, flushSize);
+            this.toContext = new ToContext(cacheManager, host, port, fromIsCluster, toIsCluster, isConsole, immediate, immediateResendTimes, switchFlag, flushSize, isNodesInfoContext);
         }
 
         @Override
@@ -209,7 +209,7 @@ public class Controller {
             toNodeAddresses.forEach(address -> {
                 String host = address.getHostString();
                 int port = address.getPort();
-                ToNode toNode = new ToNode("Console", cacheManager, host, port, toIsCluster, true, immediate, 0, switchFlag, 0);
+                ToNode toNode = new ToNode("Console", cacheManager, host, port, toIsCluster, true, immediate, 0, switchFlag, 0, false);
                 consoleContext.setToContext((ToContext) toNode.getContext());
                 toNode.start();
             });
@@ -261,7 +261,7 @@ public class Controller {
         for (InetSocketAddress address : toNodeAddresses) {
             String host = address.getHostString();
             int port = address.getPort();
-            ToNode toNode = new ToNode("Sync", cacheManager, host, port, toIsCluster, false, immediate, immediateResendTimes, switchFlag, toFlushSize);
+            ToNode toNode = new ToNode("Sync", cacheManager, host, port, toIsCluster, false, immediate, immediateResendTimes, switchFlag, toFlushSize, false);
             toNode.start();
             if (toNode.isStarted(5000)) {
                 Context context = toNode.getContext();
@@ -315,21 +315,28 @@ public class Controller {
         }
     }
 
-    public boolean getToNodesInfoSuccess(List<InetSocketAddress> toNodeAddresses) throws Exception {
+    public void getToNodesInfo(List<InetSocketAddress> toNodeAddresses) throws Exception {
         if (!cacheManager.isToNodesInfoGetSuccess()) {
             cacheManager.clearToNodesInfo();
             for (InetSocketAddress address : toNodeAddresses) {
                 String host = address.getHostString();
                 int port = address.getPort();
-                ToNode toNode = new ToNode("GetToNodesInfo", cacheManager, host, port, toIsCluster, false, immediate, immediateResendTimes, switchFlag, toFlushSize);
+                ToNode toNode = new ToNode("GetToNodesInfo", cacheManager, host, port, toIsCluster, false, immediate, immediateResendTimes, switchFlag, toFlushSize, true);
                 toNode.start();
-                if (toNode.isStarted(2000)) {
-                    Context context = toNode.getContext();
-                    if (context == null) {
-                        logger.error("[{}:{}] context is null", host, port);
+                if (toNode.isStarted(5000)) {
+                    ToContext context = (ToContext) toNode.getContext();
+                    try {
+                        if (context == null) {
+                            logger.error("[{}:{}] context is null", host, port);
+                        }
+                        if (context.nodesInfoGetSuccess(5000)) {
+                            break;
+                        }
+                    } finally {
+                        context.close();
                     }
                 } else {
-                    logger.error("[{}:{}] node start failed, close all [to] node", host, port);
+                    logger.error("[{}:{}] nodes info get failed", host, port);
                 }
             }
             if (!cacheManager.isToNodesInfoGetSuccess()) {

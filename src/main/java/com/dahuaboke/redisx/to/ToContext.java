@@ -11,6 +11,7 @@ import org.slf4j.LoggerFactory;
 import java.util.ArrayList;
 import java.util.List;
 import java.util.Map;
+import java.util.concurrent.CountDownLatch;
 import java.util.concurrent.LinkedBlockingDeque;
 import java.util.concurrent.TimeUnit;
 
@@ -34,8 +35,9 @@ public class ToContext extends Context {
     private int immediateResendTimes;
     private String switchFlag;
     private int flushSize;
+    private CountDownLatch nodesInfoFlag;
 
-    public ToContext(CacheManager cacheManager, String host, int port, boolean fromIsCluster, boolean toIsCluster, boolean isConsole, boolean immediate, int immediateResendTimes, String switchFlag, int flushSize) {
+    public ToContext(CacheManager cacheManager, String host, int port, boolean fromIsCluster, boolean toIsCluster, boolean isConsole, boolean immediate, int immediateResendTimes, String switchFlag, int flushSize, boolean isNodesInfoContext) {
         super(fromIsCluster, toIsCluster);
         this.cacheManager = cacheManager;
         this.host = host;
@@ -48,6 +50,9 @@ public class ToContext extends Context {
         this.immediateResendTimes = immediateResendTimes;
         this.switchFlag = switchFlag;
         this.flushSize = flushSize;
+        if (isNodesInfoContext) {
+            nodesInfoFlag = new CountDownLatch(1);
+        }
     }
 
     public String getId() {
@@ -157,6 +162,9 @@ public class ToContext extends Context {
     }
 
     public void close() {
+        if (nodesInfoFlag != null) {
+            nodesInfoFlag.countDown();
+        }
         this.toClient.destroy();
     }
 
@@ -257,7 +265,18 @@ public class ToContext extends Context {
         this.cacheManager.addToClusterNodesInfo(slotInfo);
     }
 
+    public boolean nodesInfoGetSuccess(int timeout) {
+        try {
+            return nodesInfoFlag.await(timeout, TimeUnit.MILLISECONDS);
+        } catch (InterruptedException e) {
+            return false;
+        }
+    }
+
     public void setToNodesInfoGetSuccess(boolean success) {
+        if (nodesInfoFlag != null) {
+            nodesInfoFlag.countDown();
+        }
         cacheManager.setToNodesInfoGetSuccess(success);
     }
 
