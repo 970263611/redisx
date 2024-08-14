@@ -55,13 +55,13 @@ public class FromClient {
                     protected void initChannel(Channel channel) throws Exception {
                         ChannelPipeline pipeline = channel.pipeline();
                         boolean console = fromContext.isConsole();
-                        pipeline.addLast(new RedisEncoder());
-                        pipeline.addLast(new CommandEncoder());
                         boolean hasPassword = false;
                         String password = fromContext.getPassword();
                         if (password != null && !password.isEmpty()) {
                             hasPassword = true;
                         }
+                        pipeline.addLast(new RedisEncoder());
+                        pipeline.addLast(new CommandEncoder());
                         if (hasPassword) {
                             pipeline.addLast(Constant.AUTH_HANDLER_NAME, new AuthHandler(password, fromContext.isFromIsCluster()));
                         }

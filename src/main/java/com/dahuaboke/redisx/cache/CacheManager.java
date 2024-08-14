@@ -3,6 +3,7 @@ package com.dahuaboke.redisx.cache;
 import com.dahuaboke.redisx.Context;
 import com.dahuaboke.redisx.command.from.SyncCommand;
 import com.dahuaboke.redisx.from.FromContext;
+import com.dahuaboke.redisx.handler.SlotInfoHandler;
 import com.dahuaboke.redisx.to.ToContext;
 import org.slf4j.Logger;
 import org.slf4j.LoggerFactory;
@@ -35,6 +36,10 @@ public final class CacheManager {
     private String id = UUID.randomUUID().toString().replaceAll("-", "");
     private Map<String, NodeMessage> nodeMessages = new ConcurrentHashMap();
     private String redisVersion;
+    private boolean fromNodesInfoGetSuccess = false;
+    private boolean toNodesInfoGetSuccess = false;
+    private Set<SlotInfoHandler.SlotInfo> fromClusterNodesInfo = new HashSet<>();
+    private Set<SlotInfoHandler.SlotInfo> toClusterNodesInfo = new HashSet<>();
 
     public CacheManager(String redisVersion, boolean fromIsCluster, String fromPassword, boolean toIsCluster, String toPassword) {
         this.redisVersion = redisVersion;
@@ -185,6 +190,46 @@ public final class CacheManager {
                 ((ToContext) cont).close();
             }
         }
+    }
+
+    public boolean isFromNodesInfoGetSuccess() {
+        return fromNodesInfoGetSuccess;
+    }
+
+    public void setFromNodesInfoGetSuccess(boolean fromNodesInfoGetSuccess) {
+        this.fromNodesInfoGetSuccess = fromNodesInfoGetSuccess;
+    }
+
+    public boolean isToNodesInfoGetSuccess() {
+        return toNodesInfoGetSuccess;
+    }
+
+    public void setToNodesInfoGetSuccess(boolean toNodesInfoGetSuccess) {
+        this.toNodesInfoGetSuccess = toNodesInfoGetSuccess;
+    }
+
+    public Set<SlotInfoHandler.SlotInfo> getFromClusterNodesInfo() {
+        return fromClusterNodesInfo;
+    }
+
+    public void addFromClusterNodesInfo(SlotInfoHandler.SlotInfo fromClusterNodesInfo) {
+        this.fromClusterNodesInfo.add(fromClusterNodesInfo);
+    }
+
+    public Set<SlotInfoHandler.SlotInfo> getToClusterNodesInfo() {
+        return toClusterNodesInfo;
+    }
+
+    public void addToClusterNodesInfo(SlotInfoHandler.SlotInfo toClusterNodesInfo) {
+        this.toClusterNodesInfo.add(toClusterNodesInfo);
+    }
+
+    public void clearFromNodesInfo() {
+        this.fromClusterNodesInfo.clear();
+    }
+
+    public void clearToNodesInfo() {
+        this.toClusterNodesInfo.clear();
     }
 
     public static class NodeMessage {

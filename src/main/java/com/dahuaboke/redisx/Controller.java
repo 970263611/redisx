@@ -46,40 +46,10 @@ public class Controller {
     }
 
     public void start(List<InetSocketAddress> fromNodeAddresses, List<InetSocketAddress> toNodeAddresses, boolean startConsole, int consolePort, int consoleTimeout, boolean alwaysFullSync, boolean syncRdb, int toFlushSize) {
-        closeLog4jShutdownHook();
         logger.info("Application global id is {}", cacheManager.getId());
-        Thread shutdownHookThread = new Thread(() -> {
-            logger.info("Shutdown hook thread is starting");
-            controllerPool.shutdown();
-            logger.info("Update offset thread shutdown");
-            cacheManager.closeAllFrom();
-            List<Context> allContexts = cacheManager.getAllContexts();
-            while (true) {
-                boolean allowClose = true;
-                for (Context cont : allContexts) {
-                    if (cont instanceof ToContext) {
-                        ToContext toContext = (ToContext) cont;
-                        if (!toContext.isClose) {
-                            if (!cacheManager.checkHasNeedWriteCommand(toContext)) {
-                                toContext.close();
-                            }
-                            allowClose = false;
-                            break;
-                        }
-                    }
-                }
-                if (allowClose) {
-                    break;
-                }
-            }
-            logger.info("Application exit success");
-            //否则日志不一定打印，因为shutdownHook顺序无法保证
-            LogManager.shutdown();
-        });
-        shutdownHookThread.setName(Constant.PROJECT_NAME + "-ShutdownHook");
-        if (!immediate) {
-            Runtime.getRuntime().addShutdownHook(shutdownHookThread);
-        }
+        registerShutdownKook();
+
+
         //scheduleWithFixedDelay not scheduleAtFixedRate，无需关心异常
         controllerPool.scheduleAtFixedRate(() -> {
             boolean isMaster = cacheManager.isMaster();
@@ -307,5 +277,64 @@ public class Controller {
             }
         }
         cacheManager.setToStarted(success);
+    }
+
+    private void registerShutdownKook() {
+        closeLog4jShutdownHook();
+        Thread shutdownHookThread = new Thread(() -> {
+            logger.info("Shutdown hook thread is starting");
+            controllerPool.shutdown();
+            logger.info("Update offset thread shutdown");
+            cacheManager.closeAllFrom();
+            List<Context> allContexts = cacheManager.getAllContexts();
+            while (true) {
+                boolean allowClose = true;
+                for (Context cont : allContexts) {
+                    if (cont instanceof ToContext) {
+                        ToContext toContext = (ToContext) cont;
+                        if (!toContext.isClose) {
+                            if (!cacheManager.checkHasNeedWriteCommand(toContext)) {
+                                toContext.close();
+                            }
+                            allowClose = false;
+                            break;
+                        }
+                    }
+                }
+                if (allowClose) {
+                    break;
+                }
+            }
+            logger.info("Application exit success");
+            //否则日志不一定打印，因为shutdownHook顺序无法保证
+            LogManager.shutdown();
+        });
+        shutdownHookThread.setName(Constant.PROJECT_NAME + "-ShutdownHook");
+        if (!immediate) {
+            Runtime.getRuntime().addShutdownHook(shutdownHookThread);
+        }
+    }
+
+    public boolean getToNodesInfoSuccess(List<InetSocketAddress> toNodeAddresses) throws Exception {
+        if (!cacheManager.isToNodesInfoGetSuccess()) {
+            cacheManager.clearToNodesInfo();
+            for (InetSocketAddress address : toNodeAddresses) {
+                String host = address.getHostString();
+                int port = address.getPort();
+                ToNode toNode = new ToNode("GetToNodesInfo", cacheManager, host, port, toIsCluster, false, immediate, immediateResendTimes, switchFlag, toFlushSize);
+                toNode.start();
+                if (toNode.isStarted(2000)) {
+                    Context context = toNode.getContext();
+                    if (context == null) {
+                        logger.error("[{}:{}] context is null", host, port);
+                    }
+                } else {
+                    logger.error("[{}:{}] node start failed, close all [to] node", host, port);
+                }
+            }
+            if (!cacheManager.isToNodesInfoGetSuccess()) {
+                throw new Exception();
+            }
+        }
     }
 }

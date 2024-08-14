@@ -4,6 +4,7 @@ import com.dahuaboke.redisx.Constant;
 import com.dahuaboke.redisx.Context;
 import com.dahuaboke.redisx.cache.CacheManager;
 import com.dahuaboke.redisx.command.from.SyncCommand;
+import com.dahuaboke.redisx.handler.SlotInfoHandler;
 import org.slf4j.Logger;
 import org.slf4j.LoggerFactory;
 
@@ -250,6 +251,14 @@ public class ToContext extends Context {
 
     public int getFlushSize() {
         return flushSize;
+    }
+
+    public void addSlotInfo(SlotInfoHandler.SlotInfo slotInfo) {
+        this.cacheManager.addToClusterNodesInfo(slotInfo);
+    }
+
+    public void setToNodesInfoGetSuccess(boolean success) {
+        cacheManager.setToNodesInfoGetSuccess(success);
     }
 
     @Override

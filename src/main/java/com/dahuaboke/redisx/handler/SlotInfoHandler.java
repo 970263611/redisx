@@ -4,6 +4,7 @@ import com.dahuaboke.redisx.Constant;
 import com.dahuaboke.redisx.Context;
 import com.dahuaboke.redisx.from.FromContext;
 import com.dahuaboke.redisx.to.ToContext;
+import com.dahuaboke.redisx.utils.StringUtils;
 import io.netty.channel.Channel;
 import io.netty.channel.ChannelHandlerContext;
 import org.slf4j.Logger;
@@ -74,12 +75,13 @@ public class SlotInfoHandler extends RedisChannelInboundHandler {
                     SlotInfo slotInfo = new SlotInfo(s);
                     map.put(slotInfo.getId(), slotInfo);
                 });
-                map.forEach((k, v) -> {
-                    if (context instanceof FromContext) {
-                        FromContext fromContext = (FromContext) context;
+                if (context instanceof FromContext) {
+                    FromContext fromContext = (FromContext) context;
+                    map.forEach((k, v) -> {
                         if (fromContext.getHost().equals(v.getIp()) &&
                                 fromContext.getPort() == v.getPort()) {
                             fromContext.setSlotInfo(v);
+                            fromContext.addSlotInfo(v);
                             if ("master".equals(v.getFlags())) {
                                 fromContext.setSlotBegin(v.getSlotStart());
                                 fromContext.setSlotEnd(v.getSlotEnd());
@@ -88,13 +90,16 @@ public class SlotInfoHandler extends RedisChannelInboundHandler {
                                 fromContext.setSlotEnd(map.get(v.getMasterId()).getSlotEnd());
                             }
                             ctx.pipeline().remove(this);
-                            return;
                         }
-                    } else if (context instanceof ToContext) {
-                        ToContext toContext = (ToContext) context;
+                    });
+                    fromContext.setFromNodesInfoGetSuccess(true);
+                } else if (context instanceof ToContext) {
+                    ToContext toContext = (ToContext) context;
+                    map.forEach((k, v) -> {
                         if (toContext.getHost().equals(v.getIp()) &&
                                 toContext.getPort() == v.getPort()) {
                             toContext.setSlotInfo(v);
+                            toContext.addSlotInfo(v);
                             if ("master".equals(v.getFlags())) {
                                 toContext.setSlotBegin(v.getSlotStart());
                                 toContext.setSlotEnd(v.getSlotEnd());
@@ -103,10 +108,10 @@ public class SlotInfoHandler extends RedisChannelInboundHandler {
                                 toContext.setSlotEnd(map.get(v.getMasterId()).getSlotEnd());
                             }
                             ctx.pipeline().remove(this);
-                            return;
                         }
-                    }
-                });
+                    });
+                    toContext.setToNodesInfoGetSuccess(true);
+                }
             }
         }
     }
@@ -196,6 +201,10 @@ public class SlotInfoHandler extends RedisChannelInboundHandler {
 
         public void setSlotEnd(int slotEnd) {
             this.slotEnd = slotEnd;
+        }
+
+        public boolean isMaster() {
+            return !StringUtils.isEmpty(masterId);
         }
     }
 }

@@ -4,6 +4,7 @@ import com.dahuaboke.redisx.Constant;
 import com.dahuaboke.redisx.Context;
 import com.dahuaboke.redisx.cache.CacheManager;
 import com.dahuaboke.redisx.command.from.SyncCommand;
+import com.dahuaboke.redisx.handler.SlotInfoHandler;
 import io.netty.channel.Channel;
 import org.slf4j.Logger;
 import org.slf4j.LoggerFactory;
@@ -200,5 +201,13 @@ public class FromContext extends Context {
 
     public void setMasterId(String masterId) {
         this.masterId = masterId;
+    }
+
+    public void addSlotInfo(SlotInfoHandler.SlotInfo slotInfo) {
+        this.cacheManager.addFromClusterNodesInfo(slotInfo);
+    }
+
+    public void setFromNodesInfoGetSuccess(boolean success) {
+        cacheManager.setFromNodesInfoGetSuccess(success);
     }
 }
