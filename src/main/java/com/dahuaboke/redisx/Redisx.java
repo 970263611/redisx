@@ -24,7 +24,12 @@ public class Redisx {
         Configurator.setRootLevel(Level.getLevel(config.getLogLevelGlobal()));
         Controller controller = new Controller(config.getFromAddresses(), config.getToAddresses(), config.getRedisVersion(), config.isFromIsCluster(), config.getFromPassword(),
                 config.isToIsCluster(), config.getToPassword(), config.isImmediate(), config.getImmediateResendTimes(), config.getSwitchFlag());
-        controller.start(config.isConsoleEnable(), config.getConsolePort(), config.getConsoleTimeout(), config.isAlwaysFullSync(), config.isSyncRdb(), config.getToFlushSize());
+        //强制全量同步必须同步rdb文件
+        boolean syncRdb = config.isSyncRdb();
+        if (config.isAlwaysFullSync()) {
+            syncRdb = true;
+        }
+        controller.start(config.isConsoleEnable(), config.getConsolePort(), config.getConsoleTimeout(), config.isAlwaysFullSync(), syncRdb, config.getToFlushSize());
     }
 
     public static class Config {

@@ -16,16 +16,7 @@ redisx:
       - 172.31.84.163:16102
       - 172.31.84.163:16103
     flushSize: 20
-  console:
-    enable: true
-    port: 9999
-    timeout: 5000
-  immediate:
-    enable: false
-    resendTimes: 3
-  alwaysFullSync: false
-  switchFlag: REDIS-X-AUTHOR:DAHUA&CHANGDONGLIANG&ZHANGHUIHAO&ZHANGSHUHAN
-  syncRdb: true
+
 
 jasypt:
   encryptor:

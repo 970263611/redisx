@@ -54,13 +54,14 @@ public class ToContext extends Context {
         this.isNodesInfoContext = isNodesInfoContext;
         if (isNodesInfoContext) {
             nodesInfoFlag = new CountDownLatch(1);
-        }
-        SlotInfoHandler.SlotInfo toClusterNodeInfo = cacheManager.getToClusterNodeInfoByIpAndPort(host, port);
-        if (toClusterNodeInfo != null) {
-            this.slotBegin = toClusterNodeInfo.getSlotStart();
-            this.slotEnd = toClusterNodeInfo.getSlotEnd();
         } else {
-            throw new IllegalStateException("Slot info error");
+            SlotInfoHandler.SlotInfo toClusterNodeInfo = cacheManager.getToClusterNodeInfoByIpAndPort(host, port);
+            if (toClusterNodeInfo != null) {
+                this.slotBegin = toClusterNodeInfo.getSlotStart();
+                this.slotEnd = toClusterNodeInfo.getSlotEnd();
+            } else {
+                throw new IllegalStateException("Slot info error");
+            }
         }
     }
 

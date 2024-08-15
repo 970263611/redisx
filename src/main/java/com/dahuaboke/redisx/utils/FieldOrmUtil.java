@@ -18,13 +18,13 @@ public class FieldOrmUtil {
             }
             //必须有映射名称
             if (StringUtils.isEmpty(FieldOrm.value())) {
-                throw new IllegalArgumentException("config map failed,name is null : " + field.getName());
+                throw new IllegalArgumentException("Config map failed, name is null : " + field.getName());
             }
             //参数值获取及类型转换
             Object val = map.get(FieldOrm.value());
             if (val == null) {
                 if (FieldOrm.required()) {
-                    throw new IllegalArgumentException("config map failed,param is required : " + FieldOrm.value());
+                    throw new IllegalArgumentException("Config map failed, param is required : " + FieldOrm.value());
                 }
                 if (StringUtils.isNotEmpty(FieldOrm.defaultValue())) {
                     val = FieldOrm.defaultValue();
@@ -37,17 +37,17 @@ public class FieldOrmUtil {
                 val = StringUtils.changePrimitive(val, field.getType());
             }
             //获取set方法
-            Method method = null;
+            Method method;
             try {
                 method = clazz.getMethod("set" + StringUtils.upperFirstLetter(field.getName()), field.getType());
             } catch (NoSuchMethodException e) {
-                throw new IllegalArgumentException("config map failed,field not find set method : " + field.getName());
+                throw new IllegalArgumentException("Config map failed, field not find set method : " + field.getName());
             }
             //设置值
             try {
                 method.invoke(bean, val);
             } catch (Exception e) {
-                throw new IllegalArgumentException("config map failed,set value error : " + field.getName());
+                throw new IllegalArgumentException("Config map failed, set value error : " + field.getName());
             }
         }
     }

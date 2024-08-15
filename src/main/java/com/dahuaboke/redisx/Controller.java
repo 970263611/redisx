@@ -53,6 +53,7 @@ public class Controller {
 
     public void start(boolean startConsole, int consolePort, int consoleTimeout, boolean alwaysFullSync, boolean syncRdb, int toFlushSize) {
         logger.info("Application global id is {}", cacheManager.getId());
+        //注册shutdownhook
         registerShutdownKook();
         //需要确保上一次执行结束再执行下一次任务
         controllerPool.scheduleAtFixedRate(() -> {
@@ -160,7 +161,6 @@ public class Controller {
     }
 
     private void registerShutdownKook() {
-        closeLog4jShutdownHook();
         Thread shutdownHookThread = new Thread(() -> {
             logger.info("Shutdown hook thread is starting");
             controllerPool.shutdown();
@@ -191,6 +191,7 @@ public class Controller {
         });
         shutdownHookThread.setName(Constant.PROJECT_NAME + "-ShutdownHook");
         if (!immediate) {
+            closeLog4jShutdownHook();
             Runtime.getRuntime().addShutdownHook(shutdownHookThread);
         }
     }
