@@ -4,7 +4,6 @@ import com.dahuaboke.redisx.Constant;
 import com.dahuaboke.redisx.Context;
 import com.dahuaboke.redisx.from.FromContext;
 import com.dahuaboke.redisx.to.ToContext;
-import com.dahuaboke.redisx.utils.StringUtils;
 import io.netty.channel.Channel;
 import io.netty.channel.ChannelHandlerContext;
 import org.slf4j.Logger;
@@ -78,22 +77,16 @@ public class SlotInfoHandler extends RedisChannelInboundHandler {
                 if (context instanceof FromContext) {
                     FromContext fromContext = (FromContext) context;
                     map.forEach((k, v) -> {
-                        if (fromContext.getHost().equals(v.getIp()) &&
-                                fromContext.getPort() == v.getPort()) {
-                            fromContext.addSlotInfo(v);
-                            ctx.pipeline().remove(this);
-                        }
+                        fromContext.addSlotInfo(v);
                     });
+                    ctx.pipeline().remove(this);
                     fromContext.setFromNodesInfoGetSuccess();
                 } else if (context instanceof ToContext) {
                     ToContext toContext = (ToContext) context;
                     map.forEach((k, v) -> {
-                        if (toContext.getHost().equals(v.getIp()) &&
-                                toContext.getPort() == v.getPort()) {
-                            toContext.addSlotInfo(v);
-                            ctx.pipeline().remove(this);
-                        }
+                        toContext.addSlotInfo(v);
                     });
+                    ctx.pipeline().remove(this);
                     toContext.setToNodesInfoGetSuccess();
                 }
             }
@@ -188,7 +181,7 @@ public class SlotInfoHandler extends RedisChannelInboundHandler {
         }
 
         public boolean isMaster() {
-            return !StringUtils.isEmpty(masterId);
+            return "master".equals(flags);
         }
     }
 }
