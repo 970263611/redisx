@@ -175,7 +175,7 @@ public class ToContext extends Context {
     }
 
     public boolean toStarted() {
-        return cacheManager.getToStarted();
+        return cacheManager.toIsStarted();
     }
 
     public void setToStarted(boolean started) {

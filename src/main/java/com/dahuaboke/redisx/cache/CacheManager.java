@@ -2,6 +2,7 @@ package com.dahuaboke.redisx.cache;
 
 import com.dahuaboke.redisx.Context;
 import com.dahuaboke.redisx.command.from.SyncCommand;
+import com.dahuaboke.redisx.console.ConsoleContext;
 import com.dahuaboke.redisx.from.FromContext;
 import com.dahuaboke.redisx.handler.SlotInfoHandler;
 import com.dahuaboke.redisx.to.ToContext;
@@ -38,6 +39,7 @@ public final class CacheManager {
     private String redisVersion;
     private Set<SlotInfoHandler.SlotInfo> fromClusterNodesInfo = new HashSet<>();
     private Set<SlotInfoHandler.SlotInfo> toClusterNodesInfo = new HashSet<>();
+    private ConsoleContext consoleContext;
 
     public CacheManager(String redisVersion, boolean fromIsCluster, String fromPassword, boolean toIsCluster, String toPassword) {
         this.redisVersion = redisVersion;
@@ -117,7 +119,7 @@ public final class CacheManager {
         this.isMaster.set(isMaster);
     }
 
-    public boolean getToStarted() {
+    public boolean toIsStarted() {
         return toStarted.get();
     }
 
@@ -230,6 +232,14 @@ public final class CacheManager {
 
     public void clearToNodesInfo() {
         this.toClusterNodesInfo.clear();
+    }
+
+    public ConsoleContext getConsoleContext() {
+        return consoleContext;
+    }
+
+    public void setConsoleContext(ConsoleContext consoleContext) {
+        this.consoleContext = consoleContext;
     }
 
     public static class NodeMessage {

@@ -60,7 +60,7 @@ public class Controller {
             boolean isMaster = cacheManager.isMaster();
             boolean fromIsStarted = cacheManager.fromIsStarted();
             List<Context> allContexts = cacheManager.getAllContexts();
-            if (cacheManager.getToStarted()) {
+            if (cacheManager.toIsStarted()) {
                 for (Context cont : allContexts) {
                     if (cont instanceof ToContext) {
                         ToContext toContext = (ToContext) cont;
@@ -87,7 +87,7 @@ public class Controller {
                 cacheManager.closeAllFrom();
                 cacheManager.setFromIsStarted(false);
             } else if (!isMaster && !fromIsStarted) { //未抢占到主节点，from未启动
-                if (!cacheManager.getToStarted()) {
+                if (!cacheManager.toIsStarted()) {
                     startAllTo(toFlushSize);
                 }
             } else {
@@ -95,8 +95,19 @@ public class Controller {
                 logger.warn("Unknown application state");
             }
         }, 5000, 1000000, TimeUnit.MICROSECONDS); //用微秒减少主从抢占脑裂问题，纳秒个人感觉太夸张了
-        if (startConsole) {
-            new ConsoleNode("localhost", consolePort, consoleTimeout).start();
+        //控制台相关
+        if (startConsole && cacheManager.toIsStarted() && cacheManager.fromIsStarted()) {
+            if (cacheManager.getConsoleContext() == null) {
+                ConsoleNode consoleNode = new ConsoleNode("localhost", consolePort, consoleTimeout);
+                Context context = consoleNode.getContext();
+                cacheManager.setConsoleContext((ConsoleContext) context);
+                consoleNode.start();
+            }
+        } else {
+            ConsoleContext consoleContext = cacheManager.getConsoleContext();
+            if (consoleContext != null) {
+                consoleContext.close();
+            }
         }
     }
 
@@ -397,6 +408,7 @@ public class Controller {
             });
             ConsoleServer consoleServer = new ConsoleServer(consoleContext, getExecutor("Console-Boss"), getExecutor("Console-Worker"));
             consoleServer.start();
+            consoleContext.setConsoleServer(consoleServer);
             flag.countDown();
         }
 

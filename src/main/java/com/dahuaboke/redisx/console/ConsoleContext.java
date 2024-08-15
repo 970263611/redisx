@@ -25,6 +25,7 @@ public class ConsoleContext extends Context {
     private boolean fromIsCluster;
     private List<ToContext> toContexts = new ArrayList();
     private List<FromContext> fromContexts = new ArrayList();
+    private ConsoleServer consoleServer;
 
     public ConsoleContext(String host, int port, int timeout, boolean toIsCluster, boolean fromIsCluster) {
         super(fromIsCluster, toIsCluster);
@@ -73,5 +74,19 @@ public class ConsoleContext extends Context {
         } else {
             throw new IllegalArgumentException("Type is error, should be [from] or [to]");
         }
+    }
+
+    public void close() {
+        consoleServer.destroy();
+        for (FromContext fromContext : fromContexts) {
+            fromContext.close();
+        }
+        for (ToContext toContext : toContexts) {
+            toContext.close();
+        }
+    }
+
+    public void setConsoleServer(ConsoleServer consoleServer) {
+        this.consoleServer = consoleServer;
     }
 }
