@@ -36,6 +36,7 @@ public class ToContext extends Context {
     private String switchFlag;
     private int flushSize;
     private CountDownLatch nodesInfoFlag;
+    private boolean isNodesInfoContext;
 
     public ToContext(CacheManager cacheManager, String host, int port, boolean fromIsCluster, boolean toIsCluster, boolean isConsole, boolean immediate, int immediateResendTimes, String switchFlag, int flushSize, boolean isNodesInfoContext) {
         super(fromIsCluster, toIsCluster);
@@ -50,8 +51,16 @@ public class ToContext extends Context {
         this.immediateResendTimes = immediateResendTimes;
         this.switchFlag = switchFlag;
         this.flushSize = flushSize;
+        this.isNodesInfoContext = isNodesInfoContext;
         if (isNodesInfoContext) {
             nodesInfoFlag = new CountDownLatch(1);
+        }
+        SlotInfoHandler.SlotInfo toClusterNodeInfo = cacheManager.getToClusterNodeInfoByIpAndPort(host, port);
+        if (toClusterNodeInfo != null) {
+            this.slotBegin = toClusterNodeInfo.getSlotStart();
+            this.slotEnd = toClusterNodeInfo.getSlotEnd();
+        } else {
+            throw new IllegalStateException("Slot info error");
         }
     }
 
@@ -147,14 +156,6 @@ public class ToContext extends Context {
                 return "false";
             }
         }
-    }
-
-    public void setSlotBegin(int slotBegin) {
-        this.slotBegin = slotBegin;
-    }
-
-    public void setSlotEnd(int slotEnd) {
-        this.slotEnd = slotEnd;
     }
 
     public void setClient(ToClient toClient) {
@@ -273,11 +274,14 @@ public class ToContext extends Context {
         }
     }
 
-    public void setToNodesInfoGetSuccess(boolean success) {
+    public void setToNodesInfoGetSuccess() {
         if (nodesInfoFlag != null) {
             nodesInfoFlag.countDown();
         }
-        cacheManager.setToNodesInfoGetSuccess(success);
+    }
+
+    public boolean isNodesInfoContext() {
+        return isNodesInfoContext;
     }
 
     @Override

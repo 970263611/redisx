@@ -36,8 +36,6 @@ public final class CacheManager {
     private String id = UUID.randomUUID().toString().replaceAll("-", "");
     private Map<String, NodeMessage> nodeMessages = new ConcurrentHashMap();
     private String redisVersion;
-    private boolean fromNodesInfoGetSuccess = false;
-    private boolean toNodesInfoGetSuccess = false;
     private Set<SlotInfoHandler.SlotInfo> fromClusterNodesInfo = new HashSet<>();
     private Set<SlotInfoHandler.SlotInfo> toClusterNodesInfo = new HashSet<>();
 
@@ -192,28 +190,30 @@ public final class CacheManager {
         }
     }
 
-    public boolean isFromNodesInfoGetSuccess() {
-        return fromNodesInfoGetSuccess;
-    }
-
-    public void setFromNodesInfoGetSuccess(boolean fromNodesInfoGetSuccess) {
-        this.fromNodesInfoGetSuccess = fromNodesInfoGetSuccess;
-    }
-
-    public boolean isToNodesInfoGetSuccess() {
-        return toNodesInfoGetSuccess;
-    }
-
-    public void setToNodesInfoGetSuccess(boolean toNodesInfoGetSuccess) {
-        this.toNodesInfoGetSuccess = toNodesInfoGetSuccess;
-    }
-
     public Set<SlotInfoHandler.SlotInfo> getFromClusterNodesInfo() {
         return fromClusterNodesInfo;
     }
 
     public void addFromClusterNodesInfo(SlotInfoHandler.SlotInfo fromClusterNodesInfo) {
         this.fromClusterNodesInfo.add(fromClusterNodesInfo);
+    }
+
+    public SlotInfoHandler.SlotInfo getFromClusterNodeInfoByIpAndPort(String ip, int port) {
+        for (SlotInfoHandler.SlotInfo slotInfo : fromClusterNodesInfo) {
+            if (ip.equals(slotInfo.getIp()) && port == slotInfo.getPort()) {
+                return slotInfo;
+            }
+        }
+        return null;
+    }
+
+    public SlotInfoHandler.SlotInfo getToClusterNodeInfoByIpAndPort(String ip, int port) {
+        for (SlotInfoHandler.SlotInfo slotInfo : toClusterNodesInfo) {
+            if (ip.equals(slotInfo.getIp()) && port == slotInfo.getPort()) {
+                return slotInfo;
+            }
+        }
+        return null;
     }
 
     public Set<SlotInfoHandler.SlotInfo> getToClusterNodesInfo() {

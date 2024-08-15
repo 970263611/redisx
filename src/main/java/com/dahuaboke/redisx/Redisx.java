@@ -20,65 +20,64 @@ public class Redisx {
 
     public static void main(String[] args) {
         Config config = new Config();
-        FieldOrmUtil.MapToBean(YamlUtil.parseYamlParam(args),config);
+        FieldOrmUtil.MapToBean(YamlUtil.parseYamlParam(args), config);
         Configurator.setRootLevel(Level.getLevel(config.getLogLevelGlobal()));
-        Controller controller = new Controller(config.getRedisVersion(), config.isFromIsCluster(), config.getFromPassword(),
+        Controller controller = new Controller(config.getFromAddresses(), config.getToAddresses(), config.getRedisVersion(), config.isFromIsCluster(), config.getFromPassword(),
                 config.isToIsCluster(), config.getToPassword(), config.isImmediate(), config.getImmediateResendTimes(), config.getSwitchFlag());
-        controller.start(config.getFromAddresses(), config.getToAddresses(), config.isConsoleEnable(),
-                config.getConsolePort(), config.getConsoleTimeout(), config.isAlwaysFullSync(), config.isSyncRdb(), config.getToFlushSize());
+        controller.start(config.isConsoleEnable(), config.getConsolePort(), config.getConsoleTimeout(), config.isAlwaysFullSync(), config.isSyncRdb(), config.getToFlushSize());
     }
 
     public static class Config {
 
-        @FieldOrm(value = "redisx.from.isCluster",defaultValue = "false")
+        @FieldOrm(value = "redisx.from.isCluster", defaultValue = "false")
         private boolean fromIsCluster;
 
-        @FieldOrm(value = "redisx.from.address",required = true)
+        @FieldOrm(value = "redisx.from.address", required = true)
         private List<InetSocketAddress> fromAddresses;
 
         @FieldOrm(value = "redisx.from.password")
         private String fromPassword;
 
-        @FieldOrm(value = "redisx.to.isCluster",defaultValue = "false")
+        @FieldOrm(value = "redisx.to.isCluster", defaultValue = "false")
         private boolean toIsCluster;
 
-        @FieldOrm(value = "redisx.to.address",required = true)
+        @FieldOrm(value = "redisx.to.address", required = true)
         private List<InetSocketAddress> toAddresses;
 
         @FieldOrm(value = "redisx.to.password")
         private String toPassword;
 
-        @FieldOrm(value = "redisx.to.flushSize",defaultValue = "50")
+        @FieldOrm(value = "redisx.to.flushSize", defaultValue = "50")
         private int toFlushSize;
 
-        @FieldOrm(value = "redisx.console.enable",defaultValue = "false")
+        @FieldOrm(value = "redisx.console.enable", defaultValue = "false")
         private boolean consoleEnable;
 
-        @FieldOrm(value = "redisx.console.timeout",defaultValue = "18080")
+        @FieldOrm(value = "redisx.console.timeout", defaultValue = "18080")
         private int consolePort;
 
-        @FieldOrm(value = "redisx.console.timeout",defaultValue = "5000")
+        @FieldOrm(value = "redisx.console.timeout", defaultValue = "5000")
         private int consoleTimeout;
 
-        @FieldOrm(value = "redisx.immediate.enable",defaultValue = "false")
+        @FieldOrm(value = "redisx.immediate.enable", defaultValue = "false")
         private boolean immediate;
 
-        @FieldOrm(value = "redisx.alwaysFullSync",defaultValue = "false")
+        @FieldOrm(value = "redisx.alwaysFullSync", defaultValue = "false")
         private boolean alwaysFullSync;
 
-        @FieldOrm(value = "redisx.immediate.resendTimes",defaultValue = "0")
+        @FieldOrm(value = "redisx.immediate.resendTimes", defaultValue = "0")
         private int immediateResendTimes;
 
-        @FieldOrm(value = "redisx.from.redis.version",required = true)
+        @FieldOrm(value = "redisx.from.redis.version", required = true)
         private String redisVersion;
 
-        @FieldOrm(value = "redisx.switchFlag",defaultValue = Constant.SWITCH_FLAG)
+        @FieldOrm(value = "redisx.switchFlag", defaultValue = Constant.SWITCH_FLAG)
         private String switchFlag;
 
-        @FieldOrm(value = "redisx.syncRdb",defaultValue = "true")
+        @FieldOrm(value = "redisx.syncRdb", defaultValue = "true")
         private boolean syncRdb;
 
-        @FieldOrm(value = "logging.level.globle",defaultValue = "INFO")
+        @FieldOrm(value = "logging.level.globle", defaultValue = "INFO")
         private String logLevelGlobal;
 
         public boolean isFromIsCluster() {

@@ -45,8 +45,7 @@ public class SyncInitializationHandler extends ChannelInboundHandlerAdapter {
                 String reply;
                 boolean redisVersionBeyond3 = fromContext.redisVersionBeyond3();
                 while (!fromContext.isClose()) {
-                    if (channel.pipeline().get(Constant.AUTH_HANDLER_NAME) == null &&
-                            channel.pipeline().get(Constant.SLOT_HANDLER_NAME) == null) {
+                    if (channel.pipeline().get(Constant.AUTH_HANDLER_NAME) == null) {
                         if ((reply = channel.attr(Constant.SYNC_REPLY).get()) != null) {
                             if (state == INIT) {
                                 state = SENT_PING;

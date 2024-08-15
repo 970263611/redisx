@@ -80,37 +80,21 @@ public class SlotInfoHandler extends RedisChannelInboundHandler {
                     map.forEach((k, v) -> {
                         if (fromContext.getHost().equals(v.getIp()) &&
                                 fromContext.getPort() == v.getPort()) {
-                            fromContext.setSlotInfo(v);
                             fromContext.addSlotInfo(v);
-                            if ("master".equals(v.getFlags())) {
-                                fromContext.setSlotBegin(v.getSlotStart());
-                                fromContext.setSlotEnd(v.getSlotEnd());
-                            } else {
-                                fromContext.setSlotBegin(map.get(v.getMasterId()).getSlotStart());
-                                fromContext.setSlotEnd(map.get(v.getMasterId()).getSlotEnd());
-                            }
                             ctx.pipeline().remove(this);
                         }
                     });
-                    fromContext.setFromNodesInfoGetSuccess(true);
+                    fromContext.setFromNodesInfoGetSuccess();
                 } else if (context instanceof ToContext) {
                     ToContext toContext = (ToContext) context;
                     map.forEach((k, v) -> {
                         if (toContext.getHost().equals(v.getIp()) &&
                                 toContext.getPort() == v.getPort()) {
-                            toContext.setSlotInfo(v);
                             toContext.addSlotInfo(v);
-                            if ("master".equals(v.getFlags())) {
-                                toContext.setSlotBegin(v.getSlotStart());
-                                toContext.setSlotEnd(v.getSlotEnd());
-                            } else {
-                                toContext.setSlotBegin(map.get(v.getMasterId()).getSlotStart());
-                                toContext.setSlotEnd(map.get(v.getMasterId()).getSlotEnd());
-                            }
                             ctx.pipeline().remove(this);
                         }
                     });
-                    toContext.setToNodesInfoGetSuccess(true);
+                    toContext.setToNodesInfoGetSuccess();
                 }
             }
         }

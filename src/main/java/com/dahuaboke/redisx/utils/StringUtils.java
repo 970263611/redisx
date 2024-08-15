@@ -6,6 +6,7 @@ public class StringUtils {
 
     /**
      * 字符串是否为空
+     *
      * @param str
      * @return
      */
@@ -15,6 +16,7 @@ public class StringUtils {
 
     /**
      * 字符串是否非空
+     *
      * @param str
      * @return
      */
@@ -24,11 +26,12 @@ public class StringUtils {
 
     /**
      * 首字母转大写
+     *
      * @param str
      * @return
      */
     public static String upperFirstLetter(String str) {
-        if(isEmpty(str)){
+        if (isEmpty(str)) {
             return str;
         }
         StringBuilder sb = new StringBuilder(str);
@@ -38,54 +41,57 @@ public class StringUtils {
 
     /**
      * 数据类型转换
-     * @param obj 数据，必须是基本数据类型或字符串类型
+     *
+     * @param obj  数据，必须是基本数据类型或字符串类型
      * @param type 要转换的类型
      * @return
      */
-    static Object changePrimitive(Object obj,Class<?> type){
-        if(obj instanceof String){
-            if(type == String.class){
+    static Object changePrimitive(Object obj, Class<?> type) {
+        if (obj instanceof String) {
+            if (type == String.class) {
                 return obj;
             }
-            return convert((String) obj,type);
-        }else if(isPrimitive(obj)){
+            return convert((String) obj, type);
+        } else if (isPrimitive(obj)) {
             obj = primitiveToString(obj);
-            return convert((String) obj,type);
-        }else{
+            return convert((String) obj, type);
+        } else {
             return obj;
         }
     }
 
     /**
      * 基本数据类型转String
+     *
      * @param obj
      * @return
      */
-    static String primitiveToString(Object obj){
-        if(isPrimitive(obj)){
+    static String primitiveToString(Object obj) {
+        if (isPrimitive(obj)) {
             return String.valueOf(obj);
-        }else{
+        } else {
             return null;
         }
     }
 
     /**
      * 判断是否是基本数据类型或者其包装类
+     *
      * @param obj
      * @return
      */
-    public static boolean isPrimitive(Object obj){
-        if(obj.getClass().isPrimitive()){
+    public static boolean isPrimitive(Object obj) {
+        if (obj.getClass().isPrimitive()) {
             return true;
         }
-        if(obj instanceof Integer
+        if (obj instanceof Integer
                 || obj instanceof Long
                 || obj instanceof Double
                 || obj instanceof Float
                 || obj instanceof Boolean
                 || obj instanceof Character
                 || obj instanceof Byte
-                || obj instanceof Short){
+                || obj instanceof Short) {
             return true;
         }
         return false;
@@ -93,10 +99,11 @@ public class StringUtils {
 
     /**
      * 字符串转基本数据类ing
+     *
      * @param value 字符串值
-     * @param type 要转的基本类型
-     * @return
+     * @param type  要转的基本类型
      * @param <T>
+     * @return
      */
     public static <T> T convert(String value, Class<T> type) {
         try {

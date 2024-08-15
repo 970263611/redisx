@@ -67,12 +67,13 @@ public class ToClient {
                         pipeline.addLast(new RedisDecoder(true));
                         pipeline.addLast(new RedisBulkStringAggregator());
                         pipeline.addLast(new RedisArrayAggregator());
-                        if (toContext.isToIsCluster()) {
+                        if (toContext.isNodesInfoContext()) {
                             pipeline.addLast(Constant.SLOT_HANDLER_NAME, new SlotInfoHandler(toContext, hasPassword));
+                        } else {
+                            pipeline.addLast(new DRHandler(toContext));
+                            pipeline.addLast(new SyncCommandListener(toContext));
+                            pipeline.addLast(new DirtyDataHandler());
                         }
-                        pipeline.addLast(new DRHandler(toContext));
-                        pipeline.addLast(new SyncCommandListener(toContext));
-                        pipeline.addLast(new DirtyDataHandler());
                     }
                 });
         ChannelFuture sync = bootstrap.connect(host, port).addListener((ChannelFutureListener) future -> {

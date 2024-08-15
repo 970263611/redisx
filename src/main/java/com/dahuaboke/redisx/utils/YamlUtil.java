@@ -22,6 +22,7 @@ public class YamlUtil {
 
     /**
      * 解析yaml文件为 map
+     *
      * @param args
      * @return
      */

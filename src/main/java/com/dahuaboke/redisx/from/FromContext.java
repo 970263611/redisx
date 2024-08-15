@@ -10,6 +10,7 @@ import org.slf4j.Logger;
 import org.slf4j.LoggerFactory;
 
 import java.net.InetSocketAddress;
+import java.util.concurrent.CountDownLatch;
 import java.util.concurrent.LinkedBlockingDeque;
 import java.util.concurrent.TimeUnit;
 
@@ -34,8 +35,10 @@ public class FromContext extends Context {
     private boolean syncRdb;
     private int unSyncCommandLength = 0;
     private String masterId;
+    private boolean isNodesInfoContext;
+    private CountDownLatch nodesInfoFlag;
 
-    public FromContext(CacheManager cacheManager, String host, int port, boolean isConsole, boolean fromIsCluster, boolean toIsCluster, boolean alwaysFullSync, boolean syncRdb) {
+    public FromContext(CacheManager cacheManager, String host, int port, boolean isConsole, boolean fromIsCluster, boolean toIsCluster, boolean alwaysFullSync, boolean syncRdb, boolean isNodesInfoContext) {
         super(fromIsCluster, toIsCluster);
         this.cacheManager = cacheManager;
         this.host = host;
@@ -46,6 +49,17 @@ public class FromContext extends Context {
         }
         this.alwaysFullSync = alwaysFullSync;
         this.syncRdb = syncRdb;
+        this.isNodesInfoContext = isNodesInfoContext;
+        if (isNodesInfoContext) {
+            nodesInfoFlag = new CountDownLatch(1);
+        }
+        SlotInfoHandler.SlotInfo fromClusterNodeInfo = cacheManager.getFromClusterNodeInfoByIpAndPort(host, port);
+        if (fromClusterNodeInfo != null) {
+            this.slotBegin = fromClusterNodeInfo.getSlotStart();
+            this.slotEnd = fromClusterNodeInfo.getSlotEnd();
+        } else {
+            throw new IllegalStateException("Slot info error");
+        }
     }
 
     public String getId() {
@@ -106,14 +120,6 @@ public class FromContext extends Context {
         return isConsole;
     }
 
-    public void setSlotBegin(int slotBegin) {
-        this.slotBegin = slotBegin;
-    }
-
-    public void setSlotEnd(int slotEnd) {
-        this.slotEnd = slotEnd;
-    }
-
     @Override
     public String sendCommand(Object command, int timeout) {
         if (replyQueue == null) {
@@ -130,6 +136,9 @@ public class FromContext extends Context {
     }
 
     public void close() {
+        if (nodesInfoFlag != null) {
+            nodesInfoFlag.countDown();
+        }
         this.fromClient.destroy();
     }
 
@@ -207,7 +216,21 @@ public class FromContext extends Context {
         this.cacheManager.addFromClusterNodesInfo(slotInfo);
     }
 
-    public void setFromNodesInfoGetSuccess(boolean success) {
-        cacheManager.setFromNodesInfoGetSuccess(success);
+    public void setFromNodesInfoGetSuccess() {
+        if (nodesInfoFlag != null) {
+            nodesInfoFlag.countDown();
+        }
+    }
+
+    public boolean nodesInfoGetSuccess(int timeout) {
+        try {
+            return nodesInfoFlag.await(timeout, TimeUnit.MILLISECONDS);
+        } catch (InterruptedException e) {
+            return false;
+        }
+    }
+
+    public boolean isNodesInfoContext() {
+        return isNodesInfoContext;
     }
 }

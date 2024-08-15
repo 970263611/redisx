@@ -65,7 +65,7 @@ public class FromClient {
                         if (hasPassword) {
                             pipeline.addLast(Constant.AUTH_HANDLER_NAME, new AuthHandler(password, fromContext.isFromIsCluster()));
                         }
-                        if (!console) {
+                        if (!console && !fromContext.isNodesInfoContext()) {
                             pipeline.addLast(Constant.INIT_SYNC_HANDLER_NAME, new SyncInitializationHandler(fromContext));
                             pipeline.addLast(new PreDistributeHandler(fromContext));
                             pipeline.addLast(Constant.OFFSET_DECODER_NAME, new OffsetCommandDecoder(fromContext));
@@ -74,13 +74,14 @@ public class FromClient {
                         pipeline.addLast(new RedisDecoder(true));
                         pipeline.addLast(new RedisBulkStringAggregator());
                         pipeline.addLast(new RedisArrayAggregator());
-                        if (fromContext.isFromIsCluster()) {
+                        if (fromContext.isNodesInfoContext()) {
                             pipeline.addLast(Constant.SLOT_HANDLER_NAME, new SlotInfoHandler(fromContext, hasPassword));
+                        } else {
+                            pipeline.addLast(new MessagePostProcessor(fromContext));
+                            pipeline.addLast(new PostDistributeHandler());
+                            pipeline.addLast(new SyncCommandPublisher(fromContext));
+                            pipeline.addLast(new DirtyDataHandler());
                         }
-                        pipeline.addLast(new MessagePostProcessor(fromContext));
-                        pipeline.addLast(new PostDistributeHandler());
-                        pipeline.addLast(new SyncCommandPublisher(fromContext));
-                        pipeline.addLast(new DirtyDataHandler());
                     }
                 });
         ResourceLeakDetector.setLevel(ResourceLeakDetector.Level.ADVANCED);
