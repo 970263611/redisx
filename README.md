@@ -22,14 +22,14 @@ To：需要被同步数据的Redis集群对应Redis-x中的节点。
 
 #### 组件对比
 
-| 组件           | redis-x               | alibaba shake                     |
-| -------------- | --------------------- | --------------------------------- |
-| 支持版本       | 2.8及以上             | 2.8及以上                         |
-| 高可用         | 集群部署，纵向扩展    | 单机部署                          |
-| 初始化同步方式 | 全量同步rdb，增量同步 | 全量同步rdb和aof，增量同步        |
-| 支持续传       | 支持                  | 不支持                            |
+| 组件           | redis-x         | alibaba shake                     |
+| -------------- |-----------------| --------------------------------- |
+| 支持版本       | 2.8及以上          | 2.8及以上                         |
+| 高可用         | 集群部署，纵向扩展       | 单机部署                          |
+| 初始化同步方式 | 全量同步rdb，增量同步    | 全量同步rdb和aof，增量同步        |
+| 支持续传       | 支持              | 不支持                            |
 | 数据类型       | 五种基本类型 + stream | 五种基本类型 + stream + 3种mudule |
-| 其他功能       | 数据查询              | 数据筛选                          |
+| 其他功能       | 数据查询，集群节点宕机重连   | 数据筛选                          |
 
 ### 性能测试
 
@@ -109,16 +109,19 @@ redisx:
     password: 1a.2b*          #From端redis密码
     isCluster: true           #From端redis是否为集群
     address:
-      - 127.0.0.1:16001       #From端redis集群地址（必要参数）
+      - 127.0.0.1:16001       #From端redis集群地址（必要参数，写任意个数即可）
       - 127.0.0.1:16002
       - 127.0.0.1:16003
   to:
     password: 2b*1a.          #To端redis密码
     isCluster: true           #To端redis是否为集群
     address:
-      - 127.0.0.2:16101       #To端redis集群地址（必要参数）
+      - 127.0.0.2:16101       #To端redis集群地址（必要参数，写任意个数即可）
       - 127.0.0.2:16102
       - 127.0.0.2:16103
+    flushDb: true             #是否在启动时清空to端数据，默认为false
+    flushSize: 20             #to端写入数据阈值（消息条数）
+    syncWithCheckSlot: false  #当to端集群不完整，是否需要槽信息连续才同步数据，默认为false（仅当to为集群配置生效）
   console:
     enable: false             #是否启用控制台，控制台主要用于双向查询数据
     port: 9999                #控制台发布端口
@@ -128,10 +131,8 @@ redisx:
     resendTimes: 3            #强一致模式下写入失败重试次数
   alwaysFullSync: false       #全局是否强制全量同步数据模式
   switchFlag: REDIS-X-AUTHOR:DAHUA&CHANGDONGLIANG&ZHANGHUIHAO&ZHANGSHUHAN      #redis-x主从切换标志，在纵向扩展时需要配置
-  syncRdb: false              #是否同步rdb文件，否：只进行增量同步
+  syncRdb: false              #是否同步rdb文件，否：只进行增量同步 当alwaysFullSync为true时，本配置强制为true
 ```
-
-from端希望配置从节点，主节点也可以，但是不要同时连接，会造成数据多次写入。to端只能配置主节点，否则会造成数据丢失。
 
 ### 高可用
 
