@@ -130,13 +130,13 @@ public class ToClient {
                 channel.closeFuture().addListener((ChannelFutureListener) channelFuture -> {
                     if (channelFuture.isSuccess()) {
                         group.shutdownGracefully();
-                        logger.warn("Close [to] [{}:{}]", host, port);
+                        logger.warn("Close [To] [{}:{}]", host, port);
                     } else {
-                        logger.error("Close [to] error", channelFuture.cause());
+                        logger.error("Close [To] error", channelFuture.cause());
                     }
                 }).sync();
             } catch (InterruptedException e) {
-                logger.error("Close [from] error", e);
+                logger.error("Close [To] error", e);
             }
         }
     }

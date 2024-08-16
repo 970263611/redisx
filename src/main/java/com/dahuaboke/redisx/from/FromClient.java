@@ -115,13 +115,13 @@ public class FromClient {
                 channel.closeFuture().addListener((ChannelFutureListener) channelFuture -> {
                     if (channelFuture.isSuccess()) {
                         group.shutdownGracefully();
-                        logger.warn("Close [from] [{}:{}]", fromContext.getHost(), fromContext.getPort());
+                        logger.warn("Close [From] [{}:{}]", fromContext.getHost(), fromContext.getPort());
                     } else {
-                        logger.error("Close [from] error", channelFuture.cause());
+                        logger.error("Close [From] error", channelFuture.cause());
                     }
                 }).sync();
             } catch (InterruptedException e) {
-                logger.error("Close [from] error", e);
+                logger.error("Close [From] error", e);
             }
         }
     }
