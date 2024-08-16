@@ -5,7 +5,10 @@ import com.dahuaboke.redisx.Context;
 import com.dahuaboke.redisx.command.from.SyncCommand;
 import com.dahuaboke.redisx.from.FromContext;
 import com.dahuaboke.redisx.to.ToContext;
-import io.netty.channel.*;
+import io.netty.channel.Channel;
+import io.netty.channel.ChannelFuture;
+import io.netty.channel.ChannelHandlerContext;
+import io.netty.channel.ChannelInboundHandlerAdapter;
 import io.netty.handler.codec.redis.RedisMessage;
 import org.slf4j.Logger;
 import org.slf4j.LoggerFactory;
@@ -75,13 +78,12 @@ public class SyncCommandListener extends ChannelInboundHandlerAdapter {
                                 }
                             }
                             if (flushThreshold > flushSize || (System.currentTimeMillis() - timeThreshold > 100)) {
-                                ChannelOutboundBuffer buf = channel.unsafe().outboundBuffer();
-                                if (buf != null && buf.size() > 0) {
+                                if (flushThreshold > 0) {
                                     ctx.flush();
                                     logger.debug("Flush data success [{}]", flushThreshold);
                                     flushThreshold = 0;
-                                    timeThreshold = System.currentTimeMillis();
                                 }
+                                timeThreshold = System.currentTimeMillis();
                             }
                         }
                     } else {

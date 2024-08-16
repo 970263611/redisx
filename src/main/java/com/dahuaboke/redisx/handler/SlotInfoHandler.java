@@ -187,8 +187,8 @@ public class SlotInfoHandler extends RedisChannelInboundHandler {
             this.slotEnd = slotEnd;
         }
 
-        public boolean isMaster() {
-            return !StringUtils.isEmpty(masterId);
+        public boolean isActiveMaster() {
+            return !StringUtils.isEmpty(masterId) && "connected".equals(linkState);
         }
     }
 }

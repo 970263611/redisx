@@ -15,7 +15,9 @@ redisx:
       - 172.31.84.163:16101
       - 172.31.84.163:16102
       - 172.31.84.163:16103
+    flushDb: true
     flushSize: 20
+    syncWithCheckSlot: false
   console:
     enable: true
     port: 9999
@@ -35,4 +37,4 @@ jasypt:
 
 logging:
   level:
-    globle: info
+    global: info

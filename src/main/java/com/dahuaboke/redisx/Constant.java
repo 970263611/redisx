@@ -69,6 +69,8 @@ public class Constant {
 
     public static final String GET_SLOT_COMMAND = "CLUSTER NODES";
 
+    public static final String FLUSH_DB_COMMAND = "flushdb";
+
     public static final String SLOT_REX = "^[0-9a-z]{40}.*";
 
     public static final String CONFIG_FILE_NAME = "redisx.yml";

@@ -6,6 +6,7 @@ import com.dahuaboke.redisx.handler.CommandEncoder;
 import com.dahuaboke.redisx.handler.DirtyDataHandler;
 import com.dahuaboke.redisx.handler.SlotInfoHandler;
 import com.dahuaboke.redisx.to.handler.DRHandler;
+import com.dahuaboke.redisx.to.handler.FlushHandler;
 import com.dahuaboke.redisx.to.handler.SyncCommandListener;
 import io.netty.bootstrap.Bootstrap;
 import io.netty.channel.*;
@@ -48,34 +49,35 @@ public class ToClient {
         String host = toContext.getHost();
         int port = toContext.getPort();
         Bootstrap bootstrap = new Bootstrap();
-        bootstrap.group(group)
-                .channel(NioSocketChannel.class)
-                .handler(new ChannelInitializer() {
-                    @Override
-                    protected void initChannel(Channel channel) throws Exception {
-                        ChannelPipeline pipeline = channel.pipeline();
-                        pipeline.addLast(new RedisEncoder());
-                        pipeline.addLast(new CommandEncoder());
-                        boolean hasPassword = false;
-                        String password = toContext.getPassword();
-                        if (password != null && !password.isEmpty()) {
-                            hasPassword = true;
-                        }
-                        if (hasPassword) {
-                            pipeline.addLast(Constant.AUTH_HANDLER_NAME, new AuthHandler(password, toContext.isToIsCluster()));
-                        }
-                        pipeline.addLast(new RedisDecoder(true));
-                        pipeline.addLast(new RedisBulkStringAggregator());
-                        pipeline.addLast(new RedisArrayAggregator());
-                        if (toContext.isNodesInfoContext()) {
-                            pipeline.addLast(Constant.SLOT_HANDLER_NAME, new SlotInfoHandler(toContext, hasPassword));
-                        } else {
-                            pipeline.addLast(new DRHandler(toContext));
-                            pipeline.addLast(new SyncCommandListener(toContext));
-                            pipeline.addLast(new DirtyDataHandler());
-                        }
-                    }
-                });
+        bootstrap.group(group).channel(NioSocketChannel.class).handler(new ChannelInitializer() {
+            @Override
+            protected void initChannel(Channel channel) throws Exception {
+                ChannelPipeline pipeline = channel.pipeline();
+                pipeline.addLast(new RedisEncoder());
+                pipeline.addLast(new CommandEncoder());
+                boolean hasPassword = false;
+                String password = toContext.getPassword();
+                if (password != null && !password.isEmpty()) {
+                    hasPassword = true;
+                }
+                if (hasPassword) {
+                    pipeline.addLast(Constant.AUTH_HANDLER_NAME, new AuthHandler(password, toContext.isToIsCluster()));
+                }
+                if (toContext.isFlushDb() && !toContext.isFlushDbSuccess()) {
+                    pipeline.addLast(new FlushHandler(toContext));
+                }
+                pipeline.addLast(new RedisDecoder(true));
+                pipeline.addLast(new RedisBulkStringAggregator());
+                pipeline.addLast(new RedisArrayAggregator());
+                if (toContext.isNodesInfoContext()) {
+                    pipeline.addLast(Constant.SLOT_HANDLER_NAME, new SlotInfoHandler(toContext, hasPassword));
+                } else {
+                    pipeline.addLast(new DRHandler(toContext));
+                    pipeline.addLast(new SyncCommandListener(toContext));
+                    pipeline.addLast(new DirtyDataHandler());
+                }
+            }
+        });
         ChannelFuture sync = bootstrap.connect(host, port).addListener((ChannelFutureListener) future -> {
             if (future.isSuccess()) {
                 logger.info("[To] started at [{}:{}]", host, port);

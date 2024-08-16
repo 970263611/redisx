@@ -37,8 +37,9 @@ public class ToContext extends Context {
     private int flushSize;
     private CountDownLatch nodesInfoFlag;
     private boolean isNodesInfoContext;
+    private boolean flushDb;
 
-    public ToContext(CacheManager cacheManager, String host, int port, boolean fromIsCluster, boolean toIsCluster, boolean isConsole, boolean immediate, int immediateResendTimes, String switchFlag, int flushSize, boolean isNodesInfoContext) {
+    public ToContext(CacheManager cacheManager, String host, int port, boolean fromIsCluster, boolean toIsCluster, boolean isConsole, boolean immediate, int immediateResendTimes, String switchFlag, int flushSize, boolean isNodesInfoContext, boolean flushDb) {
         super(fromIsCluster, toIsCluster);
         this.cacheManager = cacheManager;
         this.host = host;
@@ -63,6 +64,7 @@ public class ToContext extends Context {
                 throw new IllegalStateException("Slot info error");
             }
         }
+        this.flushDb = flushDb;
     }
 
     public String getId() {
@@ -283,6 +285,18 @@ public class ToContext extends Context {
 
     public boolean isNodesInfoContext() {
         return isNodesInfoContext;
+    }
+
+    public boolean isFlushDb() {
+        return flushDb;
+    }
+
+    public boolean isFlushDbSuccess() {
+        return cacheManager.isFlushDb(host, port);
+    }
+
+    public void setFlushDbSuccess() {
+        cacheManager.setFlushDb(host, port, true);
     }
 
     @Override

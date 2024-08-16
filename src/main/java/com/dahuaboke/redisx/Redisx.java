@@ -29,7 +29,7 @@ public class Redisx {
         if (config.isAlwaysFullSync()) {
             syncRdb = true;
         }
-        controller.start(config.isConsoleEnable(), config.getConsolePort(), config.getConsoleTimeout(), config.isAlwaysFullSync(), syncRdb, config.getToFlushSize());
+        controller.start(config.isConsoleEnable(), config.getConsolePort(), config.getConsoleTimeout(), config.isAlwaysFullSync(), syncRdb, config.getToFlushSize(), config.isFlushDb(), config.isSyncWithCheckSlot());
     }
 
     public static class Config {
@@ -82,8 +82,14 @@ public class Redisx {
         @FieldOrm(value = "redisx.syncRdb", defaultValue = "true")
         private boolean syncRdb;
 
-        @FieldOrm(value = "logging.level.globle", defaultValue = "INFO")
+        @FieldOrm(value = "logging.level.global", defaultValue = "INFO")
         private String logLevelGlobal;
+
+        @FieldOrm(value = "redisx.to.flushDb", defaultValue = "false")
+        private boolean flushDb;
+
+        @FieldOrm(value = "redisx.to.syncWithCheckSlot", defaultValue = "false")
+        private boolean syncWithCheckSlot;
 
         public boolean isFromIsCluster() {
             return fromIsCluster;
@@ -231,6 +237,22 @@ public class Redisx {
 
         public void setLogLevelGlobal(String logLevelGlobal) {
             this.logLevelGlobal = logLevelGlobal;
+        }
+
+        public boolean isFlushDb() {
+            return flushDb;
+        }
+
+        public void setFlushDb(boolean flushDb) {
+            this.flushDb = flushDb;
+        }
+
+        public boolean isSyncWithCheckSlot() {
+            return syncWithCheckSlot;
+        }
+
+        public void setSyncWithCheckSlot(boolean syncWithCheckSlot) {
+            this.syncWithCheckSlot = syncWithCheckSlot;
         }
     }
 

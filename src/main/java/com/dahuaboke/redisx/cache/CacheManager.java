@@ -40,6 +40,7 @@ public final class CacheManager {
     private Set<SlotInfoHandler.SlotInfo> fromClusterNodesInfo = new HashSet<>();
     private Set<SlotInfoHandler.SlotInfo> toClusterNodesInfo = new HashSet<>();
     private ConsoleContext consoleContext;
+    private Map<String, Boolean> flushDb = new HashMap();
 
     public CacheManager(String redisVersion, boolean fromIsCluster, String fromPassword, boolean toIsCluster, String toPassword) {
         this.redisVersion = redisVersion;
@@ -240,6 +241,15 @@ public final class CacheManager {
 
     public void setConsoleContext(ConsoleContext consoleContext) {
         this.consoleContext = consoleContext;
+    }
+
+    public boolean isFlushDb(String host, int port) {
+        Boolean b = flushDb.get(host + port);
+        return b == null ? false : b;
+    }
+
+    public void setFlushDb(String host, int port, boolean flushDb) {
+        this.flushDb.put(host + port, flushDb);
     }
 
     public static class NodeMessage {
