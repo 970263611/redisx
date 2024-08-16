@@ -166,6 +166,7 @@ public class ToContext extends Context {
     }
 
     public void close() {
+        cacheManager.remove(this);
         if (nodesInfoFlag != null) {
             nodesInfoFlag.countDown();
         }
