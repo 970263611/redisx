@@ -30,12 +30,16 @@ public class YamlUtil {
         try {
             Map<String, String> argsMap = new HashMap<>();
             if (args != null && args.length > 0) {
-                for (String s : args) {
-                    String[] arrs = s.split("=");
-                    if (arrs.length != 2 || StringUtils.isEmpty(arrs[0]) || StringUtils.isEmpty(arrs[1])) {
-                        throw new IllegalArgumentException("The command line parameter is incorrect : " + s);
+                for (int a = 0; a < args.length; a++) {
+                    if (a == 0) {
+                        argsMap.put(Constant.CONFIG_PATH, args[a]);
+                    } else {
+                        String[] arrs = args[a].split("=");
+                        if (arrs.length != 2 || StringUtils.isEmpty(arrs[0]) || StringUtils.isEmpty(arrs[1])) {
+                            throw new IllegalArgumentException("The command line parameter is incorrect : " + args[a]);
+                        }
+                        argsMap.put(arrs[0], arrs[1]);
                     }
-                    argsMap.put(arrs[0], arrs[1]);
                 }
             }
             Map<String, Object> paramMap = parseConfig(argsMap.get(Constant.CONFIG_PATH));
