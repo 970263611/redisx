@@ -84,7 +84,16 @@ public final class CacheManager {
     }
 
     public void remove(Context context) {
-        cache.remove(context);
+        Iterator<Context> iterator = contexts.iterator();
+        while (iterator.hasNext()) {
+            Context next = iterator.next();
+            if (next == context) {
+                iterator.remove();
+            }
+        }
+        if (context instanceof ToContext) {
+            cache.remove(context);
+        }
     }
 
     public boolean checkHasNeedWriteCommand(Context context) {

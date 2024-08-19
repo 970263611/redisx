@@ -79,6 +79,8 @@ public class Constant {
 
     public static final String SELECT = "SELECT";
 
+    public static final String EVAL = "EVAL";
+
     public static final String ERROR_REPLY_PREFIX = "ERROR:";
 
     public static final String MULTI = "MULTI";

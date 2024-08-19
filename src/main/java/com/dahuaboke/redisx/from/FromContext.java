@@ -50,15 +50,17 @@ public class FromContext extends Context {
         this.alwaysFullSync = alwaysFullSync;
         this.syncRdb = syncRdb;
         this.isNodesInfoContext = isNodesInfoContext;
-        if (isNodesInfoContext) {
-            nodesInfoFlag = new CountDownLatch(1);
-        } else {
-            SlotInfoHandler.SlotInfo fromClusterNodeInfo = cacheManager.getFromClusterNodeInfoByIpAndPort(host, port);
-            if (fromClusterNodeInfo != null) {
-                this.slotBegin = fromClusterNodeInfo.getSlotStart();
-                this.slotEnd = fromClusterNodeInfo.getSlotEnd();
+        if (fromIsCluster) {
+            if (isNodesInfoContext) {
+                nodesInfoFlag = new CountDownLatch(1);
             } else {
-                throw new IllegalStateException("Slot info error");
+                SlotInfoHandler.SlotInfo fromClusterNodeInfo = cacheManager.getFromClusterNodeInfoByIpAndPort(host, port);
+                if (fromClusterNodeInfo != null) {
+                    this.slotBegin = fromClusterNodeInfo.getSlotStart();
+                    this.slotEnd = fromClusterNodeInfo.getSlotEnd();
+                } else {
+                    throw new IllegalStateException("Slot info error");
+                }
             }
         }
     }
@@ -137,6 +139,7 @@ public class FromContext extends Context {
     }
 
     public void close() {
+        cacheManager.remove(this);
         if (nodesInfoFlag != null) {
             nodesInfoFlag.countDown();
         }
