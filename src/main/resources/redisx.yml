@@ -4,6 +4,10 @@ redisx:
       version: 6.0.9
     #password: 2B*1a.
     isCluster: true
+    #SINGLE CLUSTER SENTINEL
+    mode: SENTINEL
+    #哨兵模式必填
+    masterName: mymaster
     address:
       - 172.31.84.163:16001
       - 172.31.84.163:16002
@@ -11,6 +15,10 @@ redisx:
   to:
     #password: 1a.2B*
     isCluster: true
+    #SINGLE CLUSTER SENTINEL
+    mode: SENTINEL
+    #哨兵模式必填
+    masterName: mymaster
     address:
       - 172.31.84.163:16101
       - 172.31.84.163:16102

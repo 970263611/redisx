@@ -64,8 +64,7 @@ public class SlotInfoHandler extends RedisChannelInboundHandler {
 
     private void parseSlotMessage(ChannelHandlerContext ctx, String msg) {
         logger.info("Beginning slot message parse");
-        Pattern pattern = Pattern.compile(Constant.SLOT_REX, Pattern.DOTALL);
-        if (msg != null && pattern.matcher(msg).matches()) {
+        if (msg != null) {
             msg = msg.replace("\r", "");
             String[] arr = msg.split("\n");
             if (arr.length != 0) {

@@ -12,34 +12,38 @@ public class FieldOrmUtil {
         Class<?> clazz = bean.getClass();
         Field[] declaredFields = clazz.getDeclaredFields();
         for (Field field : declaredFields) {
-            FieldOrm FieldOrm = field.getAnnotation(FieldOrm.class);
-            if (FieldOrm == null) {
+            FieldOrm fieldOrm = field.getAnnotation(FieldOrm.class);
+            if (fieldOrm == null) {
                 continue;
             }
             //必须有映射名称
-            if (StringUtils.isEmpty(FieldOrm.value())) {
+            if (StringUtils.isEmpty(fieldOrm.value())) {
                 throw new IllegalArgumentException("Config map failed, name is null : " + field.getName());
             }
             //参数值获取及类型转换
-            Object val = map.get(FieldOrm.value());
+            Object val = map.get(fieldOrm.value());
             if (val == null) {
-                if (FieldOrm.required()) {
-                    throw new IllegalArgumentException("Config map failed, param is required : " + FieldOrm.value());
+                if (fieldOrm.required()) {
+                    throw new IllegalArgumentException("Config map failed, param is required : " + fieldOrm.value());
                 }
-                if (StringUtils.isNotEmpty(FieldOrm.defaultValue())) {
-                    val = FieldOrm.defaultValue();
+                if (StringUtils.isNotEmpty(fieldOrm.defaultValue())) {
+                    val = fieldOrm.defaultValue();
                 }
             }
             if (val == null) {
                 continue;
             }
-            if (val.getClass() != field.getType()) {
+            Class<?> setType = field.getType();
+            if (fieldOrm.setType() != void.class){
+                setType = fieldOrm.setType();
+            }
+            if (val.getClass() != setType) {
                 val = StringUtils.changePrimitive(val, field.getType());
             }
             //获取set方法
             Method method;
             try {
-                method = clazz.getMethod("set" + StringUtils.upperFirstLetter(field.getName()), field.getType());
+                method = clazz.getMethod("set" + StringUtils.upperFirstLetter(field.getName()), setType);
             } catch (NoSuchMethodException e) {
                 throw new IllegalArgumentException("Config map failed, field not find set method : " + field.getName());
             }

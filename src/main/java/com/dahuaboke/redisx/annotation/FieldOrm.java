@@ -15,4 +15,6 @@ public @interface FieldOrm {
 
     boolean required() default false;
 
+    Class<?> setType() default void.class;
+
 }

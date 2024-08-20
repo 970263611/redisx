@@ -2,6 +2,7 @@ package com.dahuaboke.redisx;
 
 
 import com.dahuaboke.redisx.annotation.FieldOrm;
+import com.dahuaboke.redisx.enums.Mode;
 import com.dahuaboke.redisx.utils.FieldOrmUtil;
 import com.dahuaboke.redisx.utils.YamlUtil;
 import org.apache.logging.log4j.Level;
@@ -37,6 +38,12 @@ public class Redisx {
         @FieldOrm(value = "redisx.from.isCluster", defaultValue = "false")
         private boolean fromIsCluster;
 
+        @FieldOrm(value = "redisx.from.mode", defaultValue = "cluster",setType = String.class)
+        private Mode fromMode;
+
+        @FieldOrm(value = "redisx.from.masterName")
+        private String fromMasterName;
+
         @FieldOrm(value = "redisx.from.address", required = true)
         private List<InetSocketAddress> fromAddresses;
 
@@ -45,6 +52,12 @@ public class Redisx {
 
         @FieldOrm(value = "redisx.to.isCluster", defaultValue = "false")
         private boolean toIsCluster;
+
+        @FieldOrm(value = "redisx.to.mode", defaultValue = "cluster",setType = String.class)
+        private Mode toMode;
+
+        @FieldOrm(value = "redisx.to.masterName")
+        private String toMasterName;
 
         @FieldOrm(value = "redisx.to.address", required = true)
         private List<InetSocketAddress> toAddresses;
@@ -253,6 +266,38 @@ public class Redisx {
 
         public void setSyncWithCheckSlot(boolean syncWithCheckSlot) {
             this.syncWithCheckSlot = syncWithCheckSlot;
+        }
+
+        public Mode getFromMode() {
+            return fromMode;
+        }
+
+        public void setFromMode(String fromMode) {
+            this.fromMode =  Mode.getModeByString(fromMode);
+        }
+
+        public Mode getToMode() {
+            return toMode;
+        }
+
+        public void setToMode(String toMode) {
+            this.toMode =  Mode.getModeByString(toMode);
+        }
+
+        public String getToMasterName() {
+            return toMasterName;
+        }
+
+        public void setToMasterName(String toMasterName) {
+            this.toMasterName = toMasterName;
+        }
+
+        public String getFromMasterName() {
+            return fromMasterName;
+        }
+
+        public void setFromMasterName(String fromMasterName) {
+            this.fromMasterName = fromMasterName;
         }
     }
 
