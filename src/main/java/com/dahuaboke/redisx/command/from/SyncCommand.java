@@ -36,10 +36,10 @@ public class SyncCommand extends Command {
         add("MEMORY");
         add("BZMPOP");
         add("OBJECT");
-        add("EVAL");
-        add("EVAL_RO");
-        add("EVALSHA");
-        add("EVALSHA_RO");
+//        add("EVAL");
+//        add("EVAL_RO");
+//        add("EVALSHA");
+//        add("EVALSHA_RO");
         add("FCALL");
         add("FCALL_RO");
         add("PFDEBUG");
