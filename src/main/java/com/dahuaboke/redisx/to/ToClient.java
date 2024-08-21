@@ -53,12 +53,13 @@ public class ToClient {
                 ChannelPipeline pipeline = channel.pipeline();
                 pipeline.addLast(new RedisEncoder());
                 pipeline.addLast(new CommandEncoder());
+                pipeline.addLast(new PrintHandler());
                 boolean hasPassword = false;
                 String password = toContext.getPassword();
                 if (password != null && !password.isEmpty()) {
                     hasPassword = true;
                 }
-                if (hasPassword && !(Mode.SENTINEL == toContext.getToMode() && toContext.isNodesInfoContext())) {
+                if (hasPassword) {
                     pipeline.addLast(Constant.AUTH_HANDLER_NAME, new AuthHandler(password, toContext.getToMode()));
                 }
                 if (toContext.isFlushDb() && !toContext.isFlushDbSuccess()) {

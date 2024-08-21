@@ -4,6 +4,7 @@ import com.dahuaboke.redisx.Constant;
 import com.dahuaboke.redisx.Context;
 import com.dahuaboke.redisx.from.FromContext;
 import com.dahuaboke.redisx.to.ToContext;
+import com.dahuaboke.redisx.utils.StringUtils;
 import io.netty.channel.Channel;
 import io.netty.channel.ChannelHandlerContext;
 import org.slf4j.Logger;
@@ -49,7 +50,7 @@ public class SentinelInfoHandler extends RedisChannelInboundHandler {
 
     private void parseMasterMessage(ChannelHandlerContext ctx, String msg) {
         logger.info("Beginning sentinel master message parse");
-        if (msg != null) {
+        if (StringUtils.isNotEmpty(msg)) {
             String[] arr = msg.split(" ");
             String masterIp = arr[0];
             int masterPort = Integer.parseInt(arr[1]);

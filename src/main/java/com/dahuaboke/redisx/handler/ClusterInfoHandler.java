@@ -33,7 +33,7 @@ public class ClusterInfoHandler extends RedisChannelInboundHandler {
 
     @Override
     public void channelActive(ChannelHandlerContext ctx) throws Exception {
-        if (!hasPassword) {
+        if (ctx.pipeline().get(Constant.AUTH_HANDLER_NAME) == null) {
             sendSlotCommand(ctx);
         }
         ctx.fireChannelActive();
@@ -41,15 +41,7 @@ public class ClusterInfoHandler extends RedisChannelInboundHandler {
 
     @Override
     public void channelRead2(ChannelHandlerContext ctx, String msg) throws Exception {
-        if (hasPassword) {
-            if ("SLOTSEND".equals(msg)) {
-                sendSlotCommand(ctx);
-            } else {
-                parseSlotMessage(ctx, msg);
-            }
-        } else {
-            parseSlotMessage(ctx, msg);
-        }
+        parseSlotMessage(ctx, msg);
     }
 
     private void sendSlotCommand(ChannelHandlerContext ctx) {

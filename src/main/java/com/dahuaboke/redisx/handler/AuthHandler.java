@@ -36,29 +36,17 @@ public class AuthHandler extends ChannelInboundHandlerAdapter {
             //不需要去pipeline的底部，所以直接ctx.write
             ctx.writeAndFlush(Constant.CONFIG_AUTH_PREFIX + password);
         }
-        ctx.fireChannelActive();
     }
 
     @Override
     public void channelRead(ChannelHandlerContext ctx, Object obj) throws Exception {
         ByteBuf reply = (ByteBuf) obj;
-        ByteBuf slot = ByteBufAllocator.DEFAULT.buffer();
-        if (!passwordCheck) {
-            if (!Constant.OK_COMMAND.equalsIgnoreCase(reply.slice(1, 2).toString(StandardCharsets.UTF_8))) {
-                logger.error("Password error");
-                System.exit(0);
-            } else {
-                passwordCheck = true;
-                if (Mode.CLUSTER == mode) {
-                    slot.writeBytes(new byte[]{'+', 'S', 'L', 'O', 'T', 'S', 'E', 'N', 'D', '\r', '\n'});
-                    ctx.fireChannelRead(slot);
-                } else {
-                    ctx.pipeline().remove(this);
-                }
-            }
+        if (!Constant.OK_COMMAND.equalsIgnoreCase(reply.slice(1, 2).toString(StandardCharsets.UTF_8))) {
+            logger.error("Password error");
+            System.exit(0);
         } else {
             ctx.pipeline().remove(this);
-            ctx.fireChannelRead(obj);
+            ctx.fireChannelActive();
         }
     }
 }
