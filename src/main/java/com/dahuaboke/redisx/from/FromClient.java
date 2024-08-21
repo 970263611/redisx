@@ -1,11 +1,9 @@
 package com.dahuaboke.redisx.from;
 
 import com.dahuaboke.redisx.Constant;
+import com.dahuaboke.redisx.enums.Mode;
 import com.dahuaboke.redisx.from.handler.*;
-import com.dahuaboke.redisx.handler.AuthHandler;
-import com.dahuaboke.redisx.handler.CommandEncoder;
-import com.dahuaboke.redisx.handler.DirtyDataHandler;
-import com.dahuaboke.redisx.handler.ClusterInfoHandler;
+import com.dahuaboke.redisx.handler.*;
 import io.netty.bootstrap.Bootstrap;
 import io.netty.channel.*;
 import io.netty.channel.nio.NioEventLoopGroup;
@@ -75,7 +73,12 @@ public class FromClient {
                         pipeline.addLast(new RedisBulkStringAggregator());
                         pipeline.addLast(new RedisArrayAggregator());
                         if (fromContext.isNodesInfoContext()) {
-                            pipeline.addLast(Constant.SLOT_HANDLER_NAME, new ClusterInfoHandler(fromContext, hasPassword));
+                            if (Mode.CLUSTER == fromContext.getFromMode()) {
+                                pipeline.addLast(Constant.CLUSTER_HANDLER_NAME, new ClusterInfoHandler(fromContext, hasPassword));
+                            }
+                            if (Mode.SENTINEL == fromContext.getFromMode()) {
+                                pipeline.addLast(Constant.SENTINEL_HANDLER_NAME, new SentinelInfoHandler(fromContext, fromContext.getFromMasterName()));
+                            }
                         } else {
                             pipeline.addLast(new MessagePostProcessor(fromContext));
                             pipeline.addLast(new PostDistributeHandler());

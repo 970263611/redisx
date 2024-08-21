@@ -10,6 +10,7 @@ import com.dahuaboke.redisx.to.ToContext;
 import org.slf4j.Logger;
 import org.slf4j.LoggerFactory;
 
+import java.net.InetSocketAddress;
 import java.util.*;
 import java.util.concurrent.BlockingQueue;
 import java.util.concurrent.ConcurrentHashMap;
@@ -33,7 +34,6 @@ public final class CacheManager {
     private String toPassword;
     private AtomicBoolean isMaster = new AtomicBoolean(false);
     private AtomicBoolean fromStarted = new AtomicBoolean(false);
-
     private AtomicBoolean toStarted = new AtomicBoolean(false);
     private String id = UUID.randomUUID().toString().replaceAll("-", "");
     private Map<String, NodeMessage> nodeMessages = new ConcurrentHashMap();
@@ -42,6 +42,8 @@ public final class CacheManager {
     private Set<ClusterInfoHandler.SlotInfo> toClusterNodesInfo = new HashSet<>();
     private ConsoleContext consoleContext;
     private Map<String, Boolean> flushDb = new HashMap();
+    private InetSocketAddress fromSentinelMaster;
+    private InetSocketAddress toSentinelMaster;
 
     public CacheManager(String redisVersion, Mode fromMode, String fromPassword, Mode toMode, String toPassword) {
         this.redisVersion = redisVersion;
@@ -260,6 +262,22 @@ public final class CacheManager {
 
     public void setFlushDb(String host, int port, boolean flushDb) {
         this.flushDb.put(host + port, flushDb);
+    }
+
+    public InetSocketAddress getFromSentinelMaster() {
+        return fromSentinelMaster;
+    }
+
+    public void setFromSentinelMaster(InetSocketAddress fromSentinelMaster) {
+        this.fromSentinelMaster = fromSentinelMaster;
+    }
+
+    public InetSocketAddress getToSentinelMaster() {
+        return toSentinelMaster;
+    }
+
+    public void setToSentinelMaster(InetSocketAddress toSentinelMaster) {
+        this.toSentinelMaster = toSentinelMaster;
     }
 
     public static class NodeMessage {

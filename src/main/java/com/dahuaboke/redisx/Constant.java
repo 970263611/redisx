@@ -37,7 +37,9 @@ public class Constant {
 
     public static final String AUTH_HANDLER_NAME = "AUTH_HANDLER";
 
-    public static final String SLOT_HANDLER_NAME = "SLOT_HANDLER";
+    public static final String CLUSTER_HANDLER_NAME = "CLUSTER_HANDLER";
+
+    public static final String SENTINEL_HANDLER_NAME = "SENTINEL_HANDLER";
 
     public static final String OFFSET_DECODER_NAME = "OFFSET_DECODER";
 

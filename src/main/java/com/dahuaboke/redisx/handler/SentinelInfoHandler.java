@@ -2,6 +2,8 @@ package com.dahuaboke.redisx.handler;
 
 import com.dahuaboke.redisx.Constant;
 import com.dahuaboke.redisx.Context;
+import com.dahuaboke.redisx.from.FromContext;
+import com.dahuaboke.redisx.to.ToContext;
 import io.netty.channel.Channel;
 import io.netty.channel.ChannelHandlerContext;
 import org.slf4j.Logger;
@@ -27,7 +29,7 @@ public class SentinelInfoHandler extends RedisChannelInboundHandler {
 
     @Override
     public void channelActive(ChannelHandlerContext ctx) throws Exception {
-        sendSlotCommand(ctx);
+        sendMasterCommand(ctx);
         ctx.fireChannelActive();
     }
 
@@ -36,7 +38,7 @@ public class SentinelInfoHandler extends RedisChannelInboundHandler {
         parseMasterMessage(ctx, msg);
     }
 
-    private void sendSlotCommand(ChannelHandlerContext ctx) {
+    private void sendMasterCommand(ChannelHandlerContext ctx) {
         logger.info("Beginning sentinel get master command");
         Channel channel = ctx.channel();
         if (channel.isActive()) {
@@ -46,11 +48,22 @@ public class SentinelInfoHandler extends RedisChannelInboundHandler {
     }
 
     private void parseMasterMessage(ChannelHandlerContext ctx, String msg) {
-         logger.info("Beginning sentinel master message parse");
+        logger.info("Beginning sentinel master message parse");
         if (msg != null) {
             String[] arr = msg.split(" ");
             String masterIp = arr[0];
             int masterPort = Integer.parseInt(arr[1]);
+            if (context instanceof FromContext) {
+                FromContext fromContext = (FromContext) context;
+                fromContext.setSentinelMasterInfo(masterIp, masterPort);
+                ctx.pipeline().remove(this);
+                fromContext.setFromNodesInfoGetSuccess();
+            } else if (context instanceof ToContext) {
+                ToContext toContext = (ToContext) context;
+                toContext.setSentinelMasterInfo(masterIp, masterPort);
+                ctx.pipeline().remove(this);
+                toContext.setToNodesInfoGetSuccess();
+            }
         }
     }
 }

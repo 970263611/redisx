@@ -40,6 +40,8 @@ public class Controller {
     private String switchFlag;
     private List<InetSocketAddress> fromNodeAddresses;
     private List<InetSocketAddress> toNodeAddresses;
+    private String fromMasterName;
+    private String toMasterName;
 
     public Controller(List<InetSocketAddress> fromNodeAddresses, List<InetSocketAddress> toNodeAddresses, String redisVersion, Mode fromMode, String fromMasterName, String fromPassword, Mode toMode, String toMasterName, String toPassword, boolean immediate, int immediateResendTimes, String switchFlag) {
         this.fromNodeAddresses = fromNodeAddresses;
@@ -49,6 +51,8 @@ public class Controller {
         this.switchFlag = switchFlag;
         this.fromMode = fromMode;
         this.toMode = toMode;
+        this.fromMasterName = fromMasterName;
+        this.toMasterName = toMasterName;
         cacheManager = new CacheManager(redisVersion, fromMode, fromPassword, toMode, toPassword);
     }
 
@@ -208,6 +212,8 @@ public class Controller {
     public List<InetSocketAddress> getFromMasterNodesInfo() {
         if (Mode.CLUSTER == fromMode) {
             cacheManager.clearFromNodesInfo();
+        }
+        if (Mode.CLUSTER == fromMode || Mode.SENTINEL == fromMode) {
             for (InetSocketAddress address : fromNodeAddresses) {
                 String host = address.getHostString();
                 int port = address.getPort();
@@ -229,6 +235,8 @@ public class Controller {
                     logger.error("[{}:{}] nodes info get failed", host, port);
                 }
             }
+        }
+        if (Mode.CLUSTER == fromMode) {
             if (cacheManager.getFromClusterNodesInfo().isEmpty()) {
                 return null;
             }
@@ -241,6 +249,14 @@ public class Controller {
                 }
             }
             return addresses;
+        } else if (Mode.SENTINEL == fromMode) {
+            List<InetSocketAddress> addresses = new ArrayList<>();
+            InetSocketAddress fromSentinelMaster = cacheManager.getFromSentinelMaster();
+            if (fromSentinelMaster == null) {
+                return null;
+            }
+            addresses.add(fromSentinelMaster);
+            return addresses;
         }
         return fromNodeAddresses;
     }
@@ -248,6 +264,8 @@ public class Controller {
     public List<InetSocketAddress> getToMasterNodesInfo(boolean syncWithCheckSlot) {
         if (Mode.CLUSTER == toMode) {
             cacheManager.clearToNodesInfo();
+        }
+        if (Mode.CLUSTER == toMode || Mode.SENTINEL == toMode) {
             for (InetSocketAddress address : toNodeAddresses) {
                 String host = address.getHostString();
                 int port = address.getPort();
@@ -269,6 +287,8 @@ public class Controller {
                     logger.error("[{}:{}] nodes info get failed", host, port);
                 }
             }
+        }
+        if (Mode.CLUSTER == toMode) {
             if (cacheManager.getToClusterNodesInfo().isEmpty()) {
                 return null;
             }
@@ -303,8 +323,15 @@ public class Controller {
                         return null;
                     }
                 }
-
             }
+            return addresses;
+        } else if (Mode.SENTINEL == toMode) {
+            List<InetSocketAddress> addresses = new ArrayList<>();
+            InetSocketAddress toSentinelMaster = cacheManager.getToSentinelMaster();
+            if (toSentinelMaster == null) {
+                return null;
+            }
+            addresses.add(toSentinelMaster);
             return addresses;
         }
         return toNodeAddresses;
@@ -345,7 +372,7 @@ public class Controller {
             this.host = host;
             this.port = port;
             //放在构造方法而不是run，因为兼容console模式，需要收集context，否则可能收集到null
-            this.toContext = new ToContext(cacheManager, host, port, fromMode, toMode, isConsole, immediate, immediateResendTimes, switchFlag, flushSize, isNodesInfoContext, flushDb);
+            this.toContext = new ToContext(cacheManager, host, port, fromMode, toMode, isConsole, immediate, immediateResendTimes, switchFlag, flushSize, isNodesInfoContext, flushDb, toMasterName);
         }
 
         @Override
@@ -378,7 +405,7 @@ public class Controller {
             this.host = host;
             this.port = port;
             //放在构造方法而不是run，因为兼容console模式，需要收集console，否则可能收集到null
-            this.fromContext = new FromContext(cacheManager, host, port, isConsole, fromMode, toMode, alwaysFullSync, syncRdb, isNodesInfoContext);
+            this.fromContext = new FromContext(cacheManager, host, port, isConsole, fromMode, toMode, alwaysFullSync, syncRdb, isNodesInfoContext, fromMasterName);
         }
 
         @Override

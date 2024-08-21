@@ -9,6 +9,7 @@ import com.dahuaboke.redisx.handler.ClusterInfoHandler;
 import org.slf4j.Logger;
 import org.slf4j.LoggerFactory;
 
+import java.net.InetSocketAddress;
 import java.util.ArrayList;
 import java.util.List;
 import java.util.Map;
@@ -39,8 +40,9 @@ public class ToContext extends Context {
     private CountDownLatch nodesInfoFlag;
     private boolean isNodesInfoContext;
     private boolean flushDb;
+    private String toMasterName;
 
-    public ToContext(CacheManager cacheManager, String host, int port, Mode fromMode, Mode toMode, boolean isConsole, boolean immediate, int immediateResendTimes, String switchFlag, int flushSize, boolean isNodesInfoContext, boolean flushDb) {
+    public ToContext(CacheManager cacheManager, String host, int port, Mode fromMode, Mode toMode, boolean isConsole, boolean immediate, int immediateResendTimes, String switchFlag, int flushSize, boolean isNodesInfoContext, boolean flushDb, String toMasterName) {
         super(fromMode, toMode);
         this.cacheManager = cacheManager;
         this.host = host;
@@ -54,20 +56,20 @@ public class ToContext extends Context {
         this.switchFlag = switchFlag;
         this.flushSize = flushSize;
         this.isNodesInfoContext = isNodesInfoContext;
+        this.toMasterName = toMasterName;
+        this.flushDb = flushDb;
+        if (isNodesInfoContext) {
+            nodesInfoFlag = new CountDownLatch(1);
+        }
         if (Mode.CLUSTER == toMode) {
-            if (isNodesInfoContext) {
-                nodesInfoFlag = new CountDownLatch(1);
+            ClusterInfoHandler.SlotInfo toClusterNodeInfo = cacheManager.getToClusterNodeInfoByIpAndPort(host, port);
+            if (toClusterNodeInfo != null) {
+                this.slotBegin = toClusterNodeInfo.getSlotStart();
+                this.slotEnd = toClusterNodeInfo.getSlotEnd();
             } else {
-                ClusterInfoHandler.SlotInfo toClusterNodeInfo = cacheManager.getToClusterNodeInfoByIpAndPort(host, port);
-                if (toClusterNodeInfo != null) {
-                    this.slotBegin = toClusterNodeInfo.getSlotStart();
-                    this.slotEnd = toClusterNodeInfo.getSlotEnd();
-                } else {
-                    throw new IllegalStateException("Slot info error");
-                }
+                throw new IllegalStateException("Slot info error");
             }
         }
-        this.flushDb = flushDb;
     }
 
     public String getId() {
@@ -301,6 +303,14 @@ public class ToContext extends Context {
 
     public void setFlushDbSuccess() {
         cacheManager.setFlushDb(host, port, true);
+    }
+
+    public String getToMasterName() {
+        return toMasterName;
+    }
+
+    public void setSentinelMasterInfo(String host, int port) {
+        cacheManager.setToSentinelMaster(new InetSocketAddress(host, port));
     }
 
     @Override

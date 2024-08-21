@@ -38,8 +38,9 @@ public class FromContext extends Context {
     private String masterId;
     private boolean isNodesInfoContext;
     private CountDownLatch nodesInfoFlag;
+    private String fromMasterName;
 
-    public FromContext(CacheManager cacheManager, String host, int port, boolean isConsole, Mode fromMode, Mode toMode, boolean alwaysFullSync, boolean syncRdb, boolean isNodesInfoContext) {
+    public FromContext(CacheManager cacheManager, String host, int port, boolean isConsole, Mode fromMode, Mode toMode, boolean alwaysFullSync, boolean syncRdb, boolean isNodesInfoContext, String fromMasterName) {
         super(fromMode, toMode);
         this.cacheManager = cacheManager;
         this.host = host;
@@ -51,17 +52,17 @@ public class FromContext extends Context {
         this.alwaysFullSync = alwaysFullSync;
         this.syncRdb = syncRdb;
         this.isNodesInfoContext = isNodesInfoContext;
+        this.fromMasterName = fromMasterName;
+        if (isNodesInfoContext) {
+            nodesInfoFlag = new CountDownLatch(1);
+        }
         if (Mode.CLUSTER == fromMode) {
-            if (isNodesInfoContext) {
-                nodesInfoFlag = new CountDownLatch(1);
+            ClusterInfoHandler.SlotInfo fromClusterNodeInfo = cacheManager.getFromClusterNodeInfoByIpAndPort(host, port);
+            if (fromClusterNodeInfo != null) {
+                this.slotBegin = fromClusterNodeInfo.getSlotStart();
+                this.slotEnd = fromClusterNodeInfo.getSlotEnd();
             } else {
-                ClusterInfoHandler.SlotInfo fromClusterNodeInfo = cacheManager.getFromClusterNodeInfoByIpAndPort(host, port);
-                if (fromClusterNodeInfo != null) {
-                    this.slotBegin = fromClusterNodeInfo.getSlotStart();
-                    this.slotEnd = fromClusterNodeInfo.getSlotEnd();
-                } else {
-                    throw new IllegalStateException("Slot info error");
-                }
+                throw new IllegalStateException("Slot info error");
             }
         }
     }
@@ -237,5 +238,13 @@ public class FromContext extends Context {
 
     public boolean isNodesInfoContext() {
         return isNodesInfoContext;
+    }
+
+    public String getFromMasterName() {
+        return fromMasterName;
+    }
+
+    public void setSentinelMasterInfo(String host, int port) {
+        cacheManager.setFromSentinelMaster(new InetSocketAddress(host, port));
     }
 }

@@ -1,10 +1,8 @@
 package com.dahuaboke.redisx.to;
 
 import com.dahuaboke.redisx.Constant;
-import com.dahuaboke.redisx.handler.AuthHandler;
-import com.dahuaboke.redisx.handler.CommandEncoder;
-import com.dahuaboke.redisx.handler.DirtyDataHandler;
-import com.dahuaboke.redisx.handler.ClusterInfoHandler;
+import com.dahuaboke.redisx.enums.Mode;
+import com.dahuaboke.redisx.handler.*;
 import com.dahuaboke.redisx.to.handler.DRHandler;
 import com.dahuaboke.redisx.to.handler.FlushHandler;
 import com.dahuaboke.redisx.to.handler.SyncCommandListener;
@@ -70,7 +68,12 @@ public class ToClient {
                 pipeline.addLast(new RedisBulkStringAggregator());
                 pipeline.addLast(new RedisArrayAggregator());
                 if (toContext.isNodesInfoContext()) {
-                    pipeline.addLast(Constant.SLOT_HANDLER_NAME, new ClusterInfoHandler(toContext, hasPassword));
+                    if (Mode.CLUSTER == toContext.getToMode()) {
+                        pipeline.addLast(Constant.CLUSTER_HANDLER_NAME, new ClusterInfoHandler(toContext, hasPassword));
+                    }
+                    if (Mode.SENTINEL == toContext.getToMode()) {
+                        pipeline.addLast(Constant.SENTINEL_HANDLER_NAME, new SentinelInfoHandler(toContext, toContext.getToMasterName()));
+                    }
                 } else {
                     pipeline.addLast(new DRHandler(toContext));
                     pipeline.addLast(new SyncCommandListener(toContext));
