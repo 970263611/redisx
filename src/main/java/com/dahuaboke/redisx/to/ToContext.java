@@ -60,14 +60,14 @@ public class ToContext extends Context {
         this.flushDb = flushDb;
         if (isNodesInfoContext) {
             nodesInfoFlag = new CountDownLatch(1);
-        }
-        if (Mode.CLUSTER == toMode) {
-            ClusterInfoHandler.SlotInfo toClusterNodeInfo = cacheManager.getToClusterNodeInfoByIpAndPort(host, port);
-            if (toClusterNodeInfo != null) {
-                this.slotBegin = toClusterNodeInfo.getSlotStart();
-                this.slotEnd = toClusterNodeInfo.getSlotEnd();
-            } else {
-                throw new IllegalStateException("Slot info error");
+            if (Mode.CLUSTER == toMode) {
+                ClusterInfoHandler.SlotInfo toClusterNodeInfo = cacheManager.getToClusterNodeInfoByIpAndPort(host, port);
+                if (toClusterNodeInfo != null) {
+                    this.slotBegin = toClusterNodeInfo.getSlotStart();
+                    this.slotEnd = toClusterNodeInfo.getSlotEnd();
+                } else {
+                    throw new IllegalStateException("Slot info error");
+                }
             }
         }
     }

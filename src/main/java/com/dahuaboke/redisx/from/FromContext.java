@@ -55,14 +55,14 @@ public class FromContext extends Context {
         this.fromMasterName = fromMasterName;
         if (isNodesInfoContext) {
             nodesInfoFlag = new CountDownLatch(1);
-        }
-        if (Mode.CLUSTER == fromMode) {
-            ClusterInfoHandler.SlotInfo fromClusterNodeInfo = cacheManager.getFromClusterNodeInfoByIpAndPort(host, port);
-            if (fromClusterNodeInfo != null) {
-                this.slotBegin = fromClusterNodeInfo.getSlotStart();
-                this.slotEnd = fromClusterNodeInfo.getSlotEnd();
-            } else {
-                throw new IllegalStateException("Slot info error");
+            if (Mode.CLUSTER == fromMode) {
+                ClusterInfoHandler.SlotInfo fromClusterNodeInfo = cacheManager.getFromClusterNodeInfoByIpAndPort(host, port);
+                if (fromClusterNodeInfo != null) {
+                    this.slotBegin = fromClusterNodeInfo.getSlotStart();
+                    this.slotEnd = fromClusterNodeInfo.getSlotEnd();
+                } else {
+                    throw new IllegalStateException("Slot info error");
+                }
             }
         }
     }

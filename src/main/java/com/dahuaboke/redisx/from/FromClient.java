@@ -60,7 +60,7 @@ public class FromClient {
                         }
                         pipeline.addLast(new RedisEncoder());
                         pipeline.addLast(new CommandEncoder());
-                        if (hasPassword) {
+                        if (hasPassword && !(Mode.SENTINEL == fromContext.getFromMode() && fromContext.isNodesInfoContext())) {
                             pipeline.addLast(Constant.AUTH_HANDLER_NAME, new AuthHandler(password, fromContext.getFromMode()));
                         }
                         if (!console && !fromContext.isNodesInfoContext()) {

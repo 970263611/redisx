@@ -58,7 +58,7 @@ public class ToClient {
                 if (password != null && !password.isEmpty()) {
                     hasPassword = true;
                 }
-                if (hasPassword) {
+                if (hasPassword && !(Mode.SENTINEL == toContext.getToMode() && toContext.isNodesInfoContext())) {
                     pipeline.addLast(Constant.AUTH_HANDLER_NAME, new AuthHandler(password, toContext.getToMode()));
                 }
                 if (toContext.isFlushDb() && !toContext.isFlushDbSuccess()) {
