@@ -4,7 +4,8 @@ import com.dahuaboke.redisx.Constant;
 import com.dahuaboke.redisx.Context;
 import com.dahuaboke.redisx.cache.CacheManager;
 import com.dahuaboke.redisx.command.from.SyncCommand;
-import com.dahuaboke.redisx.handler.SlotInfoHandler;
+import com.dahuaboke.redisx.enums.Mode;
+import com.dahuaboke.redisx.handler.ClusterInfoHandler;
 import io.netty.channel.Channel;
 import org.slf4j.Logger;
 import org.slf4j.LoggerFactory;
@@ -38,8 +39,8 @@ public class FromContext extends Context {
     private boolean isNodesInfoContext;
     private CountDownLatch nodesInfoFlag;
 
-    public FromContext(CacheManager cacheManager, String host, int port, boolean isConsole, boolean fromIsCluster, boolean toIsCluster, boolean alwaysFullSync, boolean syncRdb, boolean isNodesInfoContext) {
-        super(fromIsCluster, toIsCluster);
+    public FromContext(CacheManager cacheManager, String host, int port, boolean isConsole, Mode fromMode, Mode toMode, boolean alwaysFullSync, boolean syncRdb, boolean isNodesInfoContext) {
+        super(fromMode, toMode);
         this.cacheManager = cacheManager;
         this.host = host;
         this.port = port;
@@ -50,11 +51,11 @@ public class FromContext extends Context {
         this.alwaysFullSync = alwaysFullSync;
         this.syncRdb = syncRdb;
         this.isNodesInfoContext = isNodesInfoContext;
-        if (fromIsCluster) {
+        if (Mode.CLUSTER == fromMode) {
             if (isNodesInfoContext) {
                 nodesInfoFlag = new CountDownLatch(1);
             } else {
-                SlotInfoHandler.SlotInfo fromClusterNodeInfo = cacheManager.getFromClusterNodeInfoByIpAndPort(host, port);
+                ClusterInfoHandler.SlotInfo fromClusterNodeInfo = cacheManager.getFromClusterNodeInfoByIpAndPort(host, port);
                 if (fromClusterNodeInfo != null) {
                     this.slotBegin = fromClusterNodeInfo.getSlotStart();
                     this.slotEnd = fromClusterNodeInfo.getSlotEnd();
@@ -109,8 +110,8 @@ public class FromContext extends Context {
     }
 
     @Override
-    public boolean isAdapt(boolean isMasterCluster, String command) {
-        if (isMasterCluster && command != null) {
+    public boolean isAdapt(Mode mode, String command) {
+        if (Mode.CLUSTER == mode && command != null) {
             int hash = calculateHash(command) % Constant.COUNT_SLOT_NUMS;
             return hash >= slotBegin && hash <= slotEnd;
         } else {
@@ -216,7 +217,7 @@ public class FromContext extends Context {
         this.masterId = masterId;
     }
 
-    public void addSlotInfo(SlotInfoHandler.SlotInfo slotInfo) {
+    public void addSlotInfo(ClusterInfoHandler.SlotInfo slotInfo) {
         this.cacheManager.addFromClusterNodesInfo(slotInfo);
     }
 

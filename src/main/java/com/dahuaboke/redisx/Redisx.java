@@ -4,6 +4,7 @@ package com.dahuaboke.redisx;
 import com.dahuaboke.redisx.annotation.FieldOrm;
 import com.dahuaboke.redisx.enums.Mode;
 import com.dahuaboke.redisx.utils.FieldOrmUtil;
+import com.dahuaboke.redisx.utils.StringUtils;
 import com.dahuaboke.redisx.utils.YamlUtil;
 import org.apache.logging.log4j.Level;
 import org.apache.logging.log4j.core.config.Configurator;
@@ -22,9 +23,15 @@ public class Redisx {
     public static void main(String[] args) {
         Config config = new Config();
         FieldOrmUtil.MapToBean(YamlUtil.parseYamlParam(args), config);
+        if (Mode.SENTINEL == config.getFromMode() && StringUtils.isEmpty(config.getFromMasterName())) {
+            throw new IllegalArgumentException("redisx.from.masterName");
+        }
+        if (Mode.SENTINEL == config.getToMode() && StringUtils.isEmpty(config.getToMasterName())) {
+            throw new IllegalArgumentException("redisx.to.masterName");
+        }
         Configurator.setRootLevel(Level.getLevel(config.getLogLevelGlobal()));
-        Controller controller = new Controller(config.getFromAddresses(), config.getToAddresses(), config.getRedisVersion(), config.isFromIsCluster(), config.getFromPassword(),
-                config.isToIsCluster(), config.getToPassword(), config.isImmediate(), config.getImmediateResendTimes(), config.getSwitchFlag());
+        Controller controller = new Controller(config.getFromAddresses(), config.getToAddresses(), config.getRedisVersion(), config.getFromMode(), config.getFromMasterName(), config.getFromPassword(),
+                config.getToMode(), config.getToMasterName(), config.getToPassword(), config.isImmediate(), config.getImmediateResendTimes(), config.getSwitchFlag());
         //强制全量同步必须同步rdb文件
         boolean syncRdb = config.isSyncRdb();
         if (config.isAlwaysFullSync()) {
@@ -35,10 +42,7 @@ public class Redisx {
 
     public static class Config {
 
-        @FieldOrm(value = "redisx.from.isCluster", defaultValue = "false")
-        private boolean fromIsCluster;
-
-        @FieldOrm(value = "redisx.from.mode", defaultValue = "cluster",setType = String.class)
+        @FieldOrm(value = "redisx.from.mode", defaultValue = "cluster", setType = String.class)
         private Mode fromMode;
 
         @FieldOrm(value = "redisx.from.masterName")
@@ -50,10 +54,7 @@ public class Redisx {
         @FieldOrm(value = "redisx.from.password")
         private String fromPassword;
 
-        @FieldOrm(value = "redisx.to.isCluster", defaultValue = "false")
-        private boolean toIsCluster;
-
-        @FieldOrm(value = "redisx.to.mode", defaultValue = "cluster",setType = String.class)
+        @FieldOrm(value = "redisx.to.mode", defaultValue = "cluster", setType = String.class)
         private Mode toMode;
 
         @FieldOrm(value = "redisx.to.masterName")
@@ -104,14 +105,6 @@ public class Redisx {
         @FieldOrm(value = "redisx.to.syncWithCheckSlot", defaultValue = "false")
         private boolean syncWithCheckSlot;
 
-        public boolean isFromIsCluster() {
-            return fromIsCluster;
-        }
-
-        public void setFromIsCluster(boolean fromIsCluster) {
-            this.fromIsCluster = fromIsCluster;
-        }
-
         public List<InetSocketAddress> getFromAddresses() {
             return fromAddresses;
         }
@@ -132,14 +125,6 @@ public class Redisx {
 
         public void setFromPassword(String fromPassword) {
             this.fromPassword = fromPassword;
-        }
-
-        public boolean isToIsCluster() {
-            return toIsCluster;
-        }
-
-        public void setToIsCluster(boolean toIsCluster) {
-            this.toIsCluster = toIsCluster;
         }
 
         public List<InetSocketAddress> getToAddresses() {
@@ -273,7 +258,7 @@ public class Redisx {
         }
 
         public void setFromMode(String fromMode) {
-            this.fromMode =  Mode.getModeByString(fromMode);
+            this.fromMode = Mode.getModeByString(fromMode);
         }
 
         public Mode getToMode() {
@@ -281,7 +266,7 @@ public class Redisx {
         }
 
         public void setToMode(String toMode) {
-            this.toMode =  Mode.getModeByString(toMode);
+            this.toMode = Mode.getModeByString(toMode);
         }
 
         public String getToMasterName() {

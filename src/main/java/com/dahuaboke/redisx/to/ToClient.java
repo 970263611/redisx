@@ -4,7 +4,7 @@ import com.dahuaboke.redisx.Constant;
 import com.dahuaboke.redisx.handler.AuthHandler;
 import com.dahuaboke.redisx.handler.CommandEncoder;
 import com.dahuaboke.redisx.handler.DirtyDataHandler;
-import com.dahuaboke.redisx.handler.SlotInfoHandler;
+import com.dahuaboke.redisx.handler.ClusterInfoHandler;
 import com.dahuaboke.redisx.to.handler.DRHandler;
 import com.dahuaboke.redisx.to.handler.FlushHandler;
 import com.dahuaboke.redisx.to.handler.SyncCommandListener;
@@ -61,7 +61,7 @@ public class ToClient {
                     hasPassword = true;
                 }
                 if (hasPassword) {
-                    pipeline.addLast(Constant.AUTH_HANDLER_NAME, new AuthHandler(password, toContext.isToIsCluster()));
+                    pipeline.addLast(Constant.AUTH_HANDLER_NAME, new AuthHandler(password, toContext.getToMode()));
                 }
                 if (toContext.isFlushDb() && !toContext.isFlushDbSuccess()) {
                     pipeline.addLast(new FlushHandler(toContext));
@@ -70,7 +70,7 @@ public class ToClient {
                 pipeline.addLast(new RedisBulkStringAggregator());
                 pipeline.addLast(new RedisArrayAggregator());
                 if (toContext.isNodesInfoContext()) {
-                    pipeline.addLast(Constant.SLOT_HANDLER_NAME, new SlotInfoHandler(toContext, hasPassword));
+                    pipeline.addLast(Constant.SLOT_HANDLER_NAME, new ClusterInfoHandler(toContext, hasPassword));
                 } else {
                     pipeline.addLast(new DRHandler(toContext));
                     pipeline.addLast(new SyncCommandListener(toContext));

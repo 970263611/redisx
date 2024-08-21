@@ -5,7 +5,7 @@ import com.dahuaboke.redisx.from.handler.*;
 import com.dahuaboke.redisx.handler.AuthHandler;
 import com.dahuaboke.redisx.handler.CommandEncoder;
 import com.dahuaboke.redisx.handler.DirtyDataHandler;
-import com.dahuaboke.redisx.handler.SlotInfoHandler;
+import com.dahuaboke.redisx.handler.ClusterInfoHandler;
 import io.netty.bootstrap.Bootstrap;
 import io.netty.channel.*;
 import io.netty.channel.nio.NioEventLoopGroup;
@@ -63,7 +63,7 @@ public class FromClient {
                         pipeline.addLast(new RedisEncoder());
                         pipeline.addLast(new CommandEncoder());
                         if (hasPassword) {
-                            pipeline.addLast(Constant.AUTH_HANDLER_NAME, new AuthHandler(password, fromContext.isFromIsCluster()));
+                            pipeline.addLast(Constant.AUTH_HANDLER_NAME, new AuthHandler(password, fromContext.getFromMode()));
                         }
                         if (!console && !fromContext.isNodesInfoContext()) {
                             pipeline.addLast(Constant.INIT_SYNC_HANDLER_NAME, new SyncInitializationHandler(fromContext));
@@ -75,7 +75,7 @@ public class FromClient {
                         pipeline.addLast(new RedisBulkStringAggregator());
                         pipeline.addLast(new RedisArrayAggregator());
                         if (fromContext.isNodesInfoContext()) {
-                            pipeline.addLast(Constant.SLOT_HANDLER_NAME, new SlotInfoHandler(fromContext, hasPassword));
+                            pipeline.addLast(Constant.SLOT_HANDLER_NAME, new ClusterInfoHandler(fromContext, hasPassword));
                         } else {
                             pipeline.addLast(new MessagePostProcessor(fromContext));
                             pipeline.addLast(new PostDistributeHandler());

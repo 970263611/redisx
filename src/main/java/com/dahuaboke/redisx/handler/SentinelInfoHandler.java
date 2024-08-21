@@ -2,17 +2,10 @@ package com.dahuaboke.redisx.handler;
 
 import com.dahuaboke.redisx.Constant;
 import com.dahuaboke.redisx.Context;
-import com.dahuaboke.redisx.from.FromContext;
-import com.dahuaboke.redisx.to.ToContext;
 import io.netty.channel.Channel;
 import io.netty.channel.ChannelHandlerContext;
 import org.slf4j.Logger;
 import org.slf4j.LoggerFactory;
-
-import java.util.Arrays;
-import java.util.HashMap;
-import java.util.Map;
-import java.util.regex.Pattern;
 
 
 /**
@@ -20,13 +13,13 @@ import java.util.regex.Pattern;
  * auth: cdl
  * desc: 通过哨兵获取当前主节点ip和端口
  */
-public class SentinelMasterHandler extends RedisChannelInboundHandler {
+public class SentinelInfoHandler extends RedisChannelInboundHandler {
 
     private static final Logger logger = LoggerFactory.getLogger(CommandEncoder.class);
     private Context context;
     private String masterName;
 
-    public SentinelMasterHandler(Context context, String masterName) {
+    public SentinelInfoHandler(Context context, String masterName) {
         super(context);
         this.context = context;
         this.masterName = masterName;
@@ -40,7 +33,7 @@ public class SentinelMasterHandler extends RedisChannelInboundHandler {
 
     @Override
     public void channelRead2(ChannelHandlerContext ctx, String msg) throws Exception {
-       parseSlotMessage(ctx, msg);
+        parseMasterMessage(ctx, msg);
     }
 
     private void sendSlotCommand(ChannelHandlerContext ctx) {
@@ -52,7 +45,7 @@ public class SentinelMasterHandler extends RedisChannelInboundHandler {
         }
     }
 
-    private void parseSlotMessage(ChannelHandlerContext ctx, String msg) {
+    private void parseMasterMessage(ChannelHandlerContext ctx, String msg) {
          logger.info("Beginning sentinel master message parse");
         if (msg != null) {
             String[] arr = msg.split(" ");
@@ -60,5 +53,4 @@ public class SentinelMasterHandler extends RedisChannelInboundHandler {
             int masterPort = Integer.parseInt(arr[1]);
         }
     }
-
 }

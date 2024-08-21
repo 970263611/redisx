@@ -4,7 +4,8 @@ import com.dahuaboke.redisx.Constant;
 import com.dahuaboke.redisx.Context;
 import com.dahuaboke.redisx.cache.CacheManager;
 import com.dahuaboke.redisx.command.from.SyncCommand;
-import com.dahuaboke.redisx.handler.SlotInfoHandler;
+import com.dahuaboke.redisx.enums.Mode;
+import com.dahuaboke.redisx.handler.ClusterInfoHandler;
 import org.slf4j.Logger;
 import org.slf4j.LoggerFactory;
 
@@ -39,8 +40,8 @@ public class ToContext extends Context {
     private boolean isNodesInfoContext;
     private boolean flushDb;
 
-    public ToContext(CacheManager cacheManager, String host, int port, boolean fromIsCluster, boolean toIsCluster, boolean isConsole, boolean immediate, int immediateResendTimes, String switchFlag, int flushSize, boolean isNodesInfoContext, boolean flushDb) {
-        super(fromIsCluster, toIsCluster);
+    public ToContext(CacheManager cacheManager, String host, int port, Mode fromMode, Mode toMode, boolean isConsole, boolean immediate, int immediateResendTimes, String switchFlag, int flushSize, boolean isNodesInfoContext, boolean flushDb) {
+        super(fromMode, toMode);
         this.cacheManager = cacheManager;
         this.host = host;
         this.port = port;
@@ -53,11 +54,11 @@ public class ToContext extends Context {
         this.switchFlag = switchFlag;
         this.flushSize = flushSize;
         this.isNodesInfoContext = isNodesInfoContext;
-        if (toIsCluster) {
+        if (Mode.CLUSTER == toMode) {
             if (isNodesInfoContext) {
                 nodesInfoFlag = new CountDownLatch(1);
             } else {
-                SlotInfoHandler.SlotInfo toClusterNodeInfo = cacheManager.getToClusterNodeInfoByIpAndPort(host, port);
+                ClusterInfoHandler.SlotInfo toClusterNodeInfo = cacheManager.getToClusterNodeInfoByIpAndPort(host, port);
                 if (toClusterNodeInfo != null) {
                     this.slotBegin = toClusterNodeInfo.getSlotStart();
                     this.slotEnd = toClusterNodeInfo.getSlotEnd();
@@ -102,8 +103,8 @@ public class ToContext extends Context {
     }
 
     @Override
-    public boolean isAdapt(boolean toIsCluster, String command) {
-        if (toIsCluster && command != null) {
+    public boolean isAdapt(Mode mode, String command) {
+        if (Mode.CLUSTER == mode && command != null) {
             int hash = calculateHash(command) % Constant.COUNT_SLOT_NUMS;
             return hash >= slotBegin && hash <= slotEnd;
         } else {
@@ -152,7 +153,7 @@ public class ToContext extends Context {
                         } else {
                             flag = (String) command;
                         }
-                        if (toContext.isAdapt(toIsCluster, flag)) {
+                        if (toContext.isAdapt(toMode, flag)) {
                             return toContext.sendCommand(command, 1000, true, null);
                         }
                     }
@@ -268,7 +269,7 @@ public class ToContext extends Context {
         return flushSize;
     }
 
-    public void addSlotInfo(SlotInfoHandler.SlotInfo slotInfo) {
+    public void addSlotInfo(ClusterInfoHandler.SlotInfo slotInfo) {
         this.cacheManager.addToClusterNodesInfo(slotInfo);
     }
 
@@ -315,8 +316,8 @@ public class ToContext extends Context {
                 ", flushSize=" + flushSize +
                 ", isClose=" + isClose +
                 ", isConsole=" + isConsole +
-                ", toIsCluster=" + toIsCluster +
-                ", fromIsCluster=" + fromIsCluster +
+                ", toMode=" + toMode +
+                ", fromMode=" + fromMode +
                 '}';
     }
 }

@@ -1,6 +1,7 @@
 package com.dahuaboke.redisx.handler;
 
 import com.dahuaboke.redisx.Constant;
+import com.dahuaboke.redisx.enums.Mode;
 import io.netty.buffer.ByteBuf;
 import io.netty.buffer.ByteBufAllocator;
 import io.netty.channel.Channel;
@@ -20,12 +21,12 @@ public class AuthHandler extends ChannelInboundHandlerAdapter {
 
     private static final Logger logger = LoggerFactory.getLogger(AuthHandler.class);
     private String password;
-    private boolean isCluster;
+    private Mode mode;
     private boolean passwordCheck = false;
 
-    public AuthHandler(String password, boolean isCluster) {
+    public AuthHandler(String password, Mode mode) {
         this.password = password;
-        this.isCluster = isCluster;
+        this.mode = mode;
     }
 
     @Override
@@ -48,7 +49,7 @@ public class AuthHandler extends ChannelInboundHandlerAdapter {
                 System.exit(0);
             } else {
                 passwordCheck = true;
-                if (isCluster) {
+                if (Mode.CLUSTER == mode) {
                     slot.writeBytes(new byte[]{'+', 'S', 'L', 'O', 'T', 'S', 'E', 'N', 'D', '\r', '\n'});
                     ctx.fireChannelRead(slot);
                 } else {

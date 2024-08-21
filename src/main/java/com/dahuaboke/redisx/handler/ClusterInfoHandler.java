@@ -12,7 +12,6 @@ import org.slf4j.LoggerFactory;
 import java.util.Arrays;
 import java.util.HashMap;
 import java.util.Map;
-import java.util.regex.Pattern;
 
 
 /**
@@ -20,13 +19,13 @@ import java.util.regex.Pattern;
  * auth: cdl
  * desc:
  */
-public class SlotInfoHandler extends RedisChannelInboundHandler {
+public class ClusterInfoHandler extends RedisChannelInboundHandler {
 
     private static final Logger logger = LoggerFactory.getLogger(CommandEncoder.class);
     private Context context;
     private boolean hasPassword;
 
-    public SlotInfoHandler(Context context, boolean hasPassword) {
+    public ClusterInfoHandler(Context context, boolean hasPassword) {
         super(context);
         this.context = context;
         this.hasPassword = hasPassword;

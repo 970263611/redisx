@@ -3,6 +3,7 @@ package com.dahuaboke.redisx.command.from;
 import com.dahuaboke.redisx.Constant;
 import com.dahuaboke.redisx.Context;
 import com.dahuaboke.redisx.command.Command;
+import com.dahuaboke.redisx.enums.Mode;
 import io.netty.buffer.ByteBuf;
 import io.netty.buffer.ByteBufAllocator;
 import io.netty.handler.codec.redis.ArrayRedisMessage;
@@ -122,10 +123,10 @@ public class SyncCommand extends Command {
     public boolean isIgnore() {
         String stringCommand = getStringCommand();
         if (stringCommand.toUpperCase().startsWith(Constant.SELECT)) {
-            return context.isFromIsCluster() || context.isToIsCluster();
+            return Mode.CLUSTER == context.getFromMode() || Mode.CLUSTER == context.getToMode();
         }
         if (stringCommand.toUpperCase().startsWith(Constant.EVAL)) {
-            return context.isToIsCluster();
+            return Mode.CLUSTER == context.getToMode();
         }
         return Constant.PING_COMMAND.equalsIgnoreCase(stringCommand) || Constant.MULTI.equalsIgnoreCase(stringCommand) || Constant.EXEC.equalsIgnoreCase(stringCommand);
     }

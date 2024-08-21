@@ -1,6 +1,7 @@
 package com.dahuaboke.redisx.console;
 
 import com.dahuaboke.redisx.Context;
+import com.dahuaboke.redisx.enums.Mode;
 import com.dahuaboke.redisx.from.FromContext;
 import com.dahuaboke.redisx.to.ToContext;
 import org.slf4j.Logger;
@@ -21,19 +22,19 @@ public class ConsoleContext extends Context {
     private String host;
     private int port;
     private int timeout;
-    private boolean toIsCluster;
-    private boolean fromIsCluster;
+    private Mode toMode;
+    private Mode fromMode;
     private List<ToContext> toContexts = new ArrayList();
     private List<FromContext> fromContexts = new ArrayList();
     private ConsoleServer consoleServer;
 
-    public ConsoleContext(String host, int port, int timeout, boolean toIsCluster, boolean fromIsCluster) {
-        super(fromIsCluster, toIsCluster);
+    public ConsoleContext(String host, int port, int timeout, Mode toMode, Mode fromMode) {
+        super(fromMode, toMode);
         this.host = host;
         this.port = port;
         this.timeout = timeout;
-        this.toIsCluster = toIsCluster;
-        this.fromIsCluster = fromIsCluster;
+        this.toMode = toMode;
+        this.fromMode = fromMode;
     }
 
     public void setToContext(ToContext toContext) {
@@ -59,14 +60,14 @@ public class ConsoleContext extends Context {
         }
         if ("from".equalsIgnoreCase(type)) {
             for (FromContext fromContext : fromContexts) {
-                if (fromContext.isAdapt(fromIsCluster, list.get(1))) {
+                if (fromContext.isAdapt(fromMode, list.get(1))) {
                     return fromContext.sendCommand(command, timeout);
                 }
             }
             return null;
         } else if ("to".equalsIgnoreCase(type)) {
             for (ToContext toContext : toContexts) {
-                if (toContext.isAdapt(toIsCluster, list.get(1))) {
+                if (toContext.isAdapt(toMode, list.get(1))) {
                     return toContext.sendCommand(command, timeout);
                 }
             }

@@ -3,9 +3,10 @@ package com.dahuaboke.redisx;
 import com.dahuaboke.redisx.cache.CacheManager;
 import com.dahuaboke.redisx.console.ConsoleContext;
 import com.dahuaboke.redisx.console.ConsoleServer;
+import com.dahuaboke.redisx.enums.Mode;
 import com.dahuaboke.redisx.from.FromClient;
 import com.dahuaboke.redisx.from.FromContext;
-import com.dahuaboke.redisx.handler.SlotInfoHandler;
+import com.dahuaboke.redisx.handler.ClusterInfoHandler;
 import com.dahuaboke.redisx.thread.RedisxThreadFactory;
 import com.dahuaboke.redisx.to.ToClient;
 import com.dahuaboke.redisx.to.ToContext;
@@ -31,8 +32,8 @@ public class Controller {
 
     private static final Logger logger = LoggerFactory.getLogger(Controller.class);
     private static ScheduledExecutorService controllerPool = Executors.newScheduledThreadPool(1, new RedisxThreadFactory(Constant.PROJECT_NAME + "-Controller"));
-    private boolean toIsCluster;
-    private boolean fromIsCluster;
+    private Mode fromMode;
+    private Mode toMode;
     private CacheManager cacheManager;
     private boolean immediate;
     private int immediateResendTimes;
@@ -40,15 +41,15 @@ public class Controller {
     private List<InetSocketAddress> fromNodeAddresses;
     private List<InetSocketAddress> toNodeAddresses;
 
-    public Controller(List<InetSocketAddress> fromNodeAddresses, List<InetSocketAddress> toNodeAddresses, String redisVersion, boolean fromIsCluster, String fromPassword, boolean toIsCluster, String toPassword, boolean immediate, int immediateResendTimes, String switchFlag) {
+    public Controller(List<InetSocketAddress> fromNodeAddresses, List<InetSocketAddress> toNodeAddresses, String redisVersion, Mode fromMode, String fromMasterName, String fromPassword, Mode toMode, String toMasterName, String toPassword, boolean immediate, int immediateResendTimes, String switchFlag) {
         this.fromNodeAddresses = fromNodeAddresses;
         this.toNodeAddresses = toNodeAddresses;
-        this.toIsCluster = toIsCluster;
-        this.fromIsCluster = fromIsCluster;
         this.immediate = immediate;
         this.immediateResendTimes = immediateResendTimes;
         this.switchFlag = switchFlag;
-        cacheManager = new CacheManager(redisVersion, fromIsCluster, fromPassword, toIsCluster, toPassword);
+        this.fromMode = fromMode;
+        this.toMode = toMode;
+        cacheManager = new CacheManager(redisVersion, fromMode, fromPassword, toMode, toPassword);
     }
 
     public void start(boolean startConsole, int consolePort, int consoleTimeout, boolean alwaysFullSync, boolean syncRdb, int toFlushSize, boolean flushDb, boolean syncWithCheckSlot) {
@@ -64,7 +65,7 @@ public class Controller {
                 for (Context cont : allContexts) {
                     if (cont instanceof ToContext) {
                         ToContext toContext = (ToContext) cont;
-                        if (toContext.isAdapt(toIsCluster, switchFlag)) {
+                        if (toContext.isAdapt(toMode, switchFlag)) {
                             //如果本身是主节点则同时写入偏移量
                             toContext.preemptMaster();
                         }
@@ -151,7 +152,7 @@ public class Controller {
         for (InetSocketAddress address : toMasterNodesInfo) {
             String host = address.getHostString();
             int port = address.getPort();
-            ToNode toNode = new ToNode("Sync", cacheManager, host, port, toIsCluster, false, immediate, immediateResendTimes, switchFlag, toFlushSize, false, flushDb);
+            ToNode toNode = new ToNode("Sync", cacheManager, host, port, toMode, false, immediate, immediateResendTimes, switchFlag, toFlushSize, false, flushDb);
             toNode.start();
             if (toNode.isStarted(5000)) {
                 Context context = toNode.getContext();
@@ -205,7 +206,7 @@ public class Controller {
     }
 
     public List<InetSocketAddress> getFromMasterNodesInfo() {
-        if (fromIsCluster) {
+        if (Mode.CLUSTER == fromMode) {
             cacheManager.clearFromNodesInfo();
             for (InetSocketAddress address : fromNodeAddresses) {
                 String host = address.getHostString();
@@ -233,7 +234,7 @@ public class Controller {
             }
             fromNodeAddresses.clear();
             List<InetSocketAddress> addresses = new ArrayList<>();
-            for (SlotInfoHandler.SlotInfo slotInfo : cacheManager.getFromClusterNodesInfo()) {
+            for (ClusterInfoHandler.SlotInfo slotInfo : cacheManager.getFromClusterNodesInfo()) {
                 fromNodeAddresses.add(new InetSocketAddress(slotInfo.getIp(), slotInfo.getPort()));
                 if (slotInfo.isActiveMaster()) {
                     addresses.add(new InetSocketAddress(slotInfo.getIp(), slotInfo.getPort()));
@@ -245,12 +246,12 @@ public class Controller {
     }
 
     public List<InetSocketAddress> getToMasterNodesInfo(boolean syncWithCheckSlot) {
-        if (toIsCluster) {
+        if (Mode.CLUSTER == toMode) {
             cacheManager.clearToNodesInfo();
             for (InetSocketAddress address : toNodeAddresses) {
                 String host = address.getHostString();
                 int port = address.getPort();
-                ToNode toNode = new ToNode("GetToNodesInfo", cacheManager, host, port, toIsCluster, false, false, 0, switchFlag, 0, true, false);
+                ToNode toNode = new ToNode("GetToNodesInfo", cacheManager, host, port, toMode, false, false, 0, switchFlag, 0, true, false);
                 toNode.start();
                 if (toNode.isStarted(5000)) {
                     ToContext context = (ToContext) toNode.getContext();
@@ -272,9 +273,9 @@ public class Controller {
                 return null;
             }
             toNodeAddresses.clear();
-            List<SlotInfoHandler.SlotInfo> masterSlotInfoList = new ArrayList<>();
+            List<ClusterInfoHandler.SlotInfo> masterSlotInfoList = new ArrayList<>();
             List<InetSocketAddress> addresses = new ArrayList<>();
-            for (SlotInfoHandler.SlotInfo slotInfo : cacheManager.getToClusterNodesInfo()) {
+            for (ClusterInfoHandler.SlotInfo slotInfo : cacheManager.getToClusterNodesInfo()) {
                 toNodeAddresses.add(new InetSocketAddress(slotInfo.getIp(), slotInfo.getPort()));
                 if (slotInfo.isActiveMaster()) {
                     masterSlotInfoList.add(slotInfo);
@@ -286,7 +287,7 @@ public class Controller {
                 boolean checkComplete = false;
                 while (!checkComplete) {
                     boolean right = false;
-                    for (SlotInfoHandler.SlotInfo slotInfo : masterSlotInfoList) {
+                    for (ClusterInfoHandler.SlotInfo slotInfo : masterSlotInfoList) {
                         if (start == (16383 + 1)) {
                             checkComplete = true;
                             right = true;
@@ -337,14 +338,14 @@ public class Controller {
         private int port;
         private ToContext toContext;
 
-        public ToNode(String threadNamePrefix, CacheManager cacheManager, String host, int port, boolean toIsCluster, boolean isConsole, boolean immediate, int immediateResendTimes, String switchFlag, int flushSize, boolean isNodesInfoContext, boolean flushDb) {
+        public ToNode(String threadNamePrefix, CacheManager cacheManager, String host, int port, Mode toMode, boolean isConsole, boolean immediate, int immediateResendTimes, String switchFlag, int flushSize, boolean isNodesInfoContext, boolean flushDb) {
             this.name = Constant.PROJECT_NAME + "-" + threadNamePrefix + "-ToNode-" + host + "-" + port;
             this.setName(name);
             this.cacheManager = cacheManager;
             this.host = host;
             this.port = port;
             //放在构造方法而不是run，因为兼容console模式，需要收集context，否则可能收集到null
-            this.toContext = new ToContext(cacheManager, host, port, fromIsCluster, toIsCluster, isConsole, immediate, immediateResendTimes, switchFlag, flushSize, isNodesInfoContext, flushDb);
+            this.toContext = new ToContext(cacheManager, host, port, fromMode, toMode, isConsole, immediate, immediateResendTimes, switchFlag, flushSize, isNodesInfoContext, flushDb);
         }
 
         @Override
@@ -377,7 +378,7 @@ public class Controller {
             this.host = host;
             this.port = port;
             //放在构造方法而不是run，因为兼容console模式，需要收集console，否则可能收集到null
-            this.fromContext = new FromContext(cacheManager, host, port, isConsole, fromIsCluster, toIsCluster, alwaysFullSync, syncRdb, isNodesInfoContext);
+            this.fromContext = new FromContext(cacheManager, host, port, isConsole, fromMode, toMode, alwaysFullSync, syncRdb, isNodesInfoContext);
         }
 
         @Override
@@ -409,7 +410,7 @@ public class Controller {
             this.host = host;
             this.port = port;
             this.timeout = timeout;
-            consoleContext = new ConsoleContext(this.host, this.port, this.timeout, toIsCluster, fromIsCluster);
+            consoleContext = new ConsoleContext(this.host, this.port, this.timeout, toMode, fromMode);
         }
 
         @Override
@@ -417,7 +418,7 @@ public class Controller {
             toNodeAddresses.forEach(address -> {
                 String host = address.getHostString();
                 int port = address.getPort();
-                ToNode toNode = new ToNode("Console", cacheManager, host, port, toIsCluster, true, immediate, 0, switchFlag, 0, false, false);
+                ToNode toNode = new ToNode("Console", cacheManager, host, port, toMode, true, immediate, 0, switchFlag, 0, false, false);
                 consoleContext.setToContext((ToContext) toNode.getContext());
                 toNode.start();
             });

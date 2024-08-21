@@ -1,5 +1,6 @@
 package com.dahuaboke.redisx;
 
+import com.dahuaboke.redisx.enums.Mode;
 import com.dahuaboke.redisx.utils.CRC16;
 import org.slf4j.Logger;
 import org.slf4j.LoggerFactory;
@@ -17,15 +18,15 @@ public class Context {
     protected BlockingDeque<String> replyQueue;
     protected boolean isClose = false;
     protected boolean isConsole;
-    protected boolean toIsCluster;
-    protected boolean fromIsCluster;
+    protected Mode toMode;
+    protected Mode fromMode;
 
-    public Context(boolean fromIsCluster, boolean toIsCluster) {
-        this.fromIsCluster = fromIsCluster;
-        this.toIsCluster = toIsCluster;
+    public Context(Mode fromMode, Mode toMode) {
+        this.fromMode = fromMode;
+        this.toMode = toMode;
     }
 
-    public boolean isAdapt(boolean isCluster, String command) {
+    public boolean isAdapt(Mode mode, String command) {
         return false;
     }
 
@@ -55,12 +56,12 @@ public class Context {
         isClose = close;
     }
 
-    public boolean isToIsCluster() {
-        return toIsCluster;
+    public Mode getToMode() {
+        return toMode;
     }
 
-    public boolean isFromIsCluster() {
-        return fromIsCluster;
+    public Mode getFromMode() {
+        return fromMode;
     }
 
     public boolean isConsole() {

@@ -3,8 +3,9 @@ package com.dahuaboke.redisx.cache;
 import com.dahuaboke.redisx.Context;
 import com.dahuaboke.redisx.command.from.SyncCommand;
 import com.dahuaboke.redisx.console.ConsoleContext;
+import com.dahuaboke.redisx.enums.Mode;
 import com.dahuaboke.redisx.from.FromContext;
-import com.dahuaboke.redisx.handler.SlotInfoHandler;
+import com.dahuaboke.redisx.handler.ClusterInfoHandler;
 import com.dahuaboke.redisx.to.ToContext;
 import org.slf4j.Logger;
 import org.slf4j.LoggerFactory;
@@ -26,9 +27,9 @@ public final class CacheManager {
     private static final Logger logger = LoggerFactory.getLogger(CacheManager.class);
     private List<Context> contexts = new ArrayList();
     private Map<Context, BlockingQueue<SyncCommand>> cache = new HashMap();
-    private boolean fromIsCluster;
+    private Mode fromMode;
     private String fromPassword;
-    private boolean toIsCluster;
+    private Mode toMode;
     private String toPassword;
     private AtomicBoolean isMaster = new AtomicBoolean(false);
     private AtomicBoolean fromStarted = new AtomicBoolean(false);
@@ -37,16 +38,16 @@ public final class CacheManager {
     private String id = UUID.randomUUID().toString().replaceAll("-", "");
     private Map<String, NodeMessage> nodeMessages = new ConcurrentHashMap();
     private String redisVersion;
-    private Set<SlotInfoHandler.SlotInfo> fromClusterNodesInfo = new HashSet<>();
-    private Set<SlotInfoHandler.SlotInfo> toClusterNodesInfo = new HashSet<>();
+    private Set<ClusterInfoHandler.SlotInfo> fromClusterNodesInfo = new HashSet<>();
+    private Set<ClusterInfoHandler.SlotInfo> toClusterNodesInfo = new HashSet<>();
     private ConsoleContext consoleContext;
     private Map<String, Boolean> flushDb = new HashMap();
 
-    public CacheManager(String redisVersion, boolean fromIsCluster, String fromPassword, boolean toIsCluster, String toPassword) {
+    public CacheManager(String redisVersion, Mode fromMode, String fromPassword, Mode toMode, String toPassword) {
         this.redisVersion = redisVersion;
-        this.fromIsCluster = fromIsCluster;
+        this.fromMode = fromMode;
         this.fromPassword = fromPassword;
-        this.toIsCluster = toIsCluster;
+        this.toMode = toMode;
         this.toPassword = toPassword;
     }
 
@@ -105,7 +106,7 @@ public final class CacheManager {
         for (Map.Entry<Context, BlockingQueue<SyncCommand>> entry : cache.entrySet()) {
             Context k = entry.getKey();
             BlockingQueue<SyncCommand> v = entry.getValue();
-            if (k.isAdapt(toIsCluster, key)) {
+            if (k.isAdapt(toMode, key)) {
                 boolean offer = v.offer(command);
                 int size = v.size();
                 if (size > 10000) {
@@ -202,16 +203,16 @@ public final class CacheManager {
         }
     }
 
-    public Set<SlotInfoHandler.SlotInfo> getFromClusterNodesInfo() {
+    public Set<ClusterInfoHandler.SlotInfo> getFromClusterNodesInfo() {
         return fromClusterNodesInfo;
     }
 
-    public void addFromClusterNodesInfo(SlotInfoHandler.SlotInfo fromClusterNodesInfo) {
+    public void addFromClusterNodesInfo(ClusterInfoHandler.SlotInfo fromClusterNodesInfo) {
         this.fromClusterNodesInfo.add(fromClusterNodesInfo);
     }
 
-    public SlotInfoHandler.SlotInfo getFromClusterNodeInfoByIpAndPort(String ip, int port) {
-        for (SlotInfoHandler.SlotInfo slotInfo : fromClusterNodesInfo) {
+    public ClusterInfoHandler.SlotInfo getFromClusterNodeInfoByIpAndPort(String ip, int port) {
+        for (ClusterInfoHandler.SlotInfo slotInfo : fromClusterNodesInfo) {
             if (ip.equals(slotInfo.getIp()) && port == slotInfo.getPort()) {
                 return slotInfo;
             }
@@ -219,8 +220,8 @@ public final class CacheManager {
         return null;
     }
 
-    public SlotInfoHandler.SlotInfo getToClusterNodeInfoByIpAndPort(String ip, int port) {
-        for (SlotInfoHandler.SlotInfo slotInfo : toClusterNodesInfo) {
+    public ClusterInfoHandler.SlotInfo getToClusterNodeInfoByIpAndPort(String ip, int port) {
+        for (ClusterInfoHandler.SlotInfo slotInfo : toClusterNodesInfo) {
             if (ip.equals(slotInfo.getIp()) && port == slotInfo.getPort()) {
                 return slotInfo;
             }
@@ -228,11 +229,11 @@ public final class CacheManager {
         return null;
     }
 
-    public Set<SlotInfoHandler.SlotInfo> getToClusterNodesInfo() {
+    public Set<ClusterInfoHandler.SlotInfo> getToClusterNodesInfo() {
         return toClusterNodesInfo;
     }
 
-    public void addToClusterNodesInfo(SlotInfoHandler.SlotInfo toClusterNodesInfo) {
+    public void addToClusterNodesInfo(ClusterInfoHandler.SlotInfo toClusterNodesInfo) {
         this.toClusterNodesInfo.add(toClusterNodesInfo);
     }
 
