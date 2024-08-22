@@ -19,25 +19,22 @@ public class Redisx {
 
     private static final Logger logger = LoggerFactory.getLogger(Redisx.class);
 
-
     public static void main(String[] args) {
         Config config = new Config();
         FieldOrmUtil.MapToBean(YamlUtil.parseYamlParam(args), config);
+        Configurator.setRootLevel(Level.getLevel(config.getLogLevelGlobal()));
         if (Mode.SENTINEL == config.getFromMode() && StringUtils.isEmpty(config.getFromMasterName())) {
             throw new IllegalArgumentException("redisx.from.masterName");
         }
         if (Mode.SENTINEL == config.getToMode() && StringUtils.isEmpty(config.getToMasterName())) {
             throw new IllegalArgumentException("redisx.to.masterName");
         }
-        Configurator.setRootLevel(Level.getLevel(config.getLogLevelGlobal()));
-        Controller controller = new Controller(config.getFromAddresses(), config.getToAddresses(), config.getRedisVersion(), config.getFromMode(), config.getFromMasterName(), config.getFromPassword(),
-                config.getToMode(), config.getToMasterName(), config.getToPassword(), config.isImmediate(), config.getImmediateResendTimes(), config.getSwitchFlag());
         //强制全量同步必须同步rdb文件
-        boolean syncRdb = config.isSyncRdb();
         if (config.isAlwaysFullSync()) {
-            syncRdb = true;
+            config.setSyncRdb(true);
         }
-        controller.start(config.isConsoleEnable(), config.getConsolePort(), config.getConsoleTimeout(), config.isAlwaysFullSync(), syncRdb, config.getToFlushSize(), config.isFlushDb(), config.isSyncWithCheckSlot());
+        Controller controller = new Controller(config);
+        controller.start();
     }
 
     public static class Config {
@@ -104,6 +101,12 @@ public class Redisx {
 
         @FieldOrm(value = "redisx.to.syncWithCheckSlot", defaultValue = "false")
         private boolean syncWithCheckSlot;
+
+        @FieldOrm(value = "redisx.from.verticalScaling", defaultValue = "false")
+        private boolean verticalScaling;
+
+        @FieldOrm(value = "redisx.from.connectMaster", defaultValue = "true")
+        private boolean connectMaster;
 
         public List<InetSocketAddress> getFromAddresses() {
             return fromAddresses;
@@ -284,6 +287,21 @@ public class Redisx {
         public void setFromMasterName(String fromMasterName) {
             this.fromMasterName = fromMasterName;
         }
-    }
 
+        public boolean isVerticalScaling() {
+            return verticalScaling;
+        }
+
+        public void setVerticalScaling(boolean verticalScaling) {
+            this.verticalScaling = verticalScaling;
+        }
+
+        public boolean isConnectMaster() {
+            return connectMaster;
+        }
+
+        public void setConnectMaster(boolean connectMaster) {
+            this.connectMaster = connectMaster;
+        }
+    }
 }

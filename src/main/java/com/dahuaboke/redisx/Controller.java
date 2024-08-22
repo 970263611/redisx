@@ -42,21 +42,41 @@ public class Controller {
     private List<InetSocketAddress> toNodeAddresses;
     private String fromMasterName;
     private String toMasterName;
+    private boolean startConsole;
+    private int consolePort;
+    private int consoleTimeout;
+    private boolean alwaysFullSync;
+    private boolean syncRdb;
+    private int toFlushSize;
+    private boolean flushDb;
+    private boolean syncWithCheckSlot;
+    private boolean verticalScaling;
+    private boolean connectFromMaster;
 
-    public Controller(List<InetSocketAddress> fromNodeAddresses, List<InetSocketAddress> toNodeAddresses, String redisVersion, Mode fromMode, String fromMasterName, String fromPassword, Mode toMode, String toMasterName, String toPassword, boolean immediate, int immediateResendTimes, String switchFlag) {
-        this.fromNodeAddresses = fromNodeAddresses;
-        this.toNodeAddresses = toNodeAddresses;
-        this.immediate = immediate;
-        this.immediateResendTimes = immediateResendTimes;
-        this.switchFlag = switchFlag;
-        this.fromMode = fromMode;
-        this.toMode = toMode;
-        this.fromMasterName = fromMasterName;
-        this.toMasterName = toMasterName;
-        cacheManager = new CacheManager(redisVersion, fromMode, fromPassword, toMode, toPassword);
+    public Controller(Redisx.Config config) {
+        this.fromNodeAddresses = config.getFromAddresses();
+        this.toNodeAddresses = config.getToAddresses();
+        this.immediate = config.isImmediate();
+        this.immediateResendTimes = config.getImmediateResendTimes();
+        this.switchFlag = config.getSwitchFlag();
+        this.fromMode = config.getFromMode();
+        this.toMode = config.getToMode();
+        this.fromMasterName = config.getFromMasterName();
+        this.toMasterName = config.getToMasterName();
+        this.startConsole = config.isConsoleEnable();
+        this.consolePort = config.getConsolePort();
+        this.consoleTimeout = config.getConsoleTimeout();
+        this.alwaysFullSync = config.isAlwaysFullSync();
+        this.syncRdb = config.isSyncRdb();
+        this.toFlushSize = config.getToFlushSize();
+        this.flushDb = config.isFlushDb();
+        this.syncWithCheckSlot = config.isSyncWithCheckSlot();
+        this.verticalScaling = config.isVerticalScaling();
+        this.connectFromMaster = config.isConnectMaster();
+        cacheManager = new CacheManager(config.getRedisVersion(), fromMode, config.getFromPassword(), toMode, config.getToPassword());
     }
 
-    public void start(boolean startConsole, int consolePort, int consoleTimeout, boolean alwaysFullSync, boolean syncRdb, int toFlushSize, boolean flushDb, boolean syncWithCheckSlot) {
+    public void start() {
         logger.info("Application global id is {}", cacheManager.getId());
         //注册shutdownhook
         registerShutdownKook();
@@ -210,53 +230,55 @@ public class Controller {
     }
 
     public List<InetSocketAddress> getFromMasterNodesInfo() {
-        if (Mode.CLUSTER == fromMode) {
-            cacheManager.clearFromNodesInfo();
-        }
-        if (Mode.CLUSTER == fromMode || Mode.SENTINEL == fromMode) {
-            for (InetSocketAddress address : fromNodeAddresses) {
-                String host = address.getHostString();
-                int port = address.getPort();
-                FromNode fromNode = new FromNode("GetFromNodesInfo", cacheManager, host, port, false, false, false, true);
-                fromNode.start();
-                if (fromNode.isStarted(5000)) {
-                    FromContext context = (FromContext) fromNode.getContext();
-                    try {
-                        if (context == null) {
-                            logger.error("[{}:{}] context is null", host, port);
+        if (!verticalScaling) {
+            if (Mode.CLUSTER == fromMode) {
+                cacheManager.clearFromNodesInfo();
+            }
+            if (Mode.CLUSTER == fromMode || Mode.SENTINEL == fromMode) {
+                for (InetSocketAddress address : fromNodeAddresses) {
+                    String host = address.getHostString();
+                    int port = address.getPort();
+                    FromNode fromNode = new FromNode("GetFromNodesInfo", cacheManager, host, port, false, false, false, true);
+                    fromNode.start();
+                    if (fromNode.isStarted(5000)) {
+                        FromContext context = (FromContext) fromNode.getContext();
+                        try {
+                            if (context == null) {
+                                logger.error("[{}:{}] context is null", host, port);
+                            }
+                            if (context.nodesInfoGetSuccess(5000)) {
+                                break;
+                            }
+                        } finally {
+                            context.close();
                         }
-                        if (context.nodesInfoGetSuccess(5000)) {
-                            break;
-                        }
-                    } finally {
-                        context.close();
+                    } else {
+                        logger.error("[{}:{}] nodes info get failed", host, port);
                     }
-                } else {
-                    logger.error("[{}:{}] nodes info get failed", host, port);
                 }
             }
-        }
-        if (Mode.CLUSTER == fromMode) {
-            if (cacheManager.getFromClusterNodesInfo().isEmpty()) {
-                return null;
-            }
-            fromNodeAddresses.clear();
-            List<InetSocketAddress> addresses = new ArrayList<>();
-            for (ClusterInfoHandler.SlotInfo slotInfo : cacheManager.getFromClusterNodesInfo()) {
-                fromNodeAddresses.add(new InetSocketAddress(slotInfo.getIp(), slotInfo.getPort()));
-                if (slotInfo.isActiveMaster()) {
-                    addresses.add(new InetSocketAddress(slotInfo.getIp(), slotInfo.getPort()));
+            if (Mode.CLUSTER == fromMode) {
+                if (cacheManager.getFromClusterNodesInfo().isEmpty()) {
+                    return null;
                 }
+                fromNodeAddresses.clear();
+                List<InetSocketAddress> addresses = new ArrayList<>();
+                for (ClusterInfoHandler.SlotInfo slotInfo : cacheManager.getFromClusterNodesInfo()) {
+                    fromNodeAddresses.add(new InetSocketAddress(slotInfo.getIp(), slotInfo.getPort()));
+                    if (slotInfo.isActiveMaster()) {
+                        addresses.add(new InetSocketAddress(slotInfo.getIp(), slotInfo.getPort()));
+                    }
+                }
+                return addresses;
+            } else if (Mode.SENTINEL == fromMode) {
+                List<InetSocketAddress> addresses = new ArrayList<>();
+                InetSocketAddress fromSentinelMaster = cacheManager.getFromSentinelMaster();
+                if (fromSentinelMaster == null) {
+                    return null;
+                }
+                addresses.add(fromSentinelMaster);
+                return addresses;
             }
-            return addresses;
-        } else if (Mode.SENTINEL == fromMode) {
-            List<InetSocketAddress> addresses = new ArrayList<>();
-            InetSocketAddress fromSentinelMaster = cacheManager.getFromSentinelMaster();
-            if (fromSentinelMaster == null) {
-                return null;
-            }
-            addresses.add(fromSentinelMaster);
-            return addresses;
         }
         return fromNodeAddresses;
     }
@@ -299,7 +321,20 @@ public class Controller {
                 toNodeAddresses.add(new InetSocketAddress(slotInfo.getIp(), slotInfo.getPort()));
                 if (slotInfo.isActiveMaster()) {
                     masterSlotInfoList.add(slotInfo);
-                    addresses.add(new InetSocketAddress(slotInfo.getIp(), slotInfo.getPort()));
+                    if (connectFromMaster) {
+                        addresses.add(new InetSocketAddress(slotInfo.getIp(), slotInfo.getPort()));
+                    }
+                }
+            }
+            if (!connectFromMaster) {
+                for (ClusterInfoHandler.SlotInfo slotInfo : masterSlotInfoList) {
+                    String id = slotInfo.getId();
+                    for (ClusterInfoHandler.SlotInfo info : cacheManager.getToClusterNodesInfo()) {
+                        if (id.equals(info.getMasterId())) {
+                            addresses.add(new InetSocketAddress(slotInfo.getIp(), slotInfo.getPort()));
+                            break;
+                        }
+                    }
                 }
             }
             if (syncWithCheckSlot) {
@@ -331,7 +366,11 @@ public class Controller {
             if (toSentinelMaster == null) {
                 return null;
             }
-            addresses.add(toSentinelMaster);
+            if (connectFromMaster) {
+                addresses.add(toSentinelMaster);
+            } else {
+                //TODO
+            }
             return addresses;
         }
         return toNodeAddresses;

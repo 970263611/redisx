@@ -11,6 +11,8 @@ redisx:
       - 172.31.84.163:16001
       - 172.31.84.163:16002
       - 172.31.84.163:16003
+    verticalScaling: true
+    connectMaster: true
   to:
     #password: 1a.2B*
     #single sentinel cluster
