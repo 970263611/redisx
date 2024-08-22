@@ -10,29 +10,29 @@ public class RdbConstants {
 
     public static final String START = "REDIS";
 
-    public static final int AUX = 0xfa & 0xff;  //$string, $string;
+    public static final int RDB_OPCODE_AUX = 0xfa & 0xff;  //$string, $string; 250
 
-    public static final int MODULE_AUX = 0xf7 & 0xff; //$module2;
+    public static final int RDB_OPCODE_MODULE_AUX = 0xf7 & 0xff; //$module2; 247
 
-    public static final int FUNCTION = 0xf5 & 0xff; //$function;
+    public static final int RDB_OPCODE_FUNCTION2 = 0xf5 & 0xff; //$function; 245
 
-    public static final int DBSELECT = 0xfe & 0xff; //$length;
+    public static final int RDB_OPCODE_SELECTDB = 0xfe & 0xff; //$length; 254
 
-    public static final int DBRESIZE = 0xfb & 0xff; //$length, $length;
+    public static final int RDB_OPCODE_RESIZEDB = 0xfb & 0xff; //$length, $length; 251
 
-    public static final int EXPIRED_FD = 0xfd & 0xff;
+    public static final int RDB_OPCODE_EXPIRETIME = 0xfd & 0xff; //253
 
-    public static final int RDB_OPCODE_IDLE = 0xf8 & 0xff;
+    public static final int RDB_OPCODE_IDLE = 0xf8 & 0xff;//248
 
-    public static final int RDB_OPCODE_FREQ = 0xf9 & 0xff;
+    public static final int RDB_OPCODE_FREQ = 0xf9 & 0xff;//249
 
-    public static final int EXPIRED_FC = 0xfc & 0xff;
+    public static final int RDB_OPCODE_EXPIRETIME_MS = 0xfc & 0xff;//252
 
-    public static final int IDLE = 0xf8 & 0xff;
+    public static final int RDB_OPCODE_SLOT_INFO = 0xf4 & 0xff;//244
 
-    public static final int FREQ = 0xf9 & 0xff;
+    public static final int RDB_OPCODE_FUNCTION_PRE_GA = 0xf6 & 0xff;//246
 
-    public static final int EOF = 0xff & 0xff;
+    public static final int EOF = 0xff & 0xff;//255
 
 
     /**

@@ -19,6 +19,12 @@ public class RdbData {
     //当前数据库中一共有多少数据
     private long dataCount;
 
+    private long slotId;
+
+    private long slotSize;
+
+    private long expiresSlotSize;
+
     //当前数据库中一共有多少带时间的数据
     private long ttlCount;
 
@@ -132,11 +138,38 @@ public class RdbData {
         this.evictValue = evictValue;
     }
 
+    public long getSlotId() {
+        return slotId;
+    }
+
+    public void setSlotId(long slotId) {
+        this.slotId = slotId;
+    }
+
+    public long getSlotSize() {
+        return slotSize;
+    }
+
+    public void setSlotSize(long slotSize) {
+        this.slotSize = slotSize;
+    }
+
+    public long getExpiresSlotSize() {
+        return expiresSlotSize;
+    }
+
+    public void setExpiresSlotSize(long expiresSlotSize) {
+        this.expiresSlotSize = expiresSlotSize;
+    }
+
     @Override
     public String toString() {
         String str = "RdbData{" +
                 "selectDB=" + selectDB +
                 ", dataCount=" + dataCount +
+                ", slotId=" + slotId +
+                ", slotSize=" + slotSize +
+                ", expiresSlotSize=" + expiresSlotSize +
                 ", ttlCount=" + ttlCount +
                 ", dataNum=" + dataNum +
                 ", expireTime=" + expireTime +
