@@ -262,11 +262,26 @@ public class Controller {
                     return null;
                 }
                 fromNodeAddresses.clear();
+                List<ClusterInfoHandler.SlotInfo> masterSlotInfoList = new ArrayList<>();
                 List<InetSocketAddress> addresses = new ArrayList<>();
                 for (ClusterInfoHandler.SlotInfo slotInfo : cacheManager.getFromClusterNodesInfo()) {
                     fromNodeAddresses.add(new InetSocketAddress(slotInfo.getIp(), slotInfo.getPort()));
                     if (slotInfo.isActiveMaster()) {
-                        addresses.add(new InetSocketAddress(slotInfo.getIp(), slotInfo.getPort()));
+                        masterSlotInfoList.add(slotInfo);
+                        if (connectFromMaster) {
+                            addresses.add(new InetSocketAddress(slotInfo.getIp(), slotInfo.getPort()));
+                        }
+                    }
+                }
+                if (!connectFromMaster) {
+                    for (ClusterInfoHandler.SlotInfo slotInfo : masterSlotInfoList) {
+                        String id = slotInfo.getId();
+                        for (ClusterInfoHandler.SlotInfo info : cacheManager.getToClusterNodesInfo()) {
+                            if (id.equals(info.getMasterId()) && info.isActive()) {
+                                addresses.add(new InetSocketAddress(slotInfo.getIp(), slotInfo.getPort()));
+                                break;
+                            }
+                        }
                     }
                 }
                 return addresses;
@@ -276,7 +291,11 @@ public class Controller {
                 if (fromSentinelMaster == null) {
                     return null;
                 }
-                addresses.add(fromSentinelMaster);
+                if (connectFromMaster) {
+                    addresses.add(fromSentinelMaster);
+                } else {
+                    //TODO
+                }
                 return addresses;
             }
         }
@@ -321,20 +340,7 @@ public class Controller {
                 toNodeAddresses.add(new InetSocketAddress(slotInfo.getIp(), slotInfo.getPort()));
                 if (slotInfo.isActiveMaster()) {
                     masterSlotInfoList.add(slotInfo);
-                    if (connectFromMaster) {
-                        addresses.add(new InetSocketAddress(slotInfo.getIp(), slotInfo.getPort()));
-                    }
-                }
-            }
-            if (!connectFromMaster) {
-                for (ClusterInfoHandler.SlotInfo slotInfo : masterSlotInfoList) {
-                    String id = slotInfo.getId();
-                    for (ClusterInfoHandler.SlotInfo info : cacheManager.getToClusterNodesInfo()) {
-                        if (id.equals(info.getMasterId())) {
-                            addresses.add(new InetSocketAddress(slotInfo.getIp(), slotInfo.getPort()));
-                            break;
-                        }
-                    }
+                    addresses.add(new InetSocketAddress(slotInfo.getIp(), slotInfo.getPort()));
                 }
             }
             if (syncWithCheckSlot) {
@@ -366,11 +372,7 @@ public class Controller {
             if (toSentinelMaster == null) {
                 return null;
             }
-            if (connectFromMaster) {
-                addresses.add(toSentinelMaster);
-            } else {
-                //TODO
-            }
+            addresses.add(toSentinelMaster);
             return addresses;
         }
         return toNodeAddresses;

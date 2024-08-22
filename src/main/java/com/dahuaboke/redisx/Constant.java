@@ -75,6 +75,8 @@ public class Constant {
 
     public static final String SENTINEL_GET_MASTER = "SENTINEL GET-MASTER-ADDR-BY-NAME ";
 
+    public static final String SENTINEL_GET_SLAVE = "SENTINEL SLAVES ";
+
     public static final String SLOT_REX = "^[0-9a-z]{40}.*";
 
     public static final String CONFIG_FILE_NAME = "redisx.yml";
