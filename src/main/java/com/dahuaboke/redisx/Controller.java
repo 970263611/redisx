@@ -444,7 +444,7 @@ public class Controller {
             this.host = host;
             this.port = port;
             //放在构造方法而不是run，因为兼容console模式，需要收集console，否则可能收集到null
-            this.fromContext = new FromContext(cacheManager, host, port, isConsole, fromMode, toMode, alwaysFullSync, syncRdb, isNodesInfoContext, fromMasterName);
+            this.fromContext = new FromContext(cacheManager, host, port, isConsole, fromMode, toMode, alwaysFullSync, syncRdb, isNodesInfoContext, fromMasterName, connectFromMaster);
         }
 
         @Override

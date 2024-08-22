@@ -21,11 +21,13 @@ public class SentinelInfoHandler extends RedisChannelInboundHandler {
     private static final Logger logger = LoggerFactory.getLogger(CommandEncoder.class);
     private Context context;
     private String masterName;
+    private boolean connectMaster;
 
-    public SentinelInfoHandler(Context context, String masterName) {
+    public SentinelInfoHandler(Context context, String masterName, boolean connectMaster) {
         super(context);
         this.context = context;
         this.masterName = masterName;
+        this.connectMaster = connectMaster;
     }
 
     @Override

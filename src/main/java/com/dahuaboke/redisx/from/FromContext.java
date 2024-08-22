@@ -39,8 +39,9 @@ public class FromContext extends Context {
     private boolean isNodesInfoContext;
     private CountDownLatch nodesInfoFlag;
     private String fromMasterName;
+    private boolean connectFromMaster;
 
-    public FromContext(CacheManager cacheManager, String host, int port, boolean isConsole, Mode fromMode, Mode toMode, boolean alwaysFullSync, boolean syncRdb, boolean isNodesInfoContext, String fromMasterName) {
+    public FromContext(CacheManager cacheManager, String host, int port, boolean isConsole, Mode fromMode, Mode toMode, boolean alwaysFullSync, boolean syncRdb, boolean isNodesInfoContext, String fromMasterName, boolean connectFromMaster) {
         super(fromMode, toMode);
         this.cacheManager = cacheManager;
         this.host = host;
@@ -53,9 +54,10 @@ public class FromContext extends Context {
         this.syncRdb = syncRdb;
         this.isNodesInfoContext = isNodesInfoContext;
         this.fromMasterName = fromMasterName;
+        this.connectFromMaster = connectFromMaster;
         if (isNodesInfoContext) {
             nodesInfoFlag = new CountDownLatch(1);
-        }else if (Mode.CLUSTER == fromMode) {
+        } else if (Mode.CLUSTER == fromMode) {
             ClusterInfoHandler.SlotInfo fromClusterNodeInfo = cacheManager.getFromClusterNodeInfoByIpAndPort(host, port);
             if (fromClusterNodeInfo != null) {
                 this.slotBegin = fromClusterNodeInfo.getSlotStart();
@@ -245,5 +247,9 @@ public class FromContext extends Context {
 
     public void setSentinelMasterInfo(String host, int port) {
         cacheManager.setFromSentinelMaster(new InetSocketAddress(host, port));
+    }
+
+    public boolean isConnectFromMaster() {
+        return connectFromMaster;
     }
 }
