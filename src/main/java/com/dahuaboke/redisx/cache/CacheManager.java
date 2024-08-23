@@ -6,6 +6,7 @@ import com.dahuaboke.redisx.console.ConsoleContext;
 import com.dahuaboke.redisx.enums.Mode;
 import com.dahuaboke.redisx.from.FromContext;
 import com.dahuaboke.redisx.handler.ClusterInfoHandler;
+import com.dahuaboke.redisx.handler.SentinelInfoHandler;
 import com.dahuaboke.redisx.to.ToContext;
 import org.slf4j.Logger;
 import org.slf4j.LoggerFactory;
@@ -40,6 +41,8 @@ public final class CacheManager {
     private String redisVersion;
     private Set<ClusterInfoHandler.SlotInfo> fromClusterNodesInfo = new HashSet<>();
     private Set<ClusterInfoHandler.SlotInfo> toClusterNodesInfo = new HashSet<>();
+    private Set<SentinelInfoHandler.SlaveInfo> fromSentinelNodesInfo = new HashSet<>();
+    private Set<SentinelInfoHandler.SlaveInfo> toSentinelNodesInfo = new HashSet<>();
     private ConsoleContext consoleContext;
     private Map<String, Boolean> flushDb = new HashMap();
     private InetSocketAddress fromSentinelMaster;
@@ -209,14 +212,31 @@ public final class CacheManager {
         return fromClusterNodesInfo;
     }
 
-    public void addFromClusterNodesInfo(ClusterInfoHandler.SlotInfo fromClusterNodesInfo) {
-        this.fromClusterNodesInfo.add(fromClusterNodesInfo);
+    public void addFromClusterNodesInfo(ClusterInfoHandler.SlotInfo fromClusterNodeInfo) {
+        this.fromClusterNodesInfo.add(fromClusterNodeInfo);
     }
 
     public ClusterInfoHandler.SlotInfo getFromClusterNodeInfoByIpAndPort(String ip, int port) {
         for (ClusterInfoHandler.SlotInfo slotInfo : fromClusterNodesInfo) {
             if (ip.equals(slotInfo.getIp()) && port == slotInfo.getPort()) {
                 return slotInfo;
+            }
+        }
+        return null;
+    }
+
+    public Set<SentinelInfoHandler.SlaveInfo> getFromSentinelNodesInfo() {
+        return fromSentinelNodesInfo;
+    }
+
+    public void addFromSentinelNodesInfo(SentinelInfoHandler.SlaveInfo fromSentinelNodeInfo) {
+        this.fromSentinelNodesInfo.add(fromSentinelNodeInfo);
+    }
+
+    public SentinelInfoHandler.SlaveInfo getFromSentinelNodeInfoByIpAndPort(String ip, int port) {
+        for (SentinelInfoHandler.SlaveInfo slaveInfo : fromSentinelNodesInfo) {
+            if (ip.equals(slaveInfo.getIp()) && port == slaveInfo.getPort()) {
+                return slaveInfo;
             }
         }
         return null;

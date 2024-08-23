@@ -6,6 +6,7 @@ import com.dahuaboke.redisx.cache.CacheManager;
 import com.dahuaboke.redisx.command.from.SyncCommand;
 import com.dahuaboke.redisx.enums.Mode;
 import com.dahuaboke.redisx.handler.ClusterInfoHandler;
+import com.dahuaboke.redisx.handler.SentinelInfoHandler;
 import io.netty.channel.Channel;
 import org.slf4j.Logger;
 import org.slf4j.LoggerFactory;
@@ -251,5 +252,9 @@ public class FromContext extends Context {
 
     public boolean isConnectFromMaster() {
         return connectFromMaster;
+    }
+
+    public void addSentinelSlaveInfo(SentinelInfoHandler.SlaveInfo fromSentinelNodeInfo) {
+        cacheManager.addFromSentinelNodesInfo(fromSentinelNodeInfo);
     }
 }

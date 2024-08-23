@@ -12,7 +12,9 @@ import io.netty.channel.ChannelHandlerContext;
 import org.slf4j.Logger;
 import org.slf4j.LoggerFactory;
 
+import java.util.ArrayList;
 import java.util.HashMap;
+import java.util.List;
 import java.util.Map;
 
 /**
@@ -25,32 +27,24 @@ public class SentinelInfoHandler extends RedisChannelInboundHandler {
     private static final Logger logger = LoggerFactory.getLogger(CommandEncoder.class);
     private Context context;
     private String masterName;
-    private boolean connectMaster;
 
-    public SentinelInfoHandler(Context context, String masterName, boolean connectMaster) {
+    public SentinelInfoHandler(Context context, String masterName) {
         super(context);
         this.context = context;
         this.masterName = masterName;
-        this.connectMaster = connectMaster;
     }
 
     @Override
     public void channelActive(ChannelHandlerContext ctx) throws Exception {
-        if(connectMaster) {
-            sendMasterCommand(ctx);
-        }else {
-            sendSlaveCommand(ctx);
-        }
+        //sendMasterCommand(ctx);
+        sendSlaveCommand(ctx);
         ctx.fireChannelActive();
     }
 
     @Override
     public void channelRead2(ChannelHandlerContext ctx, String msg) throws Exception {
-        if(connectMaster) {
-            parseMasterMessage(ctx, msg);
-        }else {
-            parseSlaveMessage(ctx, msg);
-        }
+        //parseMasterMessage(ctx, msg);
+        parseSlaveMessage(ctx, msg);
     }
 
     private void sendMasterCommand(ChannelHandlerContext ctx) {
@@ -93,30 +87,45 @@ public class SentinelInfoHandler extends RedisChannelInboundHandler {
 
     private void parseSlaveMessage(ChannelHandlerContext ctx, String msg) {
         logger.info("Beginning sentinel slave message parse");
-        Map<String,SlaveInfo> slaveMap = new HashMap<>();//这个就是解析后的从节点集合
+        List<SlaveInfo> slaveInfos = new ArrayList<>();//这个就是解析后的从节点集合
         String[] arrs = msg.split(" ");
-        Map<String,Object> map = new HashMap<>();
+        Map<String, Object> map = new HashMap<>();
         String key = null;
-        for(int i = 0; i < arrs.length; i++){
-            if(i % 2 == 0){
+        for (int i = 0; i < arrs.length; i++) {
+            if (i % 2 == 0) {
                 key = arrs[i];
                 if (map.containsKey(key)) {
                     SlaveInfo slaveInfo = new SlaveInfo();
                     FieldOrmUtil.MapToBean(map, slaveInfo);
-                    slaveMap.put(slaveInfo.ip + ":" + slaveInfo.getPort(), slaveInfo);
+                    slaveInfos.add(slaveInfo);
                     map.clear();
                 }
             } else {
-                map.put(key,arrs[i]);
-                if (i == arrs.length - 1){
+                map.put(key, arrs[i]);
+                if (i == arrs.length - 1) {
                     SlaveInfo slaveInfo = new SlaveInfo();
-                    FieldOrmUtil.MapToBean(map,slaveInfo);
-                    slaveMap.put(slaveInfo.ip + ":" + slaveInfo.getPort(),slaveInfo);
+                    FieldOrmUtil.MapToBean(map, slaveInfo);
+                    slaveInfos.add(slaveInfo);
                     map.clear();
                 }
             }
         }
-        System.out.println(slaveMap);
+        if (context instanceof FromContext) {
+            FromContext fromContext = (FromContext) context;
+            for (SlaveInfo slaveInfo : slaveInfos) {
+                fromContext.addSentinelSlaveInfo(slaveInfo);
+            }
+            fromContext.setFromNodesInfoGetSuccess();
+        } else if (context instanceof ToContext) {
+            ToContext toContext = (ToContext) context;
+            for (SlaveInfo slaveInfo : slaveInfos) {
+                if (slaveInfo.isActive()) {
+                    toContext.setSentinelMasterInfo(slaveInfo.getMasterHost(), slaveInfo.getMasterPort());
+                    break;
+                }
+            }
+            toContext.setToNodesInfoGetSuccess();
+        }
     }
 
     public class SlaveInfo {
@@ -350,6 +359,10 @@ public class SentinelInfoHandler extends RedisChannelInboundHandler {
 
         public void setReplicaAnnounced(String replicaAnnounced) {
             this.replicaAnnounced = replicaAnnounced;
+        }
+
+        public boolean isActive() {
+            return "connected".equals(flags);
         }
     }
 }

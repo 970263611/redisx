@@ -60,7 +60,7 @@ public class ToClient {
                     hasPassword = true;
                 }
                 if (hasPassword) {
-                    pipeline.addLast(Constant.AUTH_HANDLER_NAME, new AuthHandler(password, toContext.getToMode()));
+                    pipeline.addLast(Constant.AUTH_HANDLER_NAME, new AuthHandler(password));
                 }
                 if (toContext.isFlushDb() && !toContext.isFlushDbSuccess()) {
                     pipeline.addLast(new FlushHandler(toContext));
@@ -73,7 +73,7 @@ public class ToClient {
                         pipeline.addLast(Constant.CLUSTER_HANDLER_NAME, new ClusterInfoHandler(toContext, hasPassword));
                     }
                     if (Mode.SENTINEL == toContext.getToMode()) {
-                        pipeline.addLast(Constant.SENTINEL_HANDLER_NAME, new SentinelInfoHandler(toContext, toContext.getToMasterName(), true));
+                        pipeline.addLast(Constant.SENTINEL_HANDLER_NAME, new SentinelInfoHandler(toContext, toContext.getToMasterName()));
                     }
                 } else {
                     pipeline.addLast(new DRHandler(toContext));

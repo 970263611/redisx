@@ -62,7 +62,7 @@ public class FromClient {
                         pipeline.addLast(new CommandEncoder());
                         pipeline.addLast(new PrintHandler());
                         if (hasPassword) {
-                            pipeline.addLast(Constant.AUTH_HANDLER_NAME, new AuthHandler(password, fromContext.getFromMode()));
+                            pipeline.addLast(Constant.AUTH_HANDLER_NAME, new AuthHandler(password));
                         }
                         if (!console && !fromContext.isNodesInfoContext()) {
                             pipeline.addLast(Constant.INIT_SYNC_HANDLER_NAME, new SyncInitializationHandler(fromContext));
@@ -78,7 +78,7 @@ public class FromClient {
                                 pipeline.addLast(Constant.CLUSTER_HANDLER_NAME, new ClusterInfoHandler(fromContext, hasPassword));
                             }
                             if (Mode.SENTINEL == fromContext.getFromMode()) {
-                                pipeline.addLast(Constant.SENTINEL_HANDLER_NAME, new SentinelInfoHandler(fromContext, fromContext.getFromMasterName(), fromContext.isConnectFromMaster()));
+                                pipeline.addLast(Constant.SENTINEL_HANDLER_NAME, new SentinelInfoHandler(fromContext, fromContext.getFromMasterName()));
                             }
                         } else {
                             pipeline.addLast(new MessagePostProcessor(fromContext));

@@ -7,6 +7,7 @@ import com.dahuaboke.redisx.enums.Mode;
 import com.dahuaboke.redisx.from.FromClient;
 import com.dahuaboke.redisx.from.FromContext;
 import com.dahuaboke.redisx.handler.ClusterInfoHandler;
+import com.dahuaboke.redisx.handler.SentinelInfoHandler;
 import com.dahuaboke.redisx.thread.RedisxThreadFactory;
 import com.dahuaboke.redisx.to.ToClient;
 import com.dahuaboke.redisx.to.ToContext;
@@ -287,14 +288,18 @@ public class Controller {
                 return addresses;
             } else if (Mode.SENTINEL == fromMode) {
                 List<InetSocketAddress> addresses = new ArrayList<>();
-                InetSocketAddress fromSentinelMaster = cacheManager.getFromSentinelMaster();
-                if (fromSentinelMaster == null) {
-                    return null;
+                for (SentinelInfoHandler.SlaveInfo slaveInfo : cacheManager.getFromSentinelNodesInfo()) {
+                    if (slaveInfo.isActive()) {
+                        if (connectFromMaster) {
+                            addresses.add(new InetSocketAddress(slaveInfo.getMasterHost(), slaveInfo.getMasterPort()));
+                        } else {
+                            addresses.add(new InetSocketAddress(slaveInfo.getIp(), slaveInfo.getPort()));
+                        }
+                        break;
+                    }
                 }
-                if (connectFromMaster) {
-                    addresses.add(fromSentinelMaster);
-                } else {
-                    //TODO
+                if (addresses.isEmpty()) {
+                    return null;
                 }
                 return addresses;
             }

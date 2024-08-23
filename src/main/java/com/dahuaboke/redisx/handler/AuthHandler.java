@@ -21,12 +21,9 @@ public class AuthHandler extends ChannelInboundHandlerAdapter {
 
     private static final Logger logger = LoggerFactory.getLogger(AuthHandler.class);
     private String password;
-    private Mode mode;
-    private boolean passwordCheck = false;
 
-    public AuthHandler(String password, Mode mode) {
+    public AuthHandler(String password) {
         this.password = password;
-        this.mode = mode;
     }
 
     @Override
