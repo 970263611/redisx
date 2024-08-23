@@ -362,7 +362,7 @@ public class SentinelInfoHandler extends RedisChannelInboundHandler {
         }
 
         public boolean isActive() {
-            return "connected".equals(flags);
+            return !flags.contains("disconnected");
         }
     }
 }

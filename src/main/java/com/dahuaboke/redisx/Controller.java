@@ -83,42 +83,46 @@ public class Controller {
         registerShutdownKook();
         //需要确保上一次执行结束再执行下一次任务
         controllerPool.scheduleAtFixedRate(() -> {
-            boolean isMaster = cacheManager.isMaster();
-            boolean fromIsStarted = cacheManager.fromIsStarted();
-            List<Context> allContexts = cacheManager.getAllContexts();
-            if (cacheManager.toIsStarted()) {
-                for (Context cont : allContexts) {
-                    if (cont instanceof ToContext) {
-                        ToContext toContext = (ToContext) cont;
-                        if (toContext.isAdapt(toMode, switchFlag)) {
-                            //如果本身是主节点则同时写入偏移量
-                            toContext.preemptMaster();
+            try {
+                boolean isMaster = cacheManager.isMaster();
+                boolean fromIsStarted = cacheManager.fromIsStarted();
+                List<Context> allContexts = cacheManager.getAllContexts();
+                if (cacheManager.toIsStarted()) {
+                    for (Context cont : allContexts) {
+                        if (cont instanceof ToContext) {
+                            ToContext toContext = (ToContext) cont;
+                            if (toContext.isAdapt(toMode, switchFlag)) {
+                                //如果本身是主节点则同时写入偏移量
+                                toContext.preemptMaster();
+                            }
                         }
                     }
+                } else {
+                    //识别to集群中存在节点宕机则全部关闭to
+                    isMaster = false;
+                    cacheManager.closeAllTo();
                 }
-            } else {
-                //识别to集群中存在节点宕机则全部关闭to
-                isMaster = false;
-                cacheManager.closeAllTo();
-            }
-            if (isMaster && !fromIsStarted) { //抢占到主节点，from未启动
-                logger.info("Upgrade master and starting from clients");
-                startAllFrom(alwaysFullSync, syncRdb);
-                cacheManager.setFromIsStarted(true);
-            } else if (isMaster && fromIsStarted) { //抢占到主节点，from已经启动
-                //do nothing
-                logger.trace("State: master");
-            } else if (!isMaster && fromIsStarted) { //未抢占到主节点，from已经启动
-                logger.info("Downgrade slave and closing from clients");
-                cacheManager.closeAllFrom();
-                cacheManager.setFromIsStarted(false);
-            } else if (!isMaster && !fromIsStarted) { //未抢占到主节点，from未启动
-                if (!cacheManager.toIsStarted()) {
-                    startAllTo(toFlushSize, flushDb, syncWithCheckSlot);
+                if (isMaster && !fromIsStarted) { //抢占到主节点，from未启动
+                    logger.info("Upgrade master and starting from clients");
+                    startAllFrom(alwaysFullSync, syncRdb);
+                    cacheManager.setFromIsStarted(true);
+                } else if (isMaster && fromIsStarted) { //抢占到主节点，from已经启动
+                    //do nothing
+                    logger.trace("State: master");
+                } else if (!isMaster && fromIsStarted) { //未抢占到主节点，from已经启动
+                    logger.info("Downgrade slave and closing from clients");
+                    cacheManager.closeAllFrom();
+                    cacheManager.setFromIsStarted(false);
+                } else if (!isMaster && !fromIsStarted) { //未抢占到主节点，from未启动
+                    if (!cacheManager.toIsStarted()) {
+                        startAllTo(toFlushSize, flushDb, syncWithCheckSlot);
+                    }
+                } else {
+                    //bug do nothing
+                    logger.warn("Unknown application state");
                 }
-            } else {
-                //bug do nothing
-                logger.warn("Unknown application state");
+            }catch (Exception e){
+                logger.error("Controller schedule error {}",e);
             }
         }, 5000, 1000000, TimeUnit.MICROSECONDS); //用微秒减少主从抢占脑裂问题，纳秒个人感觉太夸张了
         //控制台相关
