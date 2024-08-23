@@ -128,6 +128,9 @@ public class SyncCommand extends Command {
         if (stringCommand.toUpperCase().startsWith(Constant.EVAL)) {
             return Mode.CLUSTER == context.getToMode();
         }
+        if (stringCommand.toUpperCase().startsWith(Constant.PUBLISH)) {
+            return Mode.SENTINEL == context.getFromMode();
+        }
         return Constant.PING_COMMAND.equalsIgnoreCase(stringCommand) || Constant.MULTI.equalsIgnoreCase(stringCommand) || Constant.EXEC.equalsIgnoreCase(stringCommand);
     }
 
