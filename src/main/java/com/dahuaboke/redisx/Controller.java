@@ -21,6 +21,7 @@ import org.slf4j.LoggerFactory;
 
 import java.net.InetSocketAddress;
 import java.util.ArrayList;
+import java.util.Iterator;
 import java.util.List;
 import java.util.concurrent.*;
 
@@ -121,8 +122,8 @@ public class Controller {
                     //bug do nothing
                     logger.warn("Unknown application state");
                 }
-            }catch (Exception e){
-                logger.error("Controller schedule error {}",e);
+            } catch (Exception e) {
+                logger.error("Controller schedule error {}", e);
             }
         }, 5000, 1000000, TimeUnit.MICROSECONDS); //用微秒减少主从抢占脑裂问题，纳秒个人感觉太夸张了
         //控制台相关
@@ -207,11 +208,14 @@ public class Controller {
             List<Context> allContexts = cacheManager.getAllContexts();
             while (true) {
                 boolean allowClose = true;
-                for (Context cont : allContexts) {
+                Iterator<Context> iterator = allContexts.iterator();
+                while (iterator.hasNext()) {
+                    Context cont = iterator.next();
                     if (cont instanceof ToContext) {
                         ToContext toContext = (ToContext) cont;
                         if (!toContext.isClose) {
                             if (!cacheManager.checkHasNeedWriteCommand(toContext)) {
+                                iterator.remove();
                                 toContext.close();
                             }
                             allowClose = false;
@@ -281,7 +285,7 @@ public class Controller {
                 if (!connectFromMaster) {
                     for (ClusterInfoHandler.SlotInfo slotInfo : masterSlotInfoList) {
                         String id = slotInfo.getId();
-                        for (ClusterInfoHandler.SlotInfo info : cacheManager.getToClusterNodesInfo()) {
+                        for (ClusterInfoHandler.SlotInfo info : cacheManager.getFromClusterNodesInfo()) {
                             if (id.equals(info.getMasterId()) && info.isActive()) {
                                 addresses.add(new InetSocketAddress(slotInfo.getIp(), slotInfo.getPort()));
                                 break;

@@ -90,13 +90,7 @@ public final class CacheManager {
     }
 
     public void remove(Context context) {
-        Iterator<Context> iterator = contexts.iterator();
-        while (iterator.hasNext()) {
-            Context next = iterator.next();
-            if (next == context) {
-                iterator.remove();
-            }
-        }
+        contexts.remove(context);
         if (context instanceof ToContext) {
             cache.remove(context);
         }
@@ -192,18 +186,26 @@ public final class CacheManager {
 
     public void closeAllFrom() {
         List<Context> allContexts = getAllContexts();
-        for (Context cont : allContexts) {
-            if (cont instanceof FromContext) {
-                ((FromContext) cont).close();
+        Iterator<Context> iterator = allContexts.iterator();
+        while (iterator.hasNext()) {
+            Context context = iterator.next();
+            if (context instanceof FromContext) {
+                FromContext fromContext = (FromContext) context;
+                iterator.remove();
+                fromContext.close();
             }
         }
     }
 
     public void closeAllTo() {
         List<Context> allContexts = getAllContexts();
-        for (Context cont : allContexts) {
-            if (cont instanceof ToContext) {
-                ((ToContext) cont).close();
+        Iterator<Context> iterator = allContexts.iterator();
+        while (iterator.hasNext()) {
+            Context context = iterator.next();
+            if (context instanceof ToContext) {
+                ToContext toContext = (ToContext) context;
+                iterator.remove();
+                toContext.close();
             }
         }
     }
