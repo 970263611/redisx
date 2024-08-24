@@ -1,4 +1,4 @@
-package dahuaboke.redis_x;
+package dahuaboke.redisx;
 
 import org.junit.After;
 import org.junit.Before;

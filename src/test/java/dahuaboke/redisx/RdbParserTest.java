@@ -1,4 +1,4 @@
-package dahuaboke.redis_x;
+package dahuaboke.redisx;
 
 import com.dahuaboke.redisx.from.rdb.RdbInfo;
 import com.dahuaboke.redisx.from.rdb.RdbParser;
