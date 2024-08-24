@@ -1,20 +1,20 @@
-## Redis流复制工具Redis-x
+## Redis流复制工具Redisx
 
 [![996.icu](https://img.shields.io/badge/link-996.icu-red.svg)](https://996.icu)
 
 ### 作者
 
-大花团队（详见github提交者），redis相关材料请关注[material项目](https://github.com/970263611/redis-x-material)
+大花团队（详见github提交者），redis相关材料请关注[material项目](https://github.com/970263611/redisx-material)
 
 ### 名词解释
 
-From：数据来源的Redis集群对应Redis-x中的节点。
+From：数据来源的Redis集群对应Redisx中的节点。
 
-To：需要被同步数据的Redis集群对应Redis-x中的节点。 	
+To：需要被同步数据的Redis集群对应Redisx中的节点。 	
 
 ### 启动环境
 
-环境需求为Jdk1.8+，启动指令为java -jar redis-x.jar
+环境需求为Jdk1.8+，启动指令为java -jar redisx.jar
 
 ### 建设思路
 
@@ -22,18 +22,18 @@ To：需要被同步数据的Redis集群对应Redis-x中的节点。
 
 #### 组件对比
 
-| 组件           | redis-x         | alibaba shake                     |
-| -------------- |-----------------| --------------------------------- |
-| 支持版本       | 2.8及以上          | 2.8及以上                         |
-| 高可用         | 集群部署，纵向扩展       | 单机部署                          |
-| 初始化同步方式 | 全量同步rdb，增量同步    | 全量同步rdb和aof，增量同步        |
-| 支持续传       | 支持              | 不支持                            |
+| 组件           | redisx         | alibaba shake                     |
+| -------------- |----------------| --------------------------------- |
+| 支持版本       | 2.8及以上         | 2.8及以上                         |
+| 高可用         | 集群部署，纵向扩展      | 单机部署                          |
+| 初始化同步方式 | 全量同步rdb，增量同步   | 全量同步rdb和aof，增量同步        |
+| 支持续传       | 支持             | 不支持                            |
 | 数据类型       | 五种基本类型 + stream | 五种基本类型 + stream + 3种mudule |
-| 其他功能       | 数据查询，集群节点宕机重连   | 数据筛选                          |
+| 其他功能       | 数据查询，集群节点宕机重连  | 数据筛选                          |
 
 ### 性能测试
 
-CPU为13600KF、内存为DDR5 64G（32G双通道）的电脑上搭建3主3从两套redis集群，发压工具（30并发）和redis-x同时运行，在redis-x没有特殊指定启动内存大小、没有-server启动、jdk为1.8的形况下，测试结果如下：
+CPU为13600KF、内存为DDR5 64G（32G双通道）的电脑上搭建3主3从两套redis集群，发压工具（30并发）和redisx同时运行，在redisx没有特殊指定启动内存大小、没有-server启动、jdk为1.8的形况下，测试结果如下：
 
 ![](images/redisx5w.jpg)
 
@@ -41,27 +41,27 @@ CPU为13600KF、内存为DDR5 64G（32G双通道）的电脑上搭建3主3从两
 
 在默认模式下（笔记本中测试，因为反复测试切换场景，所以数据传递落后于发布数量）：
 
-Redis：2.8.0（双端单机，此版本Redis不支持集群。Redis-x组件2节点）
+Redis：2.8.0（双端单机，此版本Redis不支持集群。Redisx组件2节点）
 
 ![](images/2.8.0.png)
 
-Redis：3.0.3（双端集群，3主3从。Redis-x组件2节点）
+Redis：3.0.3（双端集群，3主3从。Redisx组件2节点）
 
 ![](images/3.0.0.png)
 
-Redis：4.0.11（双端集群，3主3从。Redis-x组件2节点）
+Redis：4.0.11（双端集群，3主3从。Redisx组件2节点）
 
 ![](images/4.0.11.png)
 
-Redis：5.0.0（双端集群，3主3从。Redis-x组件2节点）
+Redis：5.0.0（双端集群，3主3从。Redisx组件2节点）
 
 ![](images/5.0.0.png)
 
-Redis：6.0.9（双端集群，3主3从。Redis-x组件2节点）
+Redis：6.0.9（双端集群，3主3从。Redisx组件2节点）
 
 ![](images/6.0.9.png)
 
-Redis：7.2.4（双端集群，3主3从。Redis-x组件2节点）
+Redis：7.2.4（双端集群，3主3从。Redisx组件2节点）
 
 ![](images/7.2.4.png)
 
@@ -130,17 +130,17 @@ redisx:
     enable: false             #是否开启强一致模式
     resendTimes: 3            #强一致模式下写入失败重试次数
   alwaysFullSync: false       #全局是否强制全量同步数据模式
-  switchFlag: REDIS-X-AUTHOR:DAHUA&CHANGDONGLIANG&ZHANGHUIHAO&ZHANGSHUHAN      #redis-x主从切换标志，在纵向扩展时需要配置
+  switchFlag: REDISX-AUTHOR:DAHUA&CHANGDONGLIANG&ZHANGHUIHAO&ZHANGSHUHAN      #redisx主从切换标志，在纵向扩展时需要配置
   syncRdb: false              #是否同步rdb文件，否：只进行增量同步 当alwaysFullSync为true时，本配置强制为true
 ```
 
 ### 高可用
 
-Redis-x组件天然支持多节点启动，多节点间会自动选举一个主节点，当主节点宕机10秒后，从节点们会自动选举一个新的主节点。
+Redisx组件天然支持多节点启动，多节点间会自动选举一个主节点，当主节点宕机10秒后，从节点们会自动选举一个新的主节点。
 
 #### 纵向扩展
 
-纵向扩展场景一般存在于一端为集群模式时，Redis-x组件可自动剔除非配置节点hash槽数据，多节点可通过多组并行模式进行纵向扩展。
+纵向扩展场景一般存在于一端为集群模式时，Redisx组件可自动剔除非配置节点hash槽数据，多节点可通过多组并行模式进行纵向扩展。
 
 ![](images/highuse.png)
 

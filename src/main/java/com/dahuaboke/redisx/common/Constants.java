@@ -12,11 +12,11 @@ import io.netty.util.AttributeKey;
  */
 public class Constants {
 
-    public static final String SWITCH_FLAG = "REDIS-X-AUTHOR:DAHUA&CHANGDONGLIANG&ZHANGHUIHAO&ZHANGSHUHAN";
+    public static final String SWITCH_FLAG = "REDISX-AUTHOR:DAHUA&CHANGDONGLIANG&ZHANGHUIHAO&ZHANGSHUHAN";
 
     public static final String CONFIG_PATH = "config.path";
 
-    public static final String PROJECT_NAME = "Redis-x";
+    public static final String PROJECT_NAME = "Redisx";
 
     public static final String PING_COMMAND = "PING";
 

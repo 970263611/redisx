@@ -5,7 +5,7 @@
     <modelVersion>4.0.0</modelVersion>
 
     <groupId>com.dahuaboke</groupId>
-    <artifactId>redis-x</artifactId>
+    <artifactId>redisx</artifactId>
     <version>1.0.0</version>
 
     <properties>
@@ -68,7 +68,7 @@
 
     <build>
         <!-- 打包后的名字 -->
-        <finalName>redis-x</finalName>
+        <finalName>redisx</finalName>
         <plugins>
             <!--(start) for package jar with dependencies -->
             <plugin>

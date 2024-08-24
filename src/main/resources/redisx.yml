@@ -34,7 +34,7 @@ redisx:
     enable: false
     resendTimes: 3
   alwaysFullSync: false
-  switchFlag: REDIS-X-AUTHOR:DAHUA&CHANGDONGLIANG&ZHANGHUIHAO&ZHANGSHUHAN
+  switchFlag: REDISX-AUTHOR:DAHUA&CHANGDONGLIANG&ZHANGHUIHAO&ZHANGSHUHAN
   syncRdb: true
 
 jasypt:
