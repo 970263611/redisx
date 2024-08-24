@@ -1,9 +1,9 @@
-package com.dahuaboke.redisx.cache;
+package com.dahuaboke.redisx.common.cache;
 
 import com.dahuaboke.redisx.Context;
-import com.dahuaboke.redisx.command.from.SyncCommand;
+import com.dahuaboke.redisx.common.command.from.SyncCommand;
 import com.dahuaboke.redisx.console.ConsoleContext;
-import com.dahuaboke.redisx.enums.Mode;
+import com.dahuaboke.redisx.common.enums.Mode;
 import com.dahuaboke.redisx.from.FromContext;
 import com.dahuaboke.redisx.handler.ClusterInfoHandler;
 import com.dahuaboke.redisx.handler.SentinelInfoHandler;
@@ -42,7 +42,6 @@ public final class CacheManager {
     private Set<ClusterInfoHandler.SlotInfo> fromClusterNodesInfo = new HashSet<>();
     private Set<ClusterInfoHandler.SlotInfo> toClusterNodesInfo = new HashSet<>();
     private Set<SentinelInfoHandler.SlaveInfo> fromSentinelNodesInfo = new HashSet<>();
-    private Set<SentinelInfoHandler.SlaveInfo> toSentinelNodesInfo = new HashSet<>();
     private ConsoleContext consoleContext;
     private Map<String, Boolean> flushDb = new HashMap();
     private InetSocketAddress fromSentinelMaster;
@@ -191,8 +190,8 @@ public final class CacheManager {
             Context context = iterator.next();
             if (context instanceof FromContext) {
                 FromContext fromContext = (FromContext) context;
-                iterator.remove();
                 fromContext.close();
+                iterator.remove();
             }
         }
     }
@@ -204,8 +203,8 @@ public final class CacheManager {
             Context context = iterator.next();
             if (context instanceof ToContext) {
                 ToContext toContext = (ToContext) context;
-                iterator.remove();
                 toContext.close();
+                iterator.remove();
             }
         }
     }

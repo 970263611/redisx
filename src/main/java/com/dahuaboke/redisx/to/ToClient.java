@@ -1,7 +1,7 @@
 package com.dahuaboke.redisx.to;
 
-import com.dahuaboke.redisx.Constant;
-import com.dahuaboke.redisx.enums.Mode;
+import com.dahuaboke.redisx.common.Constants;
+import com.dahuaboke.redisx.common.enums.Mode;
 import com.dahuaboke.redisx.handler.*;
 import com.dahuaboke.redisx.to.handler.DRHandler;
 import com.dahuaboke.redisx.to.handler.FlushHandler;
@@ -60,7 +60,7 @@ public class ToClient {
                     hasPassword = true;
                 }
                 if (hasPassword) {
-                    pipeline.addLast(Constant.AUTH_HANDLER_NAME, new AuthHandler(password));
+                    pipeline.addLast(Constants.AUTH_HANDLER_NAME, new AuthHandler(password));
                 }
                 if (toContext.isFlushDb() && !toContext.isFlushDbSuccess()) {
                     pipeline.addLast(new FlushHandler(toContext));
@@ -70,10 +70,10 @@ public class ToClient {
                 pipeline.addLast(new RedisArrayAggregator());
                 if (toContext.isNodesInfoContext()) {
                     if (Mode.CLUSTER == toContext.getToMode()) {
-                        pipeline.addLast(Constant.CLUSTER_HANDLER_NAME, new ClusterInfoHandler(toContext, hasPassword));
+                        pipeline.addLast(Constants.CLUSTER_HANDLER_NAME, new ClusterInfoHandler(toContext, hasPassword));
                     }
                     if (Mode.SENTINEL == toContext.getToMode()) {
-                        pipeline.addLast(Constant.SENTINEL_HANDLER_NAME, new SentinelInfoHandler(toContext, toContext.getToMasterName()));
+                        pipeline.addLast(Constants.SENTINEL_HANDLER_NAME, new SentinelInfoHandler(toContext, toContext.getToMasterName()));
                     }
                 } else {
                     pipeline.addLast(new DRHandler(toContext));

@@ -1,10 +1,10 @@
 package com.dahuaboke.redisx.from;
 
-import com.dahuaboke.redisx.Constant;
 import com.dahuaboke.redisx.Context;
-import com.dahuaboke.redisx.cache.CacheManager;
-import com.dahuaboke.redisx.command.from.SyncCommand;
-import com.dahuaboke.redisx.enums.Mode;
+import com.dahuaboke.redisx.common.Constants;
+import com.dahuaboke.redisx.common.cache.CacheManager;
+import com.dahuaboke.redisx.common.command.from.SyncCommand;
+import com.dahuaboke.redisx.common.enums.Mode;
 import com.dahuaboke.redisx.handler.ClusterInfoHandler;
 import com.dahuaboke.redisx.handler.SentinelInfoHandler;
 import io.netty.channel.Channel;
@@ -24,14 +24,10 @@ import java.util.concurrent.TimeUnit;
 public class FromContext extends Context {
 
     private static final Logger logger = LoggerFactory.getLogger(FromContext.class);
-    private CacheManager cacheManager;
-    private String host;
-    private int port;
     private Channel fromChannel;
     private int slotBegin;
     private int slotEnd;
     private FromClient fromClient;
-    private boolean isConsole;
     private boolean rdbAckOffset = false;
     private boolean alwaysFullSync;
     private boolean syncRdb;
@@ -42,13 +38,9 @@ public class FromContext extends Context {
     private String fromMasterName;
     private boolean connectFromMaster;
 
-    public FromContext(CacheManager cacheManager, String host, int port, boolean isConsole, Mode fromMode, Mode toMode, boolean alwaysFullSync, boolean syncRdb, boolean isNodesInfoContext, String fromMasterName, boolean connectFromMaster) {
-        super(fromMode, toMode);
-        this.cacheManager = cacheManager;
-        this.host = host;
-        this.port = port;
-        this.isConsole = isConsole;
-        if (isConsole) {
+    public FromContext(CacheManager cacheManager, String host, int port, boolean consoleStart, Mode fromMode, Mode toMode, boolean alwaysFullSync, boolean syncRdb, boolean isNodesInfoContext, String fromMasterName, boolean connectFromMaster) {
+        super(cacheManager, host, port, fromMode, toMode, consoleStart);
+        if (consoleStart) {
             replyQueue = new LinkedBlockingDeque();
         }
         this.alwaysFullSync = alwaysFullSync;
@@ -73,16 +65,8 @@ public class FromContext extends Context {
         return cacheManager.getId();
     }
 
-    public String getHost() {
-        return host;
-    }
-
-    public int getPort() {
-        return port;
-    }
-
     public boolean publish(SyncCommand command) {
-        if (!isConsole) {
+        if (!consoleStart) {
             command.buildCommand();
             return cacheManager.publish(command);
         } else {
@@ -115,16 +99,12 @@ public class FromContext extends Context {
     @Override
     public boolean isAdapt(Mode mode, String command) {
         if (Mode.CLUSTER == mode && command != null) {
-            int hash = calculateHash(command) % Constant.COUNT_SLOT_NUMS;
+            int hash = calculateHash(command) % Constants.COUNT_SLOT_NUMS;
             return hash >= slotBegin && hash <= slotEnd;
         } else {
             //哨兵模式或者单节点则只存在一个为ToContext类型的context
             return true;
         }
-    }
-
-    public boolean isConsole() {
-        return isConsole;
     }
 
     @Override
@@ -163,18 +143,18 @@ public class FromContext extends Context {
     }
 
     public void ackOffset() {
-        if (fromChannel != null && fromChannel.isActive() && fromChannel.pipeline().get(Constant.INIT_SYNC_HANDLER_NAME) == null) {
-            Long offsetSession = fromChannel.attr(Constant.OFFSET).get();
+        if (fromChannel != null && fromChannel.isActive() && fromChannel.pipeline().get(Constants.INIT_SYNC_HANDLER_NAME) == null) {
+            Long offsetSession = fromChannel.attr(Constants.OFFSET).get();
             CacheManager.NodeMessage nodeMessage = getNodeMessage();
             if (offsetSession != null && offsetSession > -1L) {
                 if (nodeMessage == null) {
                     setOffset(offsetSession);
                 }
-                fromChannel.attr(Constant.OFFSET).set(-1L);
+                fromChannel.attr(Constants.OFFSET).set(-1L);
             }
             if (nodeMessage != null) {
                 long offset = getOffset() + unSyncCommandLength;
-                fromChannel.writeAndFlush(Constant.ACK_COMMAND_PREFIX + offset);
+                fromChannel.writeAndFlush(Constants.ACK_COMMAND_PREFIX + offset);
                 logger.trace("Ack offset [{}]", offset);
             }
         }

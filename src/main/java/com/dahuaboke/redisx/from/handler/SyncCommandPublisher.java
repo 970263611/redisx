@@ -1,6 +1,6 @@
 package com.dahuaboke.redisx.from.handler;
 
-import com.dahuaboke.redisx.command.from.SyncCommand;
+import com.dahuaboke.redisx.common.command.from.SyncCommand;
 import com.dahuaboke.redisx.from.FromContext;
 import io.netty.channel.ChannelHandlerContext;
 import io.netty.channel.SimpleChannelInboundHandler;

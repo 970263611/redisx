@@ -1,4 +1,4 @@
-package com.dahuaboke.redisx.command.from;
+package com.dahuaboke.redisx.common.command.from;
 
 import io.netty.buffer.ByteBuf;
 

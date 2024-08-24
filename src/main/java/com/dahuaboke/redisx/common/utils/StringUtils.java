@@ -1,4 +1,4 @@
-package com.dahuaboke.redisx.utils;
+package com.dahuaboke.redisx.common.utils;
 
 import java.lang.reflect.Method;
 

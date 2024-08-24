@@ -1,6 +1,6 @@
-package com.dahuaboke.redisx.enums;
+package com.dahuaboke.redisx.common.enums;
 
-import com.dahuaboke.redisx.utils.StringUtils;
+import com.dahuaboke.redisx.common.utils.StringUtils;
 
 public enum Mode {
 

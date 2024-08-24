@@ -1,10 +1,10 @@
 package com.dahuaboke.redisx.to;
 
-import com.dahuaboke.redisx.Constant;
 import com.dahuaboke.redisx.Context;
-import com.dahuaboke.redisx.cache.CacheManager;
-import com.dahuaboke.redisx.command.from.SyncCommand;
-import com.dahuaboke.redisx.enums.Mode;
+import com.dahuaboke.redisx.common.Constants;
+import com.dahuaboke.redisx.common.cache.CacheManager;
+import com.dahuaboke.redisx.common.command.from.SyncCommand;
+import com.dahuaboke.redisx.common.enums.Mode;
 import com.dahuaboke.redisx.handler.ClusterInfoHandler;
 import org.slf4j.Logger;
 import org.slf4j.LoggerFactory;
@@ -27,9 +27,6 @@ public class ToContext extends Context {
     private static final Logger logger = LoggerFactory.getLogger(ToContext.class);
     private static final String lua1 = "local v = redis.call('GET',KEYS[1]);\n" + "    if v then\n" + "        return v;\n" + "    else\n" + "        local result = redis.call('SET',KEYS[1],ARGV[1]);\n" + "        return result;\n" + "    end";
     private static final String lua2 = "local v = redis.call('GET',KEYS[1]);\n" + "if string.match(v,ARGV[1]) then\n redis.call('SET',KEYS[1],ARGV[2]);\nend";
-    private CacheManager cacheManager;
-    private String host;
-    private int port;
     private int slotBegin;
     private int slotEnd;
     private ToClient toClient;
@@ -42,13 +39,9 @@ public class ToContext extends Context {
     private boolean flushDb;
     private String toMasterName;
 
-    public ToContext(CacheManager cacheManager, String host, int port, Mode fromMode, Mode toMode, boolean isConsole, boolean immediate, int immediateResendTimes, String switchFlag, int flushSize, boolean isNodesInfoContext, boolean flushDb, String toMasterName) {
-        super(fromMode, toMode);
-        this.cacheManager = cacheManager;
-        this.host = host;
-        this.port = port;
-        this.isConsole = isConsole;
-        if (isConsole) {
+    public ToContext(CacheManager cacheManager, String host, int port, Mode fromMode, Mode toMode, boolean consoleStart, boolean immediate, int immediateResendTimes, String switchFlag, int flushSize, boolean isNodesInfoContext, boolean flushDb, String toMasterName) {
+        super(cacheManager, host, port, fromMode, toMode, consoleStart);
+        if (consoleStart) {
             replyQueue = new LinkedBlockingDeque();
         }
         this.immediate = immediate;
@@ -75,20 +68,12 @@ public class ToContext extends Context {
         return cacheManager.getId();
     }
 
-    public String getHost() {
-        return host;
-    }
-
-    public int getPort() {
-        return port;
-    }
-
     public SyncCommand listen() {
         return cacheManager.listen(this);
     }
 
     public boolean callBack(String reply) {
-        if (isConsole) {
+        if (consoleStart) {
             if (replyQueue == null) {
                 throw new IllegalStateException("By console mode replyQueue need init");
             } else {
@@ -106,7 +91,7 @@ public class ToContext extends Context {
     @Override
     public boolean isAdapt(Mode mode, String command) {
         if (Mode.CLUSTER == mode && command != null) {
-            int hash = calculateHash(command) % Constant.COUNT_SLOT_NUMS;
+            int hash = calculateHash(command) % Constants.COUNT_SLOT_NUMS;
             return hash >= slotBegin && hash <= slotEnd;
         } else {
             //哨兵模式或者单节点则只存在一个为ToContext类型的context
@@ -128,7 +113,7 @@ public class ToContext extends Context {
     }
 
     public String sendCommand(Object command, int timeout, boolean unCheck, String key) {
-        if (isConsole) {
+        if (consoleStart) {
             if (replyQueue == null) {
                 throw new IllegalStateException("By console mode replyQueue need init");
             } else {
@@ -234,7 +219,7 @@ public class ToContext extends Context {
 
     private String preemptMasterCommand() {
         StringBuilder sb = new StringBuilder();
-        sb.append(Constant.PROJECT_NAME);
+        sb.append(Constants.PROJECT_NAME);
         sb.append("|");
         sb.append(this.getId());
         sb.append("|");
@@ -324,7 +309,7 @@ public class ToContext extends Context {
                 ", switchFlag='" + switchFlag + '\'' +
                 ", flushSize=" + flushSize +
                 ", isClose=" + isClose +
-                ", isConsole=" + isConsole +
+                ", consoleStart=" + consoleStart +
                 ", toMode=" + toMode +
                 ", fromMode=" + fromMode +
                 '}';

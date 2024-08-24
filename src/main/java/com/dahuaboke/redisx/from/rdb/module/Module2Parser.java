@@ -4,7 +4,7 @@ import com.dahuaboke.redisx.from.rdb.ParserManager;
 import com.dahuaboke.redisx.from.rdb.base.Parser;
 import io.netty.buffer.ByteBuf;
 
-import static com.dahuaboke.redisx.Constant.*;
+import static com.dahuaboke.redisx.common.Constants.*;
 
 /**
  * @Desc:

@@ -1,7 +1,8 @@
-package com.dahuaboke.redisx;
+package com.dahuaboke.redisx.common;
 
 import io.netty.buffer.ByteBuf;
 import io.netty.buffer.Unpooled;
+import io.netty.handler.codec.http.HttpVersion;
 import io.netty.util.AttributeKey;
 
 /**
@@ -9,7 +10,7 @@ import io.netty.util.AttributeKey;
  * auth: dahua
  * desc:
  */
-public class Constant {
+public class Constants {
 
     public static final String SWITCH_FLAG = "REDIS-X-AUTHOR:DAHUA&CHANGDONGLIANG&ZHANGHUIHAO&ZHANGSHUHAN";
 
@@ -32,6 +33,8 @@ public class Constant {
     public static final AttributeKey<String> SYNC_REPLY = AttributeKey.valueOf("syncReply");
 
     public static final AttributeKey<Boolean> RDB_STREAM_NEXT = AttributeKey.valueOf("rdbStreamNext");
+
+    public static final AttributeKey<HttpVersion> CONSOLE_HTTP_VERSION = AttributeKey.valueOf("consoleHttpVersion");
 
     public static final String INIT_SYNC_HANDLER_NAME = "INIT_SYNC_HANDLER";
 
@@ -59,7 +62,11 @@ public class Constant {
 
     public static final String CONFIG_SYNC_COMMAND = "SYNC";
 
-    public static final String CONSOLE_URI_PREFIX = "/console";
+    public static final String CONSOLE_URI_CONSOLE_PREFIX = "/console";
+
+    public static final String CONSOLE_URI_SEARCH_PREFIX = CONSOLE_URI_CONSOLE_PREFIX + "/search";
+
+    public static final String CONSOLE_URI_MONITOR_PREFIX = CONSOLE_URI_CONSOLE_PREFIX + "/monitor";
 
     public static final String CONSOLE_COMMAND = "command";
 

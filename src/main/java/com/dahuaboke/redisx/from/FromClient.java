@@ -1,7 +1,7 @@
 package com.dahuaboke.redisx.from;
 
-import com.dahuaboke.redisx.Constant;
-import com.dahuaboke.redisx.enums.Mode;
+import com.dahuaboke.redisx.common.Constants;
+import com.dahuaboke.redisx.common.enums.Mode;
 import com.dahuaboke.redisx.from.handler.*;
 import com.dahuaboke.redisx.handler.*;
 import io.netty.bootstrap.Bootstrap;
@@ -52,7 +52,6 @@ public class FromClient {
                     @Override
                     protected void initChannel(Channel channel) throws Exception {
                         ChannelPipeline pipeline = channel.pipeline();
-                        boolean console = fromContext.isConsole();
                         boolean hasPassword = false;
                         String password = fromContext.getPassword();
                         if (password != null && !password.isEmpty()) {
@@ -62,12 +61,12 @@ public class FromClient {
                         pipeline.addLast(new CommandEncoder());
                         pipeline.addLast(new PrintHandler());
                         if (hasPassword) {
-                            pipeline.addLast(Constant.AUTH_HANDLER_NAME, new AuthHandler(password));
+                            pipeline.addLast(Constants.AUTH_HANDLER_NAME, new AuthHandler(password));
                         }
-                        if (!console && !fromContext.isNodesInfoContext()) {
-                            pipeline.addLast(Constant.INIT_SYNC_HANDLER_NAME, new SyncInitializationHandler(fromContext));
+                        if (!fromContext.isConsoleStart() && !fromContext.isNodesInfoContext()) {
+                            pipeline.addLast(Constants.INIT_SYNC_HANDLER_NAME, new SyncInitializationHandler(fromContext));
                             pipeline.addLast(new PreDistributeHandler(fromContext));
-                            pipeline.addLast(Constant.OFFSET_DECODER_NAME, new OffsetCommandDecoder(fromContext));
+                            pipeline.addLast(Constants.OFFSET_DECODER_NAME, new OffsetCommandDecoder(fromContext));
                             pipeline.addLast(new RdbByteStreamDecoder(fromContext));
                         }
                         pipeline.addLast(new RedisDecoder(true));
@@ -75,10 +74,10 @@ public class FromClient {
                         pipeline.addLast(new RedisArrayAggregator());
                         if (fromContext.isNodesInfoContext()) {
                             if (Mode.CLUSTER == fromContext.getFromMode()) {
-                                pipeline.addLast(Constant.CLUSTER_HANDLER_NAME, new ClusterInfoHandler(fromContext, hasPassword));
+                                pipeline.addLast(Constants.CLUSTER_HANDLER_NAME, new ClusterInfoHandler(fromContext, hasPassword));
                             }
                             if (Mode.SENTINEL == fromContext.getFromMode()) {
-                                pipeline.addLast(Constant.SENTINEL_HANDLER_NAME, new SentinelInfoHandler(fromContext, fromContext.getFromMasterName()));
+                                pipeline.addLast(Constants.SENTINEL_HANDLER_NAME, new SentinelInfoHandler(fromContext, fromContext.getFromMasterName()));
                             }
                         } else {
                             pipeline.addLast(new MessagePostProcessor(fromContext));

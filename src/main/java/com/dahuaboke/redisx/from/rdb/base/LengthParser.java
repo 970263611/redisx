@@ -2,7 +2,7 @@ package com.dahuaboke.redisx.from.rdb.base;
 
 import io.netty.buffer.ByteBuf;
 
-import static com.dahuaboke.redisx.Constant.*;
+import static com.dahuaboke.redisx.common.Constants.*;
 
 /**
  * @Desc: length解析器

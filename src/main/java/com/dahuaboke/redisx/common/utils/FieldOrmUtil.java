@@ -1,6 +1,6 @@
-package com.dahuaboke.redisx.utils;
+package com.dahuaboke.redisx.common.utils;
 
-import com.dahuaboke.redisx.annotation.FieldOrm;
+import com.dahuaboke.redisx.common.annotation.FieldOrm;
 
 import java.lang.reflect.Field;
 import java.lang.reflect.Method;

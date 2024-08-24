@@ -1,4 +1,4 @@
-package com.dahuaboke.redisx.command;
+package com.dahuaboke.redisx.common.command;
 
 /**
  * 2024/5/10 16:56

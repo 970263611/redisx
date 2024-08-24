@@ -1,8 +1,8 @@
 package com.dahuaboke.redisx.to.handler;
 
-import com.dahuaboke.redisx.Constant;
+import com.dahuaboke.redisx.common.Constants;
 import com.dahuaboke.redisx.Context;
-import com.dahuaboke.redisx.command.from.SyncCommand;
+import com.dahuaboke.redisx.common.command.from.SyncCommand;
 import com.dahuaboke.redisx.from.FromContext;
 import com.dahuaboke.redisx.to.ToContext;
 import io.netty.channel.Channel;
@@ -94,7 +94,7 @@ public class SyncCommandListener extends ChannelInboundHandlerAdapter {
                 }
             }
         });
-        thread.setName(Constant.PROJECT_NAME + "-To-Writer-" + toContext.getHost() + ":" + toContext.getPort());
+        thread.setName(Constants.PROJECT_NAME + "-To-Writer-" + toContext.getHost() + ":" + toContext.getPort());
         thread.start();
     }
 

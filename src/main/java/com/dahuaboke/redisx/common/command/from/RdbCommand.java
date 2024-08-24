@@ -1,6 +1,6 @@
-package com.dahuaboke.redisx.command.from;
+package com.dahuaboke.redisx.common.command.from;
 
-import com.dahuaboke.redisx.command.Command;
+import com.dahuaboke.redisx.common.command.Command;
 import io.netty.buffer.ByteBuf;
 
 /**

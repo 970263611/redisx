@@ -1,6 +1,6 @@
 package com.dahuaboke.redisx.handler;
 
-import com.dahuaboke.redisx.Constant;
+import com.dahuaboke.redisx.common.Constants;
 import com.dahuaboke.redisx.Context;
 import com.dahuaboke.redisx.from.FromContext;
 import com.dahuaboke.redisx.to.ToContext;
@@ -33,7 +33,7 @@ public class ClusterInfoHandler extends RedisChannelInboundHandler {
 
     @Override
     public void channelActive(ChannelHandlerContext ctx) throws Exception {
-        if (ctx.pipeline().get(Constant.AUTH_HANDLER_NAME) == null) {
+        if (ctx.pipeline().get(Constants.AUTH_HANDLER_NAME) == null) {
             sendSlotCommand(ctx);
         }
         ctx.fireChannelActive();
@@ -49,7 +49,7 @@ public class ClusterInfoHandler extends RedisChannelInboundHandler {
         Channel channel = ctx.channel();
         if (channel.isActive()) {
             //不需要去pipeline的底部，所以直接ctx.write
-            ctx.writeAndFlush(Constant.GET_SLOT_COMMAND);
+            ctx.writeAndFlush(Constants.GET_SLOT_COMMAND);
         }
     }
 

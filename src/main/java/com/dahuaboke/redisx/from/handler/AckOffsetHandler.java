@@ -1,8 +1,8 @@
 package com.dahuaboke.redisx.from.handler;
 
-import com.dahuaboke.redisx.Constant;
+import com.dahuaboke.redisx.common.Constants;
 import com.dahuaboke.redisx.from.FromContext;
-import com.dahuaboke.redisx.thread.RedisxThreadFactory;
+import com.dahuaboke.redisx.common.thread.RedisxThreadFactory;
 import io.netty.channel.ChannelDuplexHandler;
 import io.netty.channel.ChannelHandlerContext;
 import org.slf4j.Logger;
@@ -26,7 +26,7 @@ public class AckOffsetHandler extends ChannelDuplexHandler {
     public AckOffsetHandler(FromContext fromContext) {
         this.fromContext = fromContext;
         this.ackPool = Executors.newScheduledThreadPool(1,
-                new RedisxThreadFactory(Constant.PROJECT_NAME + "-AckThread-" + fromContext.getHost() + ":" + fromContext.getPort()));
+                new RedisxThreadFactory(Constants.PROJECT_NAME + "-AckThread-" + fromContext.getHost() + ":" + fromContext.getPort()));
     }
 
     @Override

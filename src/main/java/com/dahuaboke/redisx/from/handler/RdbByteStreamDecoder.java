@@ -1,8 +1,8 @@
 package com.dahuaboke.redisx.from.handler;
 
-import com.dahuaboke.redisx.Constant;
-import com.dahuaboke.redisx.command.from.RdbCommand;
-import com.dahuaboke.redisx.command.from.SyncCommand;
+import com.dahuaboke.redisx.common.Constants;
+import com.dahuaboke.redisx.common.command.from.RdbCommand;
+import com.dahuaboke.redisx.common.command.from.SyncCommand;
 import com.dahuaboke.redisx.from.FromContext;
 import com.dahuaboke.redisx.from.rdb.CommandParser;
 import com.dahuaboke.redisx.from.rdb.RdbData;
@@ -57,10 +57,10 @@ public class RdbByteStreamDecoder extends ChannelInboundHandlerAdapter {
 
             if (RdbType.START == rdbType && '$' == rdb.getByte(rdb.readerIndex())) {
                 rdb.readByte();//除去$
-                int index = ByteBufUtil.indexOf(Constant.SEPARAPOR, rdb);//找到首个\r\n的index
+                int index = ByteBufUtil.indexOf(Constants.SEPARAPOR, rdb);//找到首个\r\n的index
                 String isEofOrSizeStr = rdb.readBytes(index - rdb.readerIndex()).toString(CharsetUtil.UTF_8);//截取\r\n之前的内容，不包含\r\n
                 logger.info("RdbType is " + rdbType.name() + ",isEofOrSizeStr " + isEofOrSizeStr);
-                rdb.readBytes(Constant.SEPARAPOR.readableBytes());//除去首个\r\n
+                rdb.readBytes(Constants.SEPARAPOR.readableBytes());//除去首个\r\n
                 tempRdb = ByteBufAllocator.DEFAULT.buffer();//创建缓存
                 if (isEofOrSizeStr.startsWith("EOF")) {//EOF类型看收尾
                     eofEnd = Unpooled.copiedBuffer(isEofOrSizeStr.substring(4, isEofOrSizeStr.length()).getBytes());//获取eof收尾的40位长度的校验码
@@ -107,12 +107,12 @@ public class RdbByteStreamDecoder extends ChannelInboundHandlerAdapter {
                     length = -1;
                     eofEnd = null;
                     rdbType = RdbType.START;
-                    ctx.channel().attr(Constant.RDB_STREAM_NEXT).set(false);
+                    ctx.channel().attr(Constants.RDB_STREAM_NEXT).set(false);
                     if (fromContext.isSyncRdb()) {
                         fromContext.setRdbAckOffset(true);
                         ByteBuf finalRdbBuf = rdbBuf;
                         CompletableFuture<Void> future = CompletableFuture.supplyAsync(() -> {
-                            String threadName = Constant.PROJECT_NAME + "-RdbParseThread-" + fromContext.getHost() + ":" + fromContext.getPort();
+                            String threadName = Constants.PROJECT_NAME + "-RdbParseThread-" + fromContext.getHost() + ":" + fromContext.getPort();
                             Thread.currentThread().setName(threadName);
                             parse(finalRdbBuf);
                             return null;
@@ -159,7 +159,7 @@ public class RdbByteStreamDecoder extends ChannelInboundHandlerAdapter {
                 if (data.getDataNum() == 1) {
                     long selectDB = data.getSelectDB();
                     SyncCommand syncCommand2 = new SyncCommand(fromContext, new ArrayList<String>() {{
-                        add(Constant.SELECT);
+                        add(Constants.SELECT);
                         add(String.valueOf(selectDB));
                     }}, false);
                     boolean success2 = fromContext.publish(syncCommand2);

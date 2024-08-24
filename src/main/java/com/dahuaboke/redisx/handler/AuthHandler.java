@@ -1,9 +1,7 @@
 package com.dahuaboke.redisx.handler;
 
-import com.dahuaboke.redisx.Constant;
-import com.dahuaboke.redisx.enums.Mode;
+import com.dahuaboke.redisx.common.Constants;
 import io.netty.buffer.ByteBuf;
-import io.netty.buffer.ByteBufAllocator;
 import io.netty.channel.Channel;
 import io.netty.channel.ChannelHandlerContext;
 import io.netty.channel.ChannelInboundHandlerAdapter;
@@ -31,14 +29,14 @@ public class AuthHandler extends ChannelInboundHandlerAdapter {
         Channel channel = ctx.channel();
         if (channel.isActive()) {
             //不需要去pipeline的底部，所以直接ctx.write
-            ctx.writeAndFlush(Constant.CONFIG_AUTH_PREFIX + password);
+            ctx.writeAndFlush(Constants.CONFIG_AUTH_PREFIX + password);
         }
     }
 
     @Override
     public void channelRead(ChannelHandlerContext ctx, Object obj) throws Exception {
         ByteBuf reply = (ByteBuf) obj;
-        if (!Constant.OK_COMMAND.equalsIgnoreCase(reply.slice(1, 2).toString(StandardCharsets.UTF_8))) {
+        if (!Constants.OK_COMMAND.equalsIgnoreCase(reply.slice(1, 2).toString(StandardCharsets.UTF_8))) {
             logger.error("Password error");
             System.exit(0);
         } else {

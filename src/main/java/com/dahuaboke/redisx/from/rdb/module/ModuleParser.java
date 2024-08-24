@@ -6,7 +6,7 @@ import io.netty.buffer.ByteBuf;
 
 import java.util.NoSuchElementException;
 
-import static com.dahuaboke.redisx.Constant.MODULE_SET;
+import static com.dahuaboke.redisx.common.Constants.MODULE_SET;
 
 /**
  * @Desc:

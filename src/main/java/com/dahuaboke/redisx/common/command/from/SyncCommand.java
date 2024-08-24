@@ -1,9 +1,9 @@
-package com.dahuaboke.redisx.command.from;
+package com.dahuaboke.redisx.common.command.from;
 
-import com.dahuaboke.redisx.Constant;
+import com.dahuaboke.redisx.common.Constants;
 import com.dahuaboke.redisx.Context;
-import com.dahuaboke.redisx.command.Command;
-import com.dahuaboke.redisx.enums.Mode;
+import com.dahuaboke.redisx.common.command.Command;
+import com.dahuaboke.redisx.common.enums.Mode;
 import io.netty.buffer.ByteBuf;
 import io.netty.buffer.ByteBufAllocator;
 import io.netty.handler.codec.redis.ArrayRedisMessage;
@@ -122,16 +122,16 @@ public class SyncCommand extends Command {
 
     public boolean isIgnore() {
         String stringCommand = getStringCommand();
-        if (stringCommand.toUpperCase().startsWith(Constant.SELECT)) {
+        if (stringCommand.toUpperCase().startsWith(Constants.SELECT)) {
             return Mode.CLUSTER == context.getFromMode() || Mode.CLUSTER == context.getToMode();
         }
-        if (stringCommand.toUpperCase().startsWith(Constant.EVAL)) {
+        if (stringCommand.toUpperCase().startsWith(Constants.EVAL)) {
             return Mode.CLUSTER == context.getToMode();
         }
-        if (stringCommand.toUpperCase().startsWith(Constant.PUBLISH)) {
+        if (stringCommand.toUpperCase().startsWith(Constants.PUBLISH)) {
             return Mode.SENTINEL == context.getFromMode();
         }
-        return Constant.PING_COMMAND.equalsIgnoreCase(stringCommand) || Constant.MULTI.equalsIgnoreCase(stringCommand) || Constant.EXEC.equalsIgnoreCase(stringCommand);
+        return Constants.PING_COMMAND.equalsIgnoreCase(stringCommand) || Constants.MULTI.equalsIgnoreCase(stringCommand) || Constants.EXEC.equalsIgnoreCase(stringCommand);
     }
 
     public String getKey() {

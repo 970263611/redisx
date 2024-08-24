@@ -1,4 +1,4 @@
-package com.dahuaboke.redisx.utils;
+package com.dahuaboke.redisx.common.utils;
 
 import org.jasypt.encryption.pbe.StandardPBEStringEncryptor;
 import org.jasypt.encryption.pbe.config.EnvironmentPBEConfig;

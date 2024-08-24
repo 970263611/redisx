@@ -1,7 +1,11 @@
 package com.dahuaboke.redisx.console;
 
 import com.dahuaboke.redisx.console.handler.ConsoleHandler;
+import com.dahuaboke.redisx.console.handler.MonitorHandler;
+import com.dahuaboke.redisx.console.handler.ReplyHandler;
+import com.dahuaboke.redisx.console.handler.SearchHandler;
 import com.dahuaboke.redisx.handler.DirtyDataHandler;
+import com.dahuaboke.redisx.handler.PrintHandler;
 import io.netty.bootstrap.ServerBootstrap;
 import io.netty.channel.*;
 import io.netty.channel.nio.NioEventLoopGroup;
@@ -49,7 +53,11 @@ public class ConsoleServer {
                             ChannelPipeline pipeline = channel.pipeline();
                             pipeline.addLast(new HttpServerCodec());
                             pipeline.addLast(new HttpObjectAggregator(512 * 1024));
-                            pipeline.addLast(new ConsoleHandler(consoleContext));
+                            pipeline.addLast(new PrintHandler());
+                            pipeline.addLast(new ConsoleHandler());
+                            pipeline.addLast(new SearchHandler(consoleContext));
+                            pipeline.addLast(new MonitorHandler(consoleContext));
+                            pipeline.addLast(new ReplyHandler());
                             pipeline.addLast(new DirtyDataHandler());
                         }
                     });

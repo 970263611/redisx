@@ -1,7 +1,7 @@
 package com.dahuaboke.redisx.from.handler;
 
-import com.dahuaboke.redisx.Constant;
-import com.dahuaboke.redisx.cache.CacheManager;
+import com.dahuaboke.redisx.common.Constants;
+import com.dahuaboke.redisx.common.cache.CacheManager;
 import com.dahuaboke.redisx.from.FromContext;
 import io.netty.channel.Channel;
 import io.netty.channel.ChannelHandlerContext;
@@ -45,40 +45,40 @@ public class SyncInitializationHandler extends ChannelInboundHandlerAdapter {
                 String reply;
                 boolean redisVersionBeyond3 = fromContext.redisVersionBeyond3();
                 while (!fromContext.isClose()) {
-                    if (channel.pipeline().get(Constant.AUTH_HANDLER_NAME) == null) {
-                        if ((reply = channel.attr(Constant.SYNC_REPLY).get()) != null) {
+                    if (channel.pipeline().get(Constants.AUTH_HANDLER_NAME) == null) {
+                        if ((reply = channel.attr(Constants.SYNC_REPLY).get()) != null) {
                             if (state == INIT) {
                                 state = SENT_PING;
                             }
-                            if (Constant.PONG_COMMAND.equalsIgnoreCase(reply) && state == SENT_PING) {
+                            if (Constants.PONG_COMMAND.equalsIgnoreCase(reply) && state == SENT_PING) {
                                 clearReply(ctx);
                                 if (redisVersionBeyond3) {
                                     state = SENT_PORT;
                                 } else {
                                     state = SENT_CAPA;
                                 }
-                                channel.writeAndFlush(Constant.CONFIG_PORT_COMMAND_PREFIX + fromContext.getLocalPort());
+                                channel.writeAndFlush(Constants.CONFIG_PORT_COMMAND_PREFIX + fromContext.getLocalPort());
                                 logger.debug("Sent replconf listening-port command [{}]", fromContext.getLocalPort());
                             }
-                            if (Constant.OK_COMMAND.equalsIgnoreCase(reply) && state == SENT_PORT) {
+                            if (Constants.OK_COMMAND.equalsIgnoreCase(reply) && state == SENT_PORT) {
                                 clearReply(ctx);
                                 state = SENT_ADDRESS;
-                                channel.writeAndFlush(Constant.CONFIG_HOST_COMMAND_PREFIX + fromContext.getLocalHost());
+                                channel.writeAndFlush(Constants.CONFIG_HOST_COMMAND_PREFIX + fromContext.getLocalHost());
                                 logger.debug("Sent replconf address command [{}]", fromContext.getLocalHost());
                                 continue;
                             }
-                            if (Constant.OK_COMMAND.equalsIgnoreCase(reply) && state == SENT_ADDRESS) {
+                            if (Constants.OK_COMMAND.equalsIgnoreCase(reply) && state == SENT_ADDRESS) {
                                 clearReply(ctx);
                                 state = SENT_CAPA;
-                                channel.writeAndFlush(Constant.CONFIG_CAPA_COMMAND);
+                                channel.writeAndFlush(Constants.CONFIG_CAPA_COMMAND);
                                 logger.debug("Sent replconf capa eof command");
                                 continue;
                             }
-                            if (Constant.OK_COMMAND.equalsIgnoreCase(reply) && state == SENT_CAPA) {
+                            if (Constants.OK_COMMAND.equalsIgnoreCase(reply) && state == SENT_CAPA) {
                                 clearReply(ctx);
                                 state = SENT_PSYNC;
                                 CacheManager.NodeMessage nodeMessage = fromContext.getNodeMessage();
-                                String command = Constant.CONFIG_PSYNC_COMMAND;
+                                String command = Constants.CONFIG_PSYNC_COMMAND;
                                 if (redisVersionBeyond3) {
                                     if (fromContext.isAlwaysFullSync()) {
                                         command += "? -1";
@@ -92,7 +92,7 @@ public class SyncInitializationHandler extends ChannelInboundHandlerAdapter {
                                         }
                                     }
                                 } else {
-                                    command = Constant.CONFIG_SYNC_COMMAND;
+                                    command = Constants.CONFIG_SYNC_COMMAND;
                                 }
                                 channel.writeAndFlush(command);
                                 logger.debug("Sent " + command + " command");
@@ -106,20 +106,20 @@ public class SyncInitializationHandler extends ChannelInboundHandlerAdapter {
                         } else {
                             if (state == null) {
                                 state = INIT;
-                                channel.writeAndFlush(Constant.PING_COMMAND);
+                                channel.writeAndFlush(Constants.PING_COMMAND);
                                 logger.debug("Sent ping command");
                             }
                         }
                     }
                 }
             });
-            thread.setName(Constant.PROJECT_NAME + "-SYNC-INIT-" + fromContext.getHost() + ":" + fromContext.getPort());
+            thread.setName(Constants.PROJECT_NAME + "-SYNC-INIT-" + fromContext.getHost() + ":" + fromContext.getPort());
             thread.start();
             ctx.fireChannelActive();
         }
     }
 
     private void clearReply(ChannelHandlerContext ctx) {
-        ctx.channel().attr(Constant.SYNC_REPLY).set(null);
+        ctx.channel().attr(Constants.SYNC_REPLY).set(null);
     }
 }

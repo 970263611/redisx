@@ -1,8 +1,8 @@
 package com.dahuaboke.redisx.handler;
 
-import com.dahuaboke.redisx.Constant;
+import com.dahuaboke.redisx.common.Constants;
 import com.dahuaboke.redisx.Context;
-import com.dahuaboke.redisx.command.from.SyncCommand;
+import com.dahuaboke.redisx.common.command.from.SyncCommand;
 import io.netty.buffer.ByteBuf;
 import io.netty.channel.ChannelHandlerContext;
 import io.netty.channel.SimpleChannelInboundHandler;
@@ -49,7 +49,7 @@ public abstract class RedisChannelInboundHandler extends SimpleChannelInboundHan
         } else if (msg instanceof ErrorRedisMessage) {
             String err = ((ErrorRedisMessage) msg).content();
             logger.warn("Receive error message [{}]", err);
-            syncCommand.appendCommand(Constant.ERROR_REPLY_PREFIX + err);
+            syncCommand.appendCommand(Constants.ERROR_REPLY_PREFIX + err);
         } else if (msg instanceof IntegerRedisMessage) {
             syncCommand.appendCommand(String.valueOf(((IntegerRedisMessage) msg).value()));
         } else if (msg instanceof FullBulkStringRedisMessage) {

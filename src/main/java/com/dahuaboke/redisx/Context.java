@@ -1,7 +1,8 @@
 package com.dahuaboke.redisx;
 
-import com.dahuaboke.redisx.enums.Mode;
-import com.dahuaboke.redisx.utils.CRC16;
+import com.dahuaboke.redisx.common.cache.CacheManager;
+import com.dahuaboke.redisx.common.enums.Mode;
+import com.dahuaboke.redisx.common.utils.CRC16;
 import org.slf4j.Logger;
 import org.slf4j.LoggerFactory;
 
@@ -17,13 +18,20 @@ public class Context {
     private static final Logger logger = LoggerFactory.getLogger(Context.class);
     protected BlockingDeque<String> replyQueue;
     protected boolean isClose = false;
-    protected boolean isConsole;
+    protected boolean consoleStart;
+    protected CacheManager cacheManager;
+    protected String host;
+    protected int port;
     protected Mode toMode;
     protected Mode fromMode;
 
-    public Context(Mode fromMode, Mode toMode) {
+    public Context(CacheManager cacheManager, String host, int port, Mode fromMode, Mode toMode, boolean consoleStart) {
+        this.cacheManager = cacheManager;
+        this.host = host;
+        this.port = port;
         this.fromMode = fromMode;
         this.toMode = toMode;
+        this.consoleStart = consoleStart;
     }
 
     public boolean isAdapt(Mode mode, String command) {
@@ -64,7 +72,15 @@ public class Context {
         return fromMode;
     }
 
-    public boolean isConsole() {
-        return isConsole;
+    public boolean isConsoleStart() {
+        return consoleStart;
+    }
+
+    public String getHost() {
+        return host;
+    }
+
+    public int getPort() {
+        return port;
     }
 }

@@ -4,7 +4,7 @@ import com.dahuaboke.redisx.from.rdb.ParserManager;
 import com.dahuaboke.redisx.from.rdb.base.LengthParser.Len;
 import io.netty.buffer.ByteBuf;
 
-import static com.dahuaboke.redisx.Constant.*;
+import static com.dahuaboke.redisx.common.Constants.*;
 
 /**
  * @Desc: 字符串解析器

@@ -1,12 +1,12 @@
 package com.dahuaboke.redisx.handler;
 
-import com.dahuaboke.redisx.Constant;
+import com.dahuaboke.redisx.common.Constants;
 import com.dahuaboke.redisx.Context;
-import com.dahuaboke.redisx.annotation.FieldOrm;
+import com.dahuaboke.redisx.common.annotation.FieldOrm;
 import com.dahuaboke.redisx.from.FromContext;
 import com.dahuaboke.redisx.to.ToContext;
-import com.dahuaboke.redisx.utils.FieldOrmUtil;
-import com.dahuaboke.redisx.utils.StringUtils;
+import com.dahuaboke.redisx.common.utils.FieldOrmUtil;
+import com.dahuaboke.redisx.common.utils.StringUtils;
 import io.netty.channel.Channel;
 import io.netty.channel.ChannelHandlerContext;
 import org.slf4j.Logger;
@@ -52,7 +52,7 @@ public class SentinelInfoHandler extends RedisChannelInboundHandler {
         Channel channel = ctx.channel();
         if (channel.isActive()) {
             //不需要去pipeline的底部，所以直接ctx.write
-            ctx.writeAndFlush(Constant.SENTINEL_GET_MASTER + masterName);
+            ctx.writeAndFlush(Constants.SENTINEL_GET_MASTER + masterName);
         }
     }
 
@@ -61,7 +61,7 @@ public class SentinelInfoHandler extends RedisChannelInboundHandler {
         Channel channel = ctx.channel();
         if (channel.isActive()) {
             //不需要去pipeline的底部，所以直接ctx.write
-            ctx.writeAndFlush(Constant.SENTINEL_GET_SLAVE + masterName);
+            ctx.writeAndFlush(Constants.SENTINEL_GET_SLAVE + masterName);
         }
     }
 

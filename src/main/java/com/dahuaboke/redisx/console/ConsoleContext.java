@@ -1,7 +1,8 @@
 package com.dahuaboke.redisx.console;
 
 import com.dahuaboke.redisx.Context;
-import com.dahuaboke.redisx.enums.Mode;
+import com.dahuaboke.redisx.common.cache.CacheManager;
+import com.dahuaboke.redisx.common.enums.Mode;
 import com.dahuaboke.redisx.from.FromContext;
 import com.dahuaboke.redisx.to.ToContext;
 import org.slf4j.Logger;
@@ -9,6 +10,7 @@ import org.slf4j.LoggerFactory;
 
 import java.util.ArrayList;
 import java.util.Arrays;
+import java.util.Iterator;
 import java.util.List;
 
 /**
@@ -19,22 +21,14 @@ import java.util.List;
 public class ConsoleContext extends Context {
 
     private static final Logger logger = LoggerFactory.getLogger(ConsoleContext.class);
-    private String host;
-    private int port;
     private int timeout;
-    private Mode toMode;
-    private Mode fromMode;
     private List<ToContext> toContexts = new ArrayList();
     private List<FromContext> fromContexts = new ArrayList();
     private ConsoleServer consoleServer;
 
-    public ConsoleContext(String host, int port, int timeout, Mode toMode, Mode fromMode) {
-        super(fromMode, toMode);
-        this.host = host;
-        this.port = port;
+    public ConsoleContext(CacheManager cacheManager, String host, int port, int timeout, Mode toMode, Mode fromMode) {
+        super(cacheManager, host, port, fromMode, toMode, true);
         this.timeout = timeout;
-        this.toMode = toMode;
-        this.fromMode = fromMode;
     }
 
     public void setToContext(ToContext toContext) {
@@ -43,14 +37,6 @@ public class ConsoleContext extends Context {
 
     public void setFromContext(FromContext fromContext) {
         fromContexts.add(fromContext);
-    }
-
-    public String getHost() {
-        return host;
-    }
-
-    public int getPort() {
-        return port;
     }
 
     public String sendCommand(String command, String type) {
@@ -79,11 +65,17 @@ public class ConsoleContext extends Context {
 
     public void close() {
         consoleServer.destroy();
-        for (FromContext fromContext : fromContexts) {
+        Iterator<FromContext> iterator = fromContexts.iterator();
+        while (iterator.hasNext()) {
+            FromContext fromContext = iterator.next();
             fromContext.close();
+            iterator.remove();
         }
-        for (ToContext toContext : toContexts) {
+        Iterator<ToContext> iterator1 = toContexts.iterator();
+        while (iterator1.hasNext()) {
+            ToContext toContext = iterator1.next();
             toContext.close();
+            iterator1.remove();
         }
     }
 

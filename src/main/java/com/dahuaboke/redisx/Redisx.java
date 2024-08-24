@@ -1,11 +1,12 @@
 package com.dahuaboke.redisx;
 
 
-import com.dahuaboke.redisx.annotation.FieldOrm;
-import com.dahuaboke.redisx.enums.Mode;
-import com.dahuaboke.redisx.utils.FieldOrmUtil;
-import com.dahuaboke.redisx.utils.StringUtils;
-import com.dahuaboke.redisx.utils.YamlUtil;
+import com.dahuaboke.redisx.common.Constants;
+import com.dahuaboke.redisx.common.annotation.FieldOrm;
+import com.dahuaboke.redisx.common.enums.Mode;
+import com.dahuaboke.redisx.common.utils.FieldOrmUtil;
+import com.dahuaboke.redisx.common.utils.StringUtils;
+import com.dahuaboke.redisx.common.utils.YamlUtil;
 import org.apache.logging.log4j.Level;
 import org.apache.logging.log4j.core.config.Configurator;
 import org.slf4j.Logger;
@@ -87,7 +88,7 @@ public class Redisx {
         @FieldOrm(value = "redisx.from.redis.version", required = true)
         private String redisVersion;
 
-        @FieldOrm(value = "redisx.switchFlag", defaultValue = Constant.SWITCH_FLAG)
+        @FieldOrm(value = "redisx.switchFlag", defaultValue = Constants.SWITCH_FLAG)
         private String switchFlag;
 
         @FieldOrm(value = "redisx.syncRdb", defaultValue = "true")

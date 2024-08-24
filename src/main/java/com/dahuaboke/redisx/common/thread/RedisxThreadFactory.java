@@ -1,4 +1,4 @@
-package com.dahuaboke.redisx.thread;
+package com.dahuaboke.redisx.common.thread;
 
 import io.netty.util.concurrent.FastThreadLocalThread;
 import io.netty.util.internal.ObjectUtil;

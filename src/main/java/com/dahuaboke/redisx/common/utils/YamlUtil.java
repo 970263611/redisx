@@ -1,6 +1,6 @@
-package com.dahuaboke.redisx.utils;
+package com.dahuaboke.redisx.common.utils;
 
-import com.dahuaboke.redisx.Constant;
+import com.dahuaboke.redisx.common.Constants;
 import com.dahuaboke.redisx.Redisx;
 import org.slf4j.Logger;
 import org.slf4j.LoggerFactory;
@@ -32,7 +32,7 @@ public class YamlUtil {
             if (args != null && args.length > 0) {
                 for (int a = 0; a < args.length; a++) {
                     if (a == 0) {
-                        argsMap.put(Constant.CONFIG_PATH, args[a]);
+                        argsMap.put(Constants.CONFIG_PATH, args[a]);
                     } else {
                         String[] arrs = args[a].split("=");
                         if (arrs.length != 2 || StringUtils.isEmpty(arrs[0]) || StringUtils.isEmpty(arrs[1])) {
@@ -42,7 +42,7 @@ public class YamlUtil {
                     }
                 }
             }
-            Map<String, Object> paramMap = parseConfig(argsMap.get(Constant.CONFIG_PATH));
+            Map<String, Object> paramMap = parseConfig(argsMap.get(Constants.CONFIG_PATH));
             paramMap.putAll(argsMap);
             decryptMap(paramMap);
             return paramMap;
@@ -57,7 +57,7 @@ public class YamlUtil {
         Yaml yaml = new Yaml();
         Map<String, Object> map;
         if (fileName == null) {
-            map = yaml.load(Redisx.class.getClassLoader().getResourceAsStream(Constant.CONFIG_FILE_NAME));
+            map = yaml.load(Redisx.class.getClassLoader().getResourceAsStream(Constants.CONFIG_FILE_NAME));
         } else {
             try {
                 map = yaml.load(new FileInputStream(fileName));

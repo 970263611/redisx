@@ -1,14 +1,15 @@
 package com.dahuaboke.redisx;
 
-import com.dahuaboke.redisx.cache.CacheManager;
+import com.dahuaboke.redisx.common.Constants;
+import com.dahuaboke.redisx.common.cache.CacheManager;
+import com.dahuaboke.redisx.common.enums.Mode;
+import com.dahuaboke.redisx.common.thread.RedisxThreadFactory;
 import com.dahuaboke.redisx.console.ConsoleContext;
 import com.dahuaboke.redisx.console.ConsoleServer;
-import com.dahuaboke.redisx.enums.Mode;
 import com.dahuaboke.redisx.from.FromClient;
 import com.dahuaboke.redisx.from.FromContext;
 import com.dahuaboke.redisx.handler.ClusterInfoHandler;
 import com.dahuaboke.redisx.handler.SentinelInfoHandler;
-import com.dahuaboke.redisx.thread.RedisxThreadFactory;
 import com.dahuaboke.redisx.to.ToClient;
 import com.dahuaboke.redisx.to.ToContext;
 import io.netty.util.concurrent.ThreadPerTaskExecutor;
@@ -33,7 +34,7 @@ import java.util.concurrent.*;
 public class Controller {
 
     private static final Logger logger = LoggerFactory.getLogger(Controller.class);
-    private static ScheduledExecutorService controllerPool = Executors.newScheduledThreadPool(1, new RedisxThreadFactory(Constant.PROJECT_NAME + "-Controller"));
+    private static ScheduledExecutorService controllerPool = Executors.newScheduledThreadPool(1, new RedisxThreadFactory(Constants.PROJECT_NAME + "-Controller"));
     private Mode fromMode;
     private Mode toMode;
     private CacheManager cacheManager;
@@ -143,7 +144,7 @@ public class Controller {
     }
 
     public Executor getExecutor(String name) {
-        RedisxThreadFactory defaultThreadFactory = new RedisxThreadFactory(Constant.PROJECT_NAME + "-" + name);
+        RedisxThreadFactory defaultThreadFactory = new RedisxThreadFactory(Constants.PROJECT_NAME + "-" + name);
         return new ThreadPerTaskExecutor(defaultThreadFactory);
     }
 
@@ -215,8 +216,8 @@ public class Controller {
                         ToContext toContext = (ToContext) cont;
                         if (!toContext.isClose) {
                             if (!cacheManager.checkHasNeedWriteCommand(toContext)) {
-                                iterator.remove();
                                 toContext.close();
+                                iterator.remove();
                             }
                             allowClose = false;
                             break;
@@ -231,7 +232,7 @@ public class Controller {
             //否则日志不一定打印，因为shutdownHook顺序无法保证
             LogManager.shutdown();
         });
-        shutdownHookThread.setName(Constant.PROJECT_NAME + "-ShutdownHook");
+        shutdownHookThread.setName(Constants.PROJECT_NAME + "-ShutdownHook");
         if (!immediate) {
             closeLog4jShutdownHook();
             Runtime.getRuntime().addShutdownHook(shutdownHookThread);
@@ -283,13 +284,18 @@ public class Controller {
                     }
                 }
                 if (!connectFromMaster) {
-                    for (ClusterInfoHandler.SlotInfo slotInfo : masterSlotInfoList) {
-                        String id = slotInfo.getId();
-                        for (ClusterInfoHandler.SlotInfo info : cacheManager.getFromClusterNodesInfo()) {
-                            if (id.equals(info.getMasterId()) && info.isActive()) {
-                                addresses.add(new InetSocketAddress(slotInfo.getIp(), slotInfo.getPort()));
+                    for (ClusterInfoHandler.SlotInfo masterInfo : masterSlotInfoList) {
+                        String id = masterInfo.getId();
+                        boolean getInfoSuccess = false;
+                        for (ClusterInfoHandler.SlotInfo slaveInfo : cacheManager.getFromClusterNodesInfo()) {
+                            if (id.equals(slaveInfo.getMasterId()) && slaveInfo.isActive()) {
+                                addresses.add(new InetSocketAddress(slaveInfo.getIp(), slaveInfo.getPort()));
+                                getInfoSuccess = true;
                                 break;
                             }
+                        }
+                        if (!getInfoSuccess) {
+                            addresses.add(new InetSocketAddress(masterInfo.getIp(), masterInfo.getPort()));
                         }
                     }
                 }
@@ -419,14 +425,14 @@ public class Controller {
         private int port;
         private ToContext toContext;
 
-        public ToNode(String threadNamePrefix, CacheManager cacheManager, String host, int port, Mode toMode, boolean isConsole, boolean immediate, int immediateResendTimes, String switchFlag, int flushSize, boolean isNodesInfoContext, boolean flushDb) {
-            this.name = Constant.PROJECT_NAME + "-" + threadNamePrefix + "-ToNode-" + host + "-" + port;
+        public ToNode(String threadNamePrefix, CacheManager cacheManager, String host, int port, Mode toMode, boolean consoleStart, boolean immediate, int immediateResendTimes, String switchFlag, int flushSize, boolean isNodesInfoContext, boolean flushDb) {
+            this.name = Constants.PROJECT_NAME + "-" + threadNamePrefix + "-ToNode-" + host + "-" + port;
             this.setName(name);
             this.cacheManager = cacheManager;
             this.host = host;
             this.port = port;
             //放在构造方法而不是run，因为兼容console模式，需要收集context，否则可能收集到null
-            this.toContext = new ToContext(cacheManager, host, port, fromMode, toMode, isConsole, immediate, immediateResendTimes, switchFlag, flushSize, isNodesInfoContext, flushDb, toMasterName);
+            this.toContext = new ToContext(cacheManager, host, port, fromMode, toMode, consoleStart, immediate, immediateResendTimes, switchFlag, flushSize, isNodesInfoContext, flushDb, toMasterName);
         }
 
         @Override
@@ -453,13 +459,13 @@ public class Controller {
         private int port;
         private FromContext fromContext;
 
-        public FromNode(String threadNamePrefix, CacheManager cacheManager, String host, int port, boolean isConsole, boolean alwaysFullSync, boolean syncRdb, boolean isNodesInfoContext) {
-            this.name = Constant.PROJECT_NAME + "-" + threadNamePrefix + "-FromNode - " + host + " - " + port;
+        public FromNode(String threadNamePrefix, CacheManager cacheManager, String host, int port, boolean consoleStart, boolean alwaysFullSync, boolean syncRdb, boolean isNodesInfoContext) {
+            this.name = Constants.PROJECT_NAME + "-" + threadNamePrefix + "-FromNode - " + host + " - " + port;
             this.setName(name);
             this.host = host;
             this.port = port;
             //放在构造方法而不是run，因为兼容console模式，需要收集console，否则可能收集到null
-            this.fromContext = new FromContext(cacheManager, host, port, isConsole, fromMode, toMode, alwaysFullSync, syncRdb, isNodesInfoContext, fromMasterName, connectFromMaster);
+            this.fromContext = new FromContext(cacheManager, host, port, consoleStart, fromMode, toMode, alwaysFullSync, syncRdb, isNodesInfoContext, fromMasterName, connectFromMaster);
         }
 
         @Override
@@ -491,7 +497,7 @@ public class Controller {
             this.host = host;
             this.port = port;
             this.timeout = timeout;
-            consoleContext = new ConsoleContext(this.host, this.port, this.timeout, toMode, fromMode);
+            consoleContext = new ConsoleContext(cacheManager, this.host, this.port, this.timeout, toMode, fromMode);
         }
 
         @Override
