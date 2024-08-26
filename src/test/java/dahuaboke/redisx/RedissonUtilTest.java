@@ -1,5 +1,6 @@
 package dahuaboke.redisx;
 
+import com.dahuaboke.redisx.utils.CRC16;
 import org.junit.After;
 import org.junit.Before;
 import org.junit.Test;
@@ -11,6 +12,9 @@ import org.redisson.config.Config;
 
 import java.text.SimpleDateFormat;
 import java.util.Date;
+import java.util.HashSet;
+import java.util.Iterator;
+import java.util.Set;
 import java.util.concurrent.CountDownLatch;
 import java.util.concurrent.Executors;
 import java.util.concurrent.ScheduledExecutorService;
@@ -71,6 +75,39 @@ public class RedissonUtilTest {
     }
 
     @Test
+    public void compareKey(){
+        RKeys keyTo = toClient.getKeys();
+        RKeys keyFrom = fromClient.getKeys();
+        Iterator<String> ito = keyTo.getKeys().iterator();
+        Set<String> toSet = new HashSet<>();
+        while(ito.hasNext()){
+            toSet.add(ito.next());
+        }
+        Iterator<String> ifrom = keyFrom.getKeys().iterator();
+        while(ifrom.hasNext()){
+            String key = ifrom.next();
+            if(!toSet.contains(key)){
+                System.out.println(key);
+            }
+        }
+    }
+
+
+    @Test
+    public void slotNum(){
+        RKeys keyFrom = fromClient.getKeys();
+        Iterator<String> itFrom = keyFrom.getKeys().iterator();
+        while(itFrom.hasNext()){
+            String key = itFrom.next();
+            int slot = CRC16.crc16(key.getBytes()) % 16384;
+            if(slot == 0){
+                System.out.println(key);
+            }
+        }
+
+    }
+
+    @Test
     public void keycount() {
         ScheduledExecutorService scheduledExecutorService = Executors.newScheduledThreadPool(1);
         AtomicLong toLast = new AtomicLong();
@@ -96,7 +133,7 @@ public class RedissonUtilTest {
                 first.set(false);
             }
             sb.append("-from:").append(cover(from + "", 9)).append(", ");
-            sb.append("-to:").append(cover(to + "", 9)).append(", ");
+            sb.append("-to:").append(cover(to-1 + "", 9)).append(", ");
             sb.append("-fromTps=").append(cover(formC + "", 7)).append(", ");
             sb.append("-toTps=").append(cover(toC + "", 7)).append(", ");
             sb.append("-fromMaxTps=").append(cover(fromMax.get() + "", 7)).append(", ");
