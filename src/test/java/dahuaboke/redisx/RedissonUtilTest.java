@@ -33,6 +33,11 @@ public class RedissonUtilTest {
 
     private String fromAddress = "redis://xxx.xxx.xxx.xxx:port";
 
+    //哨兵必填
+    private String masterName = null;
+
+    private String password = null;
+
     //类型
     private ServerType serverType = ServerType.CLUSTER;
     //*********** 配置项 终 ***********//
@@ -55,14 +60,14 @@ public class RedissonUtilTest {
         Config fromConfig = new Config();
         fromConfig.setCodec(new StringCodec());
         if (ServerType.CLUSTER == serverType) {
-            toConfig.useClusterServers().addNodeAddress(toAddress);
-            fromConfig.useClusterServers().addNodeAddress(fromAddress);
+            toConfig.useClusterServers().addNodeAddress(toAddress).setPassword(password);
+            fromConfig.useClusterServers().addNodeAddress(fromAddress).setPassword(password);
         } else if (ServerType.SINGLE == serverType) {
-            toConfig.useSingleServer().setAddress(toAddress);
-            fromConfig.useSingleServer().setAddress(fromAddress);
+            toConfig.useSingleServer().setAddress(toAddress).setPassword(password);
+            fromConfig.useSingleServer().setAddress(fromAddress).setPassword(password);
         } else {
-            toConfig.useSentinelServers().addSentinelAddress(toAddress).setCheckSentinelsList(false).setMasterName("mymaster");
-            fromConfig.useSentinelServers().addSentinelAddress(fromAddress).setCheckSentinelsList(false).setMasterName("mymaster");
+            toConfig.useSentinelServers().addSentinelAddress(toAddress).setCheckSentinelsList(false).setMasterName(masterName).setPassword(password).setSentinelPassword(password);
+            fromConfig.useSentinelServers().addSentinelAddress(fromAddress).setCheckSentinelsList(false).setMasterName(masterName).setPassword(password).setSentinelPassword(password);
         }
         try {
             this.toClient = Redisson.create(toConfig);

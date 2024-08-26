@@ -19,7 +19,11 @@ public class StressTestingUtilTest {
     //配置单点地址，或者集群服务器中任一地址,哨兵模式下需配置哨兵节点的ip端口
     private String address = "redis://xxx.xxx.xxx.xxx:port";
 
-    //是否集群
+    private String masterName = null;
+
+    private String password = null;
+
+    //类型
     private ServerType serverType = ServerType.CLUSTER;
 
     //并发数
