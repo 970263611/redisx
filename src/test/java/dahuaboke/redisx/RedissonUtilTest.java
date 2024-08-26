@@ -1,6 +1,6 @@
 package dahuaboke.redisx;
 
-import com.dahuaboke.redisx.utils.CRC16;
+import com.dahuaboke.redisx.common.utils.CRC16;
 import org.junit.After;
 import org.junit.Before;
 import org.junit.Test;
