@@ -2,6 +2,7 @@ package com.dahuaboke.redisx.from.handler;
 
 import com.dahuaboke.redisx.common.Constants;
 import com.dahuaboke.redisx.common.cache.CacheManager;
+import com.dahuaboke.redisx.common.enums.Mode;
 import com.dahuaboke.redisx.from.FromContext;
 import io.netty.channel.Channel;
 import io.netty.channel.ChannelHandlerContext;
@@ -63,7 +64,11 @@ public class SyncInitializationHandler extends ChannelInboundHandlerAdapter {
                             if (Constants.OK_COMMAND.equalsIgnoreCase(reply) && state == SENT_PORT) {
                                 clearReply(ctx);
                                 state = SENT_ADDRESS;
-                                channel.writeAndFlush(Constants.CONFIG_HOST_COMMAND_PREFIX + fromContext.getLocalHost());
+                                if(Mode.SENTINEL == fromContext.getFromMode()){
+                                    channel.writeAndFlush(Constants.CONFIG_HOST_COMMAND_PREFIX + Constants.REGISTER_HOST);
+                                }else{
+                                    channel.writeAndFlush(Constants.CONFIG_HOST_COMMAND_PREFIX + fromContext.getLocalHost());
+                                }
                                 logger.debug("Sent replconf address command [{}]", fromContext.getLocalHost());
                                 continue;
                             }

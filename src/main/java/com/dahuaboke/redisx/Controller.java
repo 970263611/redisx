@@ -216,8 +216,8 @@ public class Controller {
                         ToContext toContext = (ToContext) cont;
                         if (!toContext.isClose) {
                             if (!cacheManager.checkHasNeedWriteCommand(toContext)) {
-                                toContext.close();
                                 iterator.remove();
+                                toContext.close();
                             }
                             allowClose = false;
                             break;

@@ -53,7 +53,6 @@ public class ToClient {
                 ChannelPipeline pipeline = channel.pipeline();
                 pipeline.addLast(new RedisEncoder());
                 pipeline.addLast(new CommandEncoder());
-                pipeline.addLast(new PrintHandler());
                 boolean hasPassword = false;
                 String password = toContext.getPassword();
                 if (password != null && !password.isEmpty()) {

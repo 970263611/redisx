@@ -68,14 +68,14 @@ public class ConsoleContext extends Context {
         Iterator<FromContext> iterator = fromContexts.iterator();
         while (iterator.hasNext()) {
             FromContext fromContext = iterator.next();
-            fromContext.close();
             iterator.remove();
+            fromContext.close();
         }
         Iterator<ToContext> iterator1 = toContexts.iterator();
         while (iterator1.hasNext()) {
             ToContext toContext = iterator1.next();
-            toContext.close();
             iterator1.remove();
+            toContext.close();
         }
     }
 

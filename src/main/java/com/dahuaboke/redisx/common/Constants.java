@@ -102,6 +102,8 @@ public class Constants {
 
     public static final String EXEC = "EXEC";
 
+    public static final String REGISTER_HOST = "dahuaboke.com";
+
 
     //RDB
 

@@ -190,8 +190,8 @@ public final class CacheManager {
             Context context = iterator.next();
             if (context instanceof FromContext) {
                 FromContext fromContext = (FromContext) context;
-                fromContext.close();
                 iterator.remove();
+                fromContext.close();
             }
         }
     }
@@ -203,8 +203,8 @@ public final class CacheManager {
             Context context = iterator.next();
             if (context instanceof ToContext) {
                 ToContext toContext = (ToContext) context;
-                toContext.close();
                 iterator.remove();
+                toContext.close();
             }
         }
     }
