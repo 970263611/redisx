@@ -28,8 +28,6 @@ public class SentinelInfoHandler extends RedisChannelInboundHandler {
     private Context context;
     private String masterName;
 
-    private StringBuilder sb = new StringBuilder();
-
     public SentinelInfoHandler(Context context, String masterName) {
         super(context);
         this.context = context;
@@ -89,50 +87,44 @@ public class SentinelInfoHandler extends RedisChannelInboundHandler {
 
     private void parseSlaveMessage(ChannelHandlerContext ctx, String msg) {
         logger.info("Beginning sentinel slave message parse");
-        sb.append(msg);
-        msg = sb.toString();
-        try {
-            List<SlaveInfo> slaveInfos = new ArrayList<>();//这个就是解析后的从节点集合
-            String[] arrs = msg.split(" ");
-            Map<String, Object> map = new HashMap<>();
-            String key = null;
-            for (int i = 0; i < arrs.length; i++) {
-                if (i % 2 == 0) {
-                    key = arrs[i];
-                    if (map.containsKey(key)) {
-                        SlaveInfo slaveInfo = new SlaveInfo();
-                        FieldOrmUtil.MapToBean(map, slaveInfo);
-                        slaveInfos.add(slaveInfo);
-                        map.clear();
-                    }
-                } else {
-                    map.put(key, arrs[i]);
-                    if (i == arrs.length - 1) {
-                        SlaveInfo slaveInfo = new SlaveInfo();
-                        FieldOrmUtil.MapToBean(map, slaveInfo);
-                        slaveInfos.add(slaveInfo);
-                        map.clear();
-                    }
+        List<SlaveInfo> slaveInfos = new ArrayList<>();//这个就是解析后的从节点集合
+        String[] arrs = msg.split(" ");
+        Map<String, Object> map = new HashMap<>();
+        String key = null;
+        for (int i = 0; i < arrs.length; i++) {
+            if (i % 2 == 0) {
+                key = arrs[i];
+                if (map.containsKey(key)) {
+                    SlaveInfo slaveInfo = new SlaveInfo();
+                    FieldOrmUtil.MapToBean(map, slaveInfo);
+                    slaveInfos.add(slaveInfo);
+                    map.clear();
+                }
+            } else {
+                map.put(key, arrs[i]);
+                if (i == arrs.length - 1) {
+                    SlaveInfo slaveInfo = new SlaveInfo();
+                    FieldOrmUtil.MapToBean(map, slaveInfo);
+                    slaveInfos.add(slaveInfo);
+                    map.clear();
                 }
             }
-            if (context instanceof FromContext) {
-                FromContext fromContext = (FromContext) context;
-                for (SlaveInfo slaveInfo : slaveInfos) {
-                    fromContext.addSentinelSlaveInfo(slaveInfo);
-                }
-                fromContext.setFromNodesInfoGetSuccess();
-            } else if (context instanceof ToContext) {
-                ToContext toContext = (ToContext) context;
-                for (SlaveInfo slaveInfo : slaveInfos) {
-                    if (slaveInfo.isActive()) {
-                        toContext.setSentinelMasterInfo(slaveInfo.getMasterHost(), slaveInfo.getMasterPort());
-                        break;
-                    }
-                }
-                toContext.setToNodesInfoGetSuccess();
+        }
+        if (context instanceof FromContext) {
+            FromContext fromContext = (FromContext) context;
+            for (SlaveInfo slaveInfo : slaveInfos) {
+                fromContext.addSentinelSlaveInfo(slaveInfo);
             }
-        }catch (Exception e){
-            logger.warn("sentinel info parse error,information incomplete ： {}",sb.toString());
+            fromContext.setFromNodesInfoGetSuccess();
+        } else if (context instanceof ToContext) {
+            ToContext toContext = (ToContext) context;
+            for (SlaveInfo slaveInfo : slaveInfos) {
+                if (slaveInfo.isActive()) {
+                    toContext.setSentinelMasterInfo(slaveInfo.getMasterHost(), slaveInfo.getMasterPort());
+                    break;
+                }
+            }
+            toContext.setToNodesInfoGetSuccess();
         }
     }
 
@@ -370,7 +362,7 @@ public class SentinelInfoHandler extends RedisChannelInboundHandler {
         }
 
         public boolean isActive() {
-            return !flags.contains("disconnected");
+            return flags.equals("slave");
         }
     }
 }
