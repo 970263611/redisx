@@ -4,6 +4,7 @@ package com.dahuaboke.redisx;
 import com.dahuaboke.redisx.common.Constants;
 import com.dahuaboke.redisx.common.annotation.FieldOrm;
 import com.dahuaboke.redisx.common.enums.Mode;
+import com.dahuaboke.redisx.common.interfaces.FieldOrmCheck;
 import com.dahuaboke.redisx.common.utils.FieldOrmUtil;
 import com.dahuaboke.redisx.common.utils.StringUtils;
 import com.dahuaboke.redisx.common.utils.YamlUtil;
@@ -24,21 +25,11 @@ public class Redisx {
         Config config = new Config();
         FieldOrmUtil.MapToBean(YamlUtil.parseYamlParam(args), config);
         Configurator.setRootLevel(Level.getLevel(config.getLogLevelGlobal()));
-        if (Mode.SENTINEL == config.getFromMode() && StringUtils.isEmpty(config.getFromMasterName())) {
-            throw new IllegalArgumentException("redisx.from.masterName");
-        }
-        if (Mode.SENTINEL == config.getToMode() && StringUtils.isEmpty(config.getToMasterName())) {
-            throw new IllegalArgumentException("redisx.to.masterName");
-        }
-        //强制全量同步必须同步rdb文件
-        if (config.isAlwaysFullSync()) {
-            config.setSyncRdb(true);
-        }
         Controller controller = new Controller(config);
         controller.start();
     }
 
-    public static class Config {
+    public static class Config implements FieldOrmCheck {
 
         @FieldOrm(value = "redisx.from.mode", defaultValue = "cluster", setType = String.class)
         private Mode fromMode;
@@ -108,6 +99,20 @@ public class Redisx {
 
         @FieldOrm(value = "redisx.from.connectMaster", defaultValue = "true")
         private boolean connectMaster;
+
+        @Override
+        public void check() {
+            if (Mode.SENTINEL == this.fromMode && StringUtils.isEmpty(this.fromMasterName)) {
+                throw new IllegalArgumentException("redisx.from.masterName");
+            }
+            if (Mode.SENTINEL == this.toMode && StringUtils.isEmpty(this.toMasterName)) {
+                throw new IllegalArgumentException("redisx.to.masterName");
+            }
+            //强制全量同步必须同步rdb文件
+            if (this.isAlwaysFullSync()) {
+                this.setSyncRdb(true);
+            }
+        }
 
         public List<InetSocketAddress> getFromAddresses() {
             return fromAddresses;
@@ -304,5 +309,7 @@ public class Redisx {
         public void setConnectMaster(boolean connectMaster) {
             this.connectMaster = connectMaster;
         }
+
+
     }
 }
