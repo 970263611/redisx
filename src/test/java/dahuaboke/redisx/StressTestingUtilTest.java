@@ -1,5 +1,10 @@
 package dahuaboke.redisx;
 
+import com.dahuaboke.redisx.Redisx;
+import com.dahuaboke.redisx.common.enums.Mode;
+import com.dahuaboke.redisx.common.utils.FieldOrmUtil;
+import com.dahuaboke.redisx.common.utils.StringUtils;
+import com.dahuaboke.redisx.common.utils.YamlUtil;
 import org.junit.After;
 import org.junit.Before;
 import org.junit.Test;
@@ -8,6 +13,7 @@ import org.redisson.api.*;
 import org.redisson.client.codec.StringCodec;
 import org.redisson.config.Config;
 
+import java.net.InetSocketAddress;
 import java.security.NoSuchAlgorithmException;
 import java.security.SecureRandom;
 import java.util.*;
@@ -16,15 +22,15 @@ import java.util.concurrent.CountDownLatch;
 public class StressTestingUtilTest {
 
     //*********** 配置项 始 ***********//
-    //配置单点地址，或者集群服务器中任一地址,哨兵模式下需配置哨兵节点的ip端口
-    private String address = "redis://xxx.xxx.xxx.xxx:port";
+    //配置单点地址，或者集群服务器中任一地址,哨兵模式下需配置哨兵节点的ip端口,redis://xxx.xxx.xxx.xxx:port;
+    private String address = null;
 
     private String masterName = null;
 
     private String password = null;
 
     //类型
-    private ServerType serverType = ServerType.CLUSTER;
+    private Mode serverType = null;
 
     //并发数
     private int threadCount = 5;
@@ -52,26 +58,36 @@ public class StressTestingUtilTest {
 
     SnowflakeIdWorker idWorker = new SnowflakeIdWorker(0, 0);
 
-    enum ServerType {
-        SINGLE,
-        CLUSTER,
-        SENTINEL;
-    }
-
     public StressTestingUtilTest() throws NoSuchAlgorithmException {
     }
 
     @Before
     public void init() {
+        Redisx.Config yamlConfig = new Redisx.Config();
+        FieldOrmUtil.MapToBean(YamlUtil.parseYamlParam(null), yamlConfig);
+        if(serverType == null){
+            serverType = yamlConfig.getFromMode();
+        }
+        if(StringUtils.isEmpty(address)){
+            InetSocketAddress inetSocketAddress = yamlConfig.getFromAddresses().get(0);
+            address = "redis://" + inetSocketAddress.getHostString() + ":" + inetSocketAddress.getPort();
+        }
+        if(StringUtils.isEmpty(masterName)){
+            masterName = yamlConfig.getFromMasterName();
+        }
+        if(StringUtils.isEmpty(password)){
+            password = yamlConfig.getFromPassword();
+        }
         Config config = new Config();
         config.setCodec(new StringCodec());
         config.setThreads(threadCount + 1);
-        if (ServerType.CLUSTER == serverType) {
-            config.useClusterServers().addNodeAddress(address);
-        } else if (ServerType.SINGLE == serverType) {
-            config.useSingleServer().setAddress(address);
+        if (Mode.CLUSTER == serverType) {
+            config.useClusterServers().addNodeAddress(address).setPassword(password);
+        } else if (Mode.SINGLE == serverType) {
+            config.useSingleServer().setAddress(address).setPassword(password);
         } else {
-            config.useSentinelServers().addSentinelAddress(address).setCheckSentinelsList(false).setMasterName("mymaster");
+            config.useSentinelServers().addSentinelAddress(address).setCheckSentinelsList(false)
+                    .setMasterName(masterName).setPassword(password).setSentinelPassword(password);
         }
         this.redisson = Redisson.create(config);
         threadCount = threadCount < 1 ? 1 : threadCount;
