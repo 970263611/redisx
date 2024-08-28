@@ -240,40 +240,40 @@ public class Controller {
     }
 
     public List<InetSocketAddress> getFromMasterNodesInfo() {
-        if (!verticalScaling) {
-            if (Mode.CLUSTER == fromMode) {
-                cacheManager.clearFromNodesInfo();
-            }
-            if (Mode.CLUSTER == fromMode || Mode.SENTINEL == fromMode) {
-                for (InetSocketAddress address : fromNodeAddresses) {
-                    String host = address.getHostString();
-                    int port = address.getPort();
-                    FromNode fromNode = new FromNode("GetFromNodesInfo", cacheManager, host, port, false, false, false, true);
-                    fromNode.start();
-                    if (fromNode.isStarted(5000)) {
-                        FromContext context = (FromContext) fromNode.getContext();
-                        try {
-                            if (context == null) {
-                                logger.error("[{}:{}] context is null", host, port);
-                            }
-                            if (context.nodesInfoGetSuccess(5000)) {
-                                break;
-                            }
-                        } finally {
-                            context.close();
+        if (Mode.CLUSTER == fromMode) {
+            cacheManager.clearFromNodesInfo();
+        }
+        if (Mode.CLUSTER == fromMode || Mode.SENTINEL == fromMode) {
+            for (InetSocketAddress address : fromNodeAddresses) {
+                String host = address.getHostString();
+                int port = address.getPort();
+                FromNode fromNode = new FromNode("GetFromNodesInfo", cacheManager, host, port, false, false, false, true);
+                fromNode.start();
+                if (fromNode.isStarted(5000)) {
+                    FromContext context = (FromContext) fromNode.getContext();
+                    try {
+                        if (context == null) {
+                            logger.error("[{}:{}] context is null", host, port);
                         }
-                    } else {
-                        logger.error("[{}:{}] nodes info get failed", host, port);
+                        if (context.nodesInfoGetSuccess(5000)) {
+                            break;
+                        }
+                    } finally {
+                        context.close();
                     }
+                } else {
+                    logger.error("[{}:{}] nodes info get failed", host, port);
                 }
             }
-            if (Mode.CLUSTER == fromMode) {
-                if (cacheManager.getFromClusterNodesInfo().isEmpty()) {
-                    return null;
-                }
+        }
+        if (Mode.CLUSTER == fromMode) {
+            if (cacheManager.getFromClusterNodesInfo().isEmpty()) {
+                return null;
+            }
+            List<InetSocketAddress> addresses = new ArrayList<>();
+            if (!verticalScaling) {
                 fromNodeAddresses.clear();
                 List<ClusterInfoHandler.SlotInfo> masterSlotInfoList = new ArrayList<>();
-                List<InetSocketAddress> addresses = new ArrayList<>();
                 for (ClusterInfoHandler.SlotInfo slotInfo : cacheManager.getFromClusterNodesInfo()) {
                     fromNodeAddresses.add(new InetSocketAddress(slotInfo.getIp(), slotInfo.getPort()));
                     if (slotInfo.isActiveMaster()) {
@@ -299,24 +299,46 @@ public class Controller {
                         }
                     }
                 }
-                return addresses;
-            } else if (Mode.SENTINEL == fromMode) {
-                List<InetSocketAddress> addresses = new ArrayList<>();
-                for (SentinelInfoHandler.SlaveInfo slaveInfo : cacheManager.getFromSentinelNodesInfo()) {
-                    if (slaveInfo.isActive()) {
-                        if (connectFromMaster) {
-                            addresses.add(new InetSocketAddress(slaveInfo.getMasterHost(), slaveInfo.getMasterPort()));
-                        } else {
-                            addresses.add(new InetSocketAddress(slaveInfo.getIp(), slaveInfo.getPort()));
+            } else {
+                for (InetSocketAddress fromNodeAddress : fromNodeAddresses) {
+                    boolean select = false;
+                    String fromHost = fromNodeAddress.getHostString();
+                    int fromPort = fromNodeAddress.getPort();
+                    for (ClusterInfoHandler.SlotInfo slotInfo : cacheManager.getFromClusterNodesInfo()) {
+                        String host = slotInfo.getIp();
+                        int port = slotInfo.getPort();
+                        if (fromHost.equals(host) && fromPort == port) {
+                            if (!slotInfo.isActive()) {
+                                logger.error("Select node need active, but down [{}:{}]", fromHost, fromPort);
+                                return null;
+                            }
+                            select = true;
                         }
-                        break;
+                    }
+                    if (!select) {
+                        logger.error("Select node need in cluster [{}:{}]", fromHost, fromPort);
+                        return null;
                     }
                 }
-                if (addresses.isEmpty()) {
-                    return null;
-                }
-                return addresses;
+                addresses.addAll(fromNodeAddresses);
             }
+            return addresses;
+        } else if (Mode.SENTINEL == fromMode) {
+            List<InetSocketAddress> addresses = new ArrayList<>();
+            for (SentinelInfoHandler.SlaveInfo slaveInfo : cacheManager.getFromSentinelNodesInfo()) {
+                if (slaveInfo.isActive()) {
+                    if (connectFromMaster) {
+                        addresses.add(new InetSocketAddress(slaveInfo.getMasterHost(), slaveInfo.getMasterPort()));
+                    } else {
+                        addresses.add(new InetSocketAddress(slaveInfo.getIp(), slaveInfo.getPort()));
+                    }
+                    break;
+                }
+            }
+            if (addresses.isEmpty()) {
+                return null;
+            }
+            return addresses;
         }
         return fromNodeAddresses;
     }
