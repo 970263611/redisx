@@ -6,6 +6,8 @@ import com.dahuaboke.redisx.common.utils.CRC16;
 import org.slf4j.Logger;
 import org.slf4j.LoggerFactory;
 
+import java.util.ArrayList;
+import java.util.List;
 import java.util.concurrent.BlockingDeque;
 
 /**
@@ -34,26 +36,47 @@ public class Context {
         this.consoleStart = consoleStart;
     }
 
-    public boolean isAdapt(Mode mode, String command) {
+    public boolean isAdapt(Mode mode, byte[] command) {
         return false;
+    }
+
+    public boolean isAdapt(Mode mode, String command) {
+        return isAdapt(mode,command.getBytes());
     }
 
     public String sendCommand(Object command, int timeout) {
         throw new RuntimeException();
     }
 
-    protected int calculateHash(String command) {
-        if (command == null || command.length() == 0) {
+    protected int calculateHash(byte[] command) {
+        if (command == null || command.length == 0) {
             return -1;
         }
-        int leftIdx = command.indexOf("{");
-        if (leftIdx != -1 && leftIdx < (command.length() - 1)) {//存在左括号 且 左括号位置不是最后一个
-            int rightIdx = command.indexOf("}", leftIdx + 1);//在第一个左括号的右侧找第一个右括号
-            if (rightIdx != -1 && leftIdx < (rightIdx - 1)) {//存在右括号 且 左右括号之间必须有内容
-                command = command.substring(leftIdx + 1, rightIdx);
+        List<Byte> keyByte = new ArrayList<Byte>();
+        boolean startFlag = false;
+        boolean endFlag = false;
+        for(byte b : command) {
+            if(b == '{'){
+                startFlag = true;
+                continue;
+            }
+            if(b == '}'){
+                endFlag = true;
+                break;
+            }
+            if(startFlag){
+                keyByte.add(b);
             }
         }
-        return CRC16.crc16(command.getBytes());
+        if(startFlag && endFlag && keyByte.size() > 0){
+            byte[] arrs = new byte[keyByte.size()];
+            for(int i = 0; i < keyByte.size(); i++){
+                arrs[i] = keyByte.get(i);
+            }
+            return CRC16.crc16(arrs);
+        } else{
+            return CRC16.crc16(command);
+        }
     }
 
     public boolean isClose() {

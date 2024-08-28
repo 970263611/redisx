@@ -5,13 +5,14 @@ import com.dahuaboke.redisx.Context;
 import com.dahuaboke.redisx.common.command.Command;
 import com.dahuaboke.redisx.common.enums.Mode;
 import io.netty.buffer.ByteBuf;
-import io.netty.buffer.ByteBufAllocator;
+import io.netty.buffer.Unpooled;
 import io.netty.handler.codec.redis.ArrayRedisMessage;
 import io.netty.handler.codec.redis.FullBulkStringRedisMessage;
 import io.netty.handler.codec.redis.RedisMessage;
 import org.slf4j.Logger;
 import org.slf4j.LoggerFactory;
 
+import java.nio.charset.Charset;
 import java.util.ArrayList;
 import java.util.LinkedList;
 import java.util.List;
@@ -29,9 +30,10 @@ public class SyncCommand extends Command {
     private int length = 0;
     private int syncLength;
     private boolean needAddLengthToOffset;
-    private RedisMessage redisMessage;
+    private ArrayRedisMessage redisMessage;
     private String stringCommand;
-    String key;
+    private byte[] key;
+
     private static List<String> specialCommandPrefix = new ArrayList<String>() {{
         add("BITOP");
         add("MEMORY");
@@ -53,9 +55,16 @@ public class SyncCommand extends Command {
         this.needAddLengthToOffset = needAddLengthToOffset;
     }
 
-    public SyncCommand(Context context, List<String> command, boolean needAddLengthToOffset) {
+    public SyncCommand(Context context, List<byte[]> command, boolean needAddLengthToOffset) {
         this.context = context;
-        this.command = command;
+        List<RedisMessage> children = new LinkedList<>();
+        for (byte[] commandBytes : command) {
+            this.command.add(new String(commandBytes, Charset.defaultCharset()));
+            ByteBuf buffer = Unpooled.buffer();
+            buffer.writeBytes(commandBytes);
+            children.add(new FullBulkStringRedisMessage(buffer));
+        }
+        this.redisMessage = new ArrayRedisMessage(children);
         this.needAddLengthToOffset = needAddLengthToOffset;
     }
 
@@ -64,26 +73,36 @@ public class SyncCommand extends Command {
     }
 
     public void buildCommand() {
-        List<RedisMessage> children = new LinkedList<>();
-        for (String c : command) {
-            ByteBuf buffer = ByteBufAllocator.DEFAULT.buffer();
-            buffer.writeBytes(c.getBytes());
-            children.add(new FullBulkStringRedisMessage(buffer));
-        }
-        redisMessage = new ArrayRedisMessage(children);
-        String s = command.get(0);
-        if (command.size() > 1) {
-            if (specialCommandPrefix.contains(s.toUpperCase())) {
-                key = command.get(2);
-            } else {
-                key = command.get(1);
-            }
-        } else {
-            logger.warn("Command not has key [{}]", command);
-            key = s;
-        }
         getStringCommand();
         command = null;
+        boolean keyFlag = false;
+        if (redisMessage != null && redisMessage.children().size() > 1 && redisMessage.children().get(0) instanceof FullBulkStringRedisMessage) {
+            List<RedisMessage> children = redisMessage.children();
+            FullBulkStringRedisMessage rm0 = (FullBulkStringRedisMessage)children.get(0);
+            String redisCommand = rm0.content().toString(Charset.defaultCharset());
+            if (specialCommandPrefix.contains(redisCommand)) {
+                if(children.size() > 2 && children.get(2) instanceof FullBulkStringRedisMessage){
+                    FullBulkStringRedisMessage rm2 = (FullBulkStringRedisMessage)children.get(2);
+                    key = new byte[rm2.content().readableBytes()];
+                    rm2.content().getBytes(0,key);
+                    keyFlag = true;
+                }
+            } else {
+                if(children.get(1) instanceof FullBulkStringRedisMessage){
+                    FullBulkStringRedisMessage rm1 = (FullBulkStringRedisMessage)children.get(1);
+                    key = new byte[rm1.content().readableBytes()];
+                    rm1.content().getBytes(0,key);
+                    keyFlag = true;
+                }
+            }
+            if(!keyFlag){
+                key = new byte[rm0.content().readableBytes()];
+                rm0.content().getBytes(0,key);
+            }
+        }
+        if (!keyFlag) {
+            logger.warn("Command not has key [{}]", command);
+        }
     }
 
     public int getSyncLength() {
@@ -134,7 +153,7 @@ public class SyncCommand extends Command {
         return Constants.PING_COMMAND.equalsIgnoreCase(stringCommand) || Constants.MULTI.equalsIgnoreCase(stringCommand) || Constants.EXEC.equalsIgnoreCase(stringCommand);
     }
 
-    public String getKey() {
+    public byte[] getKey() {
         return key;
     }
 
@@ -144,5 +163,25 @@ public class SyncCommand extends Command {
 
     public Context getContext() {
         return context;
+    }
+
+    public void setRedisMessage(RedisMessage redisMessage) {
+        if(redisMessage instanceof ArrayRedisMessage) {
+            ArrayRedisMessage arrayRedisMessage = (ArrayRedisMessage)redisMessage;
+            List<RedisMessage> children = new LinkedList<>();
+            for (RedisMessage childMessage : arrayRedisMessage.children()) {
+                if(childMessage instanceof FullBulkStringRedisMessage){
+                    FullBulkStringRedisMessage fullBulkStringRedisMessage = (FullBulkStringRedisMessage)childMessage;
+                    ByteBuf buffer = Unpooled.buffer();
+                    fullBulkStringRedisMessage.content().markReaderIndex();
+                    buffer.writeBytes(fullBulkStringRedisMessage.content());
+                    fullBulkStringRedisMessage.content().resetReaderIndex();
+                    children.add(new FullBulkStringRedisMessage(buffer));
+                } else {
+                    children.add(childMessage);
+                }
+            }
+            this.redisMessage = new ArrayRedisMessage(children);
+        }
     }
 }

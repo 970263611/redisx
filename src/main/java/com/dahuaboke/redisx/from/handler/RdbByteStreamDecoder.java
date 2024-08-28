@@ -158,9 +158,9 @@ public class RdbByteStreamDecoder extends ChannelInboundHandlerAdapter {
                 RdbData data = info.getRdbData();
                 if (data.getDataNum() == 1) {
                     long selectDB = data.getSelectDB();
-                    SyncCommand syncCommand2 = new SyncCommand(fromContext, new ArrayList<String>() {{
-                        add(Constants.SELECT);
-                        add(String.valueOf(selectDB));
+                    SyncCommand syncCommand2 = new SyncCommand(fromContext, new ArrayList<byte[]>() {{
+                        add(Constants.SELECT.getBytes());
+                        add(String.valueOf(selectDB).getBytes());
                     }}, false);
                     boolean success2 = fromContext.publish(syncCommand2);
                     if (success2) {
@@ -169,14 +169,14 @@ public class RdbByteStreamDecoder extends ChannelInboundHandlerAdapter {
                         logger.error("Select db failed [{}]", selectDB);
                     }
                 }
-                List<List<String>> commands = commandParser.parser(data);
-                for (List<String> command : commands) {
+                List<List<byte[]>> commands = commandParser.parser(data);
+                for (List<byte[]> command : commands) {
                     SyncCommand syncCommand1 = new SyncCommand(fromContext, command, false);
                     boolean success1 = fromContext.publish(syncCommand1);
                     if (success1) {
-                        logger.trace("Success rdb data [{}]", commands);
+                        logger.trace("Success rdb data [{}]", syncCommand1.getStringCommand());
                     } else {
-                        logger.error("Sync rdb data [{}] failed", commands);
+                        logger.error("Sync rdb data [{}] failed", syncCommand1.getStringCommand());
                     }
                 }
             }

@@ -31,6 +31,7 @@ public abstract class RedisChannelInboundHandler extends SimpleChannelInboundHan
     @Override
     protected void channelRead0(ChannelHandlerContext ctx, RedisMessage msg) throws Exception {
         SyncCommand syncCommand = new SyncCommand(context, true);
+        syncCommand.setRedisMessage(msg);
         parseRedisMessage(msg, syncCommand);
         channelRead1(ctx, syncCommand);
     }

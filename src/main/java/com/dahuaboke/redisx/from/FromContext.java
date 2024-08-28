@@ -97,7 +97,7 @@ public class FromContext extends Context {
     }
 
     @Override
-    public boolean isAdapt(Mode mode, String command) {
+    public boolean isAdapt(Mode mode, byte[] command) {
         if (Mode.CLUSTER == mode && command != null) {
             int hash = calculateHash(command) % Constants.COUNT_SLOT_NUMS;
             return hash >= slotBegin && hash <= slotEnd;

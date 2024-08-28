@@ -100,7 +100,7 @@ public final class CacheManager {
     }
 
     public boolean publish(SyncCommand command) {
-        String key = command.getKey();
+        byte[] key = command.getKey();
         for (Map.Entry<Context, BlockingQueue<SyncCommand>> entry : cache.entrySet()) {
             Context k = entry.getKey();
             BlockingQueue<SyncCommand> v = entry.getValue();

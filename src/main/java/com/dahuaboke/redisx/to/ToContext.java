@@ -89,7 +89,7 @@ public class ToContext extends Context {
     }
 
     @Override
-    public boolean isAdapt(Mode mode, String command) {
+    public boolean isAdapt(Mode mode, byte[] command) {
         if (Mode.CLUSTER == mode && command != null) {
             int hash = calculateHash(command) % Constants.COUNT_SLOT_NUMS;
             return hash >= slotBegin && hash <= slotEnd;
@@ -139,7 +139,7 @@ public class ToContext extends Context {
                         } else {
                             flag = (String) command;
                         }
-                        if (toContext.isAdapt(toMode, flag)) {
+                        if (toContext.isAdapt(toMode, flag.getBytes())) {
                             return toContext.sendCommand(command, 1000, true, null);
                         }
                     }
