@@ -64,9 +64,9 @@ public class SyncInitializationHandler extends ChannelInboundHandlerAdapter {
                             if (Constants.OK_COMMAND.equalsIgnoreCase(reply) && state == SENT_PORT) {
                                 clearReply(ctx);
                                 state = SENT_ADDRESS;
-                                if(Mode.SENTINEL == fromContext.getFromMode()){
+                                if (Mode.SENTINEL == fromContext.getFromMode()) {
                                     channel.writeAndFlush(Constants.CONFIG_HOST_COMMAND_PREFIX + Constants.REGISTER_HOST);
-                                }else{
+                                } else {
                                     channel.writeAndFlush(Constants.CONFIG_HOST_COMMAND_PREFIX + fromContext.getLocalHost());
                                 }
                                 logger.debug("Sent replconf address command [{}]", fromContext.getLocalHost());

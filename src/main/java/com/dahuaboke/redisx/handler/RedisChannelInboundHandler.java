@@ -1,7 +1,7 @@
 package com.dahuaboke.redisx.handler;
 
-import com.dahuaboke.redisx.common.Constants;
 import com.dahuaboke.redisx.Context;
+import com.dahuaboke.redisx.common.Constants;
 import com.dahuaboke.redisx.common.command.from.SyncCommand;
 import io.netty.buffer.ByteBuf;
 import io.netty.channel.ChannelHandlerContext;

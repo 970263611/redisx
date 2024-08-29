@@ -19,6 +19,7 @@ import org.slf4j.LoggerFactory;
 
 import java.util.concurrent.CountDownLatch;
 import java.util.concurrent.Executor;
+import java.util.concurrent.TimeUnit;
 
 /**
  * 2024/5/13 10:32
@@ -100,13 +101,18 @@ public class ToClient {
     public boolean sendCommand(Object command, boolean needIsSuccess) {
         if (channel.isActive()) {
             if (needIsSuccess) {
+                CountDownLatch countDownLatch = new CountDownLatch(1);
                 ChannelFuture channelFuture = channel.writeAndFlush(command);
                 try {
-                    channelFuture.await();
+                    channelFuture.addListener((ChannelFutureListener) channelFuture1 -> {
+                        if (channelFuture1.isSuccess()) {
+                            countDownLatch.countDown();
+                        }
+                    });
+                    return countDownLatch.await(1000, TimeUnit.MILLISECONDS);
                 } catch (InterruptedException e) {
                     return false;
                 }
-                return channelFuture.isSuccess();
             } else {
                 channel.writeAndFlush(command);
             }
@@ -133,7 +139,7 @@ public class ToClient {
                 channel.closeFuture().addListener((ChannelFutureListener) channelFuture -> {
                     if (channelFuture.isSuccess()) {
                         group.shutdownGracefully();
-                        logger.warn("Close [To] [{}:{}]", host, port);
+                        logger.info("Close [To] [{}:{}]", host, port);
                     } else {
                         logger.error("Close [To] error", channelFuture.cause());
                     }

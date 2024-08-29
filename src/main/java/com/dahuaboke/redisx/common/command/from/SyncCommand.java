@@ -1,7 +1,7 @@
 package com.dahuaboke.redisx.common.command.from;
 
-import com.dahuaboke.redisx.common.Constants;
 import com.dahuaboke.redisx.Context;
+import com.dahuaboke.redisx.common.Constants;
 import com.dahuaboke.redisx.common.command.Command;
 import com.dahuaboke.redisx.common.enums.Mode;
 import io.netty.buffer.ByteBuf;
@@ -78,26 +78,26 @@ public class SyncCommand extends Command {
         boolean keyFlag = false;
         if (redisMessage != null && redisMessage.children().size() > 1 && redisMessage.children().get(0) instanceof FullBulkStringRedisMessage) {
             List<RedisMessage> children = redisMessage.children();
-            FullBulkStringRedisMessage rm0 = (FullBulkStringRedisMessage)children.get(0);
+            FullBulkStringRedisMessage rm0 = (FullBulkStringRedisMessage) children.get(0);
             String redisCommand = rm0.content().toString(Charset.defaultCharset());
             if (specialCommandPrefix.contains(redisCommand)) {
-                if(children.size() > 2 && children.get(2) instanceof FullBulkStringRedisMessage){
-                    FullBulkStringRedisMessage rm2 = (FullBulkStringRedisMessage)children.get(2);
+                if (children.size() > 2 && children.get(2) instanceof FullBulkStringRedisMessage) {
+                    FullBulkStringRedisMessage rm2 = (FullBulkStringRedisMessage) children.get(2);
                     key = new byte[rm2.content().readableBytes()];
-                    rm2.content().getBytes(0,key);
+                    rm2.content().getBytes(0, key);
                     keyFlag = true;
                 }
             } else {
-                if(children.get(1) instanceof FullBulkStringRedisMessage){
-                    FullBulkStringRedisMessage rm1 = (FullBulkStringRedisMessage)children.get(1);
+                if (children.get(1) instanceof FullBulkStringRedisMessage) {
+                    FullBulkStringRedisMessage rm1 = (FullBulkStringRedisMessage) children.get(1);
                     key = new byte[rm1.content().readableBytes()];
-                    rm1.content().getBytes(0,key);
+                    rm1.content().getBytes(0, key);
                     keyFlag = true;
                 }
             }
-            if(!keyFlag){
+            if (!keyFlag) {
                 key = new byte[rm0.content().readableBytes()];
-                rm0.content().getBytes(0,key);
+                rm0.content().getBytes(0, key);
             }
         }
         if (!keyFlag) {
@@ -166,12 +166,12 @@ public class SyncCommand extends Command {
     }
 
     public void setRedisMessage(RedisMessage redisMessage) {
-        if(redisMessage instanceof ArrayRedisMessage) {
-            ArrayRedisMessage arrayRedisMessage = (ArrayRedisMessage)redisMessage;
+        if (redisMessage instanceof ArrayRedisMessage) {
+            ArrayRedisMessage arrayRedisMessage = (ArrayRedisMessage) redisMessage;
             List<RedisMessage> children = new LinkedList<>();
             for (RedisMessage childMessage : arrayRedisMessage.children()) {
-                if(childMessage instanceof FullBulkStringRedisMessage){
-                    FullBulkStringRedisMessage fullBulkStringRedisMessage = (FullBulkStringRedisMessage)childMessage;
+                if (childMessage instanceof FullBulkStringRedisMessage) {
+                    FullBulkStringRedisMessage fullBulkStringRedisMessage = (FullBulkStringRedisMessage) childMessage;
                     ByteBuf buffer = Unpooled.buffer();
                     fullBulkStringRedisMessage.content().markReaderIndex();
                     buffer.writeBytes(fullBulkStringRedisMessage.content());

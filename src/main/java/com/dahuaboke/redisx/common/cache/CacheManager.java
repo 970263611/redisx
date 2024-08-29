@@ -2,8 +2,8 @@ package com.dahuaboke.redisx.common.cache;
 
 import com.dahuaboke.redisx.Context;
 import com.dahuaboke.redisx.common.command.from.SyncCommand;
-import com.dahuaboke.redisx.console.ConsoleContext;
 import com.dahuaboke.redisx.common.enums.Mode;
+import com.dahuaboke.redisx.console.ConsoleContext;
 import com.dahuaboke.redisx.from.FromContext;
 import com.dahuaboke.redisx.handler.ClusterInfoHandler;
 import com.dahuaboke.redisx.handler.SentinelInfoHandler;

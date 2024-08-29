@@ -12,7 +12,6 @@ import io.netty.handler.codec.redis.RedisArrayAggregator;
 import io.netty.handler.codec.redis.RedisBulkStringAggregator;
 import io.netty.handler.codec.redis.RedisDecoder;
 import io.netty.handler.codec.redis.RedisEncoder;
-import io.netty.util.ResourceLeakDetector;
 import org.slf4j.Logger;
 import org.slf4j.LoggerFactory;
 
@@ -87,7 +86,6 @@ public class FromClient {
                         }
                     }
                 });
-        ResourceLeakDetector.setLevel(ResourceLeakDetector.Level.ADVANCED);
         ChannelFuture sync = bootstrap.connect(masterHost, masterPort).addListener((ChannelFutureListener) future -> {
             if (future.isSuccess()) {
                 logger.info("[From] started at [{}:{}]", masterHost, masterPort);
@@ -118,7 +116,7 @@ public class FromClient {
                 channel.closeFuture().addListener((ChannelFutureListener) channelFuture -> {
                     if (channelFuture.isSuccess()) {
                         group.shutdownGracefully();
-                        logger.warn("Close [From] [{}:{}]", fromContext.getHost(), fromContext.getPort());
+                        logger.info("Close [From] [{}:{}]", fromContext.getHost(), fromContext.getPort());
                     } else {
                         logger.error("Close [From] error", channelFuture.cause());
                     }

@@ -81,6 +81,8 @@ public class Controller {
 
     public void start() {
         logger.info("Application global id is {}", cacheManager.getId());
+        //关闭netty内存监测，不准
+        System.setProperty("io.netty.leakDetection.level", "disabled");
         //注册shutdownhook
         registerShutdownKook();
         //需要确保上一次执行结束再执行下一次任务

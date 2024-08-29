@@ -53,97 +53,100 @@ public class RdbByteStreamDecoder extends ChannelInboundHandlerAdapter {
     @Override
     public void channelRead(ChannelHandlerContext ctx, Object msg) throws Exception {
         if (msg instanceof RdbCommand) {
+            ByteBuf SEPARAPOR = Unpooled.copiedBuffer(Constants.RESP_TERMINATOR);
             ByteBuf rdb = ((RdbCommand) msg).getIn();
-
-            if (RdbType.START == rdbType && '$' == rdb.getByte(rdb.readerIndex())) {
-                rdb.readByte();//除去$
-                int index = ByteBufUtil.indexOf(Constants.SEPARAPOR, rdb);//找到首个\r\n的index
-                String isEofOrSizeStr = rdb.readBytes(index - rdb.readerIndex()).toString(CharsetUtil.UTF_8);//截取\r\n之前的内容，不包含\r\n
-                logger.info("RdbType is " + rdbType.name() + ",isEofOrSizeStr " + isEofOrSizeStr);
-                rdb.readBytes(Constants.SEPARAPOR.readableBytes());//除去首个\r\n
-                tempRdb = ByteBufAllocator.DEFAULT.buffer();//创建缓存
-                if (isEofOrSizeStr.startsWith("EOF")) {//EOF类型看收尾
-                    eofEnd = Unpooled.copiedBuffer(isEofOrSizeStr.substring(4, isEofOrSizeStr.length()).getBytes());//获取eof收尾的40位长度的校验码
-                    rdbType = RdbType.TYPE_EOF;//设置解析类型位eof类型
-                    logger.info("RdbType is " + rdbType.name() + ",Rdb EOF is " + eofEnd.toString(Charset.defaultCharset()) + ",current data length is = " + tempRdb.readableBytes());
-                } else {//LENGTH类型数长度
-                    length = Integer.parseInt(isEofOrSizeStr);//获取rdb总长度
-                    rdbType = RdbType.TYPE_LENGTH;//设置解析类型位length类型
-                    logger.info("RdbType is " + rdbType.name() + ",RdbLength is " + length + ",current data length is = " + tempRdb.readableBytes());
-                }
-            }
-
-            ByteBuf rdbBuf = null;//需要解析的rdb内容
-            ByteBuf commondBuf = null;//如果发生粘包，这里存放除了Rdb的后续内容
-
-            if (rdb.readableBytes() != 0) {
-                if (RdbType.TYPE_LENGTH == rdbType) {
-                    tempRdb.writeBytes(rdb);//把内容写入缓存
-                    if (length == tempRdb.readableBytes()) {//如果rdb总长正好等于缓存大小，则开始执行解析，并且不存在需要向后发布的内容
-                        rdbBuf = tempRdb;
-                        rdbType = RdbType.END;
-                    } else if (length < tempRdb.readableBytes()) {//如果rdb总长小于缓存大小，则拆分缓存，开始执行解析，并且存在需要向后发布的内容
-                        rdbBuf = tempRdb.slice(0, length);
-                        commondBuf = tempRdb.slice(length, tempRdb.writerIndex() - length);
-                        rdbType = RdbType.END;
+            try {
+                if (RdbType.START == rdbType && '$' == rdb.getByte(rdb.readerIndex())) {
+                    rdb.readByte();//除去$
+                    int index = ByteBufUtil.indexOf(SEPARAPOR, rdb);//找到首个\r\n的index
+                    String isEofOrSizeStr = rdb.readBytes(index - rdb.readerIndex()).toString(CharsetUtil.UTF_8);//截取\r\n之前的内容，不包含\r\n
+                    logger.info("RdbType is " + rdbType.name() + ",isEofOrSizeStr " + isEofOrSizeStr);
+                    rdb.readBytes(SEPARAPOR.readableBytes());//除去首个\r\n
+                    tempRdb = ByteBufAllocator.DEFAULT.buffer();//创建缓存
+                    if (isEofOrSizeStr.startsWith("EOF")) {//EOF类型看收尾
+                        eofEnd = Unpooled.copiedBuffer(isEofOrSizeStr.substring(4, isEofOrSizeStr.length()).getBytes());//获取eof收尾的40位长度的校验码
+                        rdbType = RdbType.TYPE_EOF;//设置解析类型位eof类型
+                        logger.info("RdbType is " + rdbType.name() + ",Rdb EOF is " + eofEnd.toString(Charset.defaultCharset()) + ",current data length is = " + tempRdb.readableBytes());
+                    } else {//LENGTH类型数长度
+                        length = Integer.parseInt(isEofOrSizeStr);//获取rdb总长度
+                        rdbType = RdbType.TYPE_LENGTH;//设置解析类型位length类型
+                        logger.info("RdbType is " + rdbType.name() + ",RdbLength is " + length + ",current data length is = " + tempRdb.readableBytes());
                     }
-                    logger.info("RdbType is " + rdbType.name() + ",RdbLength is " + length + ",current data length is = " + tempRdb.readableBytes());
-                } else if (RdbType.TYPE_EOF == rdbType) {
-                    int searchIndex = tempRdb.writerIndex() >= 40 ? tempRdb.writerIndex() - 40 : 0;//防止拆包，从总体缓存的后40位开始检索
-                    tempRdb.writeBytes(rdb);//把内容写入缓存
-                    tempRdb.readerIndex(searchIndex);//防止拆包，从总体缓存的后40位开始检索
-                    int index = ByteBufUtil.indexOf(eofEnd, tempRdb);//检索
-                    if (index != -1) {
-                        rdbType = RdbType.END;
-                        tempRdb.readerIndex(0);//读标识设置为0
-                        rdbBuf = tempRdb.slice(0, index + 40);//rdb全部内容 index + 40位的eof
-                        commondBuf = tempRdb.slice(index + 40, tempRdb.writerIndex() - index - 40);//命令内容
-                    }
-                    tempRdb.readerIndex(0);
-                    logger.info("RdbType is " + rdbType.name() + ",current data length is = " + tempRdb.readableBytes());
                 }
 
-                if (RdbType.END == rdbType) {//开始解析Rdb
-                    length = -1;
-                    eofEnd = null;
-                    rdbType = RdbType.START;
-                    ctx.channel().attr(Constants.RDB_STREAM_NEXT).set(false);
-                    if (fromContext.isSyncRdb()) {
-                        fromContext.setRdbAckOffset(true);
-                        ByteBuf finalRdbBuf = rdbBuf;
-                        CompletableFuture<Void> future = CompletableFuture.supplyAsync(() -> {
-                            String threadName = Constants.PROJECT_NAME + "-RdbParseThread-" + fromContext.getHost() + ":" + fromContext.getPort();
-                            Thread.currentThread().setName(threadName);
-                            parse(finalRdbBuf);
-                            return null;
-                        });
-                        future.exceptionally(e -> {
-                            logger.error("Parse rdb stream error", e);
-                            return null;
-                        });
-                        while (!future.isDone()) {
-                            if (!fromContext.isClose()) {
-                                fromContext.ackOffset();
-                            }
-                            Thread.sleep(1000);
+                ByteBuf rdbBuf = null;//需要解析的rdb内容
+                ByteBuf commondBuf = null;//如果发生粘包，这里存放除了Rdb的后续内容
+
+                if (rdb.readableBytes() != 0) {
+                    if (RdbType.TYPE_LENGTH == rdbType) {
+                        tempRdb.writeBytes(rdb);//把内容写入缓存
+                        if (length == tempRdb.readableBytes()) {//如果rdb总长正好等于缓存大小，则开始执行解析，并且不存在需要向后发布的内容
+                            rdbBuf = tempRdb;
+                            rdbType = RdbType.END;
+                        } else if (length < tempRdb.readableBytes()) {//如果rdb总长小于缓存大小，则拆分缓存，开始执行解析，并且存在需要向后发布的内容
+                            rdbBuf = tempRdb.slice(0, length);
+                            commondBuf = tempRdb.slice(length, tempRdb.writerIndex() - length);
+                            rdbType = RdbType.END;
                         }
-                        fromContext.setRdbAckOffset(false);
-                        logger.info("The RDB stream has been processed");
+                        logger.info("RdbType is " + rdbType.name() + ",RdbLength is " + length + ",current data length is = " + tempRdb.readableBytes());
+                    } else if (RdbType.TYPE_EOF == rdbType) {
+                        int searchIndex = tempRdb.writerIndex() >= 40 ? tempRdb.writerIndex() - 40 : 0;//防止拆包，从总体缓存的后40位开始检索
+                        tempRdb.writeBytes(rdb);//把内容写入缓存
+                        tempRdb.readerIndex(searchIndex);//防止拆包，从总体缓存的后40位开始检索
+                        int index = ByteBufUtil.indexOf(eofEnd, tempRdb);//检索
+                        if (index != -1) {
+                            rdbType = RdbType.END;
+                            tempRdb.readerIndex(0);//读标识设置为0
+                            rdbBuf = tempRdb.slice(0, index + 40);//rdb全部内容 index + 40位的eof
+                            commondBuf = tempRdb.slice(index + 40, tempRdb.writerIndex() - index - 40);//命令内容
+                        }
+                        tempRdb.readerIndex(0);
+                        logger.info("RdbType is " + rdbType.name() + ",current data length is = " + tempRdb.readableBytes());
+                    }
+
+                    if (RdbType.END == rdbType) {//开始解析Rdb
+                        length = -1;
+                        eofEnd = null;
+                        rdbType = RdbType.START;
+                        ctx.channel().attr(Constants.RDB_STREAM_NEXT).set(false);
+                        if (fromContext.isSyncRdb()) {
+                            fromContext.setRdbAckOffset(true);
+                            ByteBuf finalRdbBuf = rdbBuf;
+                            CompletableFuture<Void> future = CompletableFuture.supplyAsync(() -> {
+                                String threadName = Constants.PROJECT_NAME + "-RdbParseThread-" + fromContext.getHost() + ":" + fromContext.getPort();
+                                Thread.currentThread().setName(threadName);
+                                parse(finalRdbBuf);
+                                return null;
+                            });
+                            future.exceptionally(e -> {
+                                logger.error("Parse rdb stream error", e);
+                                return null;
+                            });
+                            while (!future.isDone()) {
+                                if (!fromContext.isClose()) {
+                                    fromContext.ackOffset();
+                                }
+                                Thread.sleep(1000);
+                            }
+                            fromContext.setRdbAckOffset(false);
+                            logger.info("The RDB stream has been processed");
+                        }
+                    }
+                    if (commondBuf != null && commondBuf.isReadable()) {//命令如何有内容，继续往下走
+                        ctx.fireChannelRead(commondBuf);
+                    } else {
+                        if (rdbBuf != null) {
+                            tempRdb.release();
+                        }
                     }
                 }
-                if (commondBuf != null && commondBuf.isReadable()) {//命令如何有内容，继续往下走
-                    ctx.fireChannelRead(commondBuf);
-                } else {
-                    if (rdbBuf != null) {
-                        rdbBuf.release();
-                    }
-                }
+            } finally {
+                SEPARAPOR.release();
+                rdb.release();
             }
-            rdb.release();
         } else {
             ctx.fireChannelRead(msg);
         }
-
     }
 
     private void parse(ByteBuf byteBuf) {

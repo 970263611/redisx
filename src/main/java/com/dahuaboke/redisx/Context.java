@@ -41,7 +41,7 @@ public class Context {
     }
 
     public boolean isAdapt(Mode mode, String command) {
-        return isAdapt(mode,command.getBytes());
+        return isAdapt(mode, command.getBytes());
     }
 
     public String sendCommand(Object command, int timeout) {
@@ -55,26 +55,26 @@ public class Context {
         List<Byte> keyByte = new ArrayList<Byte>();
         boolean startFlag = false;
         boolean endFlag = false;
-        for(byte b : command) {
-            if(b == '{'){
+        for (byte b : command) {
+            if (b == '{') {
                 startFlag = true;
                 continue;
             }
-            if(b == '}'){
+            if (b == '}') {
                 endFlag = true;
                 break;
             }
-            if(startFlag){
+            if (startFlag) {
                 keyByte.add(b);
             }
         }
-        if(startFlag && endFlag && keyByte.size() > 0){
+        if (startFlag && endFlag && keyByte.size() > 0) {
             byte[] arrs = new byte[keyByte.size()];
-            for(int i = 0; i < keyByte.size(); i++){
+            for (int i = 0; i < keyByte.size(); i++) {
                 arrs[i] = keyByte.get(i);
             }
             return CRC16.crc16(arrs);
-        } else{
+        } else {
             return CRC16.crc16(command);
         }
     }
