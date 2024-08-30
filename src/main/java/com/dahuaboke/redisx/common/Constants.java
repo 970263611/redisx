@@ -50,7 +50,7 @@ public class Constants {
 
     public static final String CONFIG_AUTH_PREFIX = "AUTH ";
 
-    public static final String CONFIG_PORT_COMMAND_PREFIX = "REPLCONF listening-port ";
+    public static final String CONFIG_PORT_COMMAND_PREFIX = "REPLCONF listening-port 0";
 
     public static final String CONFIG_HOST_COMMAND_PREFIX = "REPLCONF ip-address ";
 

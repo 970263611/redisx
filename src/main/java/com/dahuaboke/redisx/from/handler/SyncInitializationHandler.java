@@ -32,7 +32,6 @@ public class SyncInitializationHandler extends ChannelInboundHandlerAdapter {
         INIT,
         SENT_PING,
         SENT_PORT,
-        SENT_ADDRESS,
         SENT_CAPA,
         SENT_PSYNC;
     }
@@ -58,21 +57,10 @@ public class SyncInitializationHandler extends ChannelInboundHandlerAdapter {
                                 } else {
                                     state = SENT_CAPA;
                                 }
-                                channel.writeAndFlush(Constants.CONFIG_PORT_COMMAND_PREFIX + fromContext.getLocalPort());
-                                logger.debug("Sent replconf listening-port command [{}]", fromContext.getLocalPort());
+                                channel.writeAndFlush(Constants.CONFIG_PORT_COMMAND_PREFIX);
+                                logger.debug("Sent replconf listening-port command [{}]", Constants.CONFIG_PORT_COMMAND_PREFIX);
                             }
                             if (Constants.OK_COMMAND.equalsIgnoreCase(reply) && state == SENT_PORT) {
-                                clearReply(ctx);
-                                state = SENT_ADDRESS;
-                                if (Mode.SENTINEL == fromContext.getFromMode()) {
-                                    channel.writeAndFlush(Constants.CONFIG_HOST_COMMAND_PREFIX + Constants.REGISTER_HOST);
-                                } else {
-                                    channel.writeAndFlush(Constants.CONFIG_HOST_COMMAND_PREFIX + fromContext.getLocalHost());
-                                }
-                                logger.debug("Sent replconf address command [{}]", fromContext.getLocalHost());
-                                continue;
-                            }
-                            if (Constants.OK_COMMAND.equalsIgnoreCase(reply) && state == SENT_ADDRESS) {
                                 clearReply(ctx);
                                 state = SENT_CAPA;
                                 channel.writeAndFlush(Constants.CONFIG_CAPA_COMMAND);
