@@ -109,8 +109,8 @@ public class FromClient {
      * 销毁方法
      */
     public void destroy() {
+        fromContext.setClose(true);
         if (channel != null && channel.isActive()) {
-            fromContext.setClose(true);
             channel.close();
             try {
                 channel.closeFuture().addListener((ChannelFutureListener) channelFuture -> {

@@ -124,6 +124,7 @@ public class ToClient {
      * 销毁方法
      */
     public void destroy() {
+        toContext.setClose(true);
         if (channel != null && channel.isActive()) {
             String host = toContext.getHost();
             int port = toContext.getPort();
@@ -133,7 +134,6 @@ public class ToClient {
             } else {
                 logger.error("Flush data error [{}] [{}]", host, port);
             }
-            toContext.setClose(true);
             channel.close();
             try {
                 channel.closeFuture().addListener((ChannelFutureListener) channelFuture -> {
