@@ -1,3 +1,5 @@
+
+
 ## Redis流复制工具Redisx
 
 [![996.icu](https://img.shields.io/badge/link-996.icu-red.svg)](https://996.icu)
@@ -10,7 +12,9 @@
 
 From：数据来源的Redis集群对应Redisx中的节点。
 
-To：需要被同步数据的Redis集群对应Redisx中的节点。 	
+To：需要被同步数据的Redis集群对应Redisx中的节点。
+
+
 
 ### 启动环境
 
@@ -22,7 +26,7 @@ To：需要被同步数据的Redis集群对应Redisx中的节点。
 
 #### 组件对比
 
-| 组件           | redisx         | alibaba shake              |
+| 组件           | redisx         | REDIS shake          |
 | -------------- |----------------|----------------------------|
 | 支持版本       | 2.8及以上         | 2.8及以上                     |
 | 高可用         | 集群部署，纵向扩展      | 单机部署                       |
@@ -31,39 +35,59 @@ To：需要被同步数据的Redis集群对应Redisx中的节点。
 | 数据类型       | 五种基本类型 + stream | 五种基本类型 + stream + 3种module |
 | 其他功能       | 数据查询，集群节点宕机重连  | 数据筛选                       |
 
+### REDISX优势
+
+#### 部署简洁
+
+上手简单，通过简单的配置信息即可快速完成部署，没有复杂的操作流程，降低学习成本;
+
+服务轻量，无需其它中间件辅助，可单独完成功能，降低组件的使用成本。
+
+配置示例
+
+```
+redisx:
+  from:
+    redis:
+      version: 6.0.9  #redis版本
+    password: 1a.2b*  #Redis密码
+    mode: cluster     #Redis模式，单机：single 集群：cluster 哨兵:sentinel
+    address:          #from数据来源地址，如模式是进群或哨兵，配置单一节点即可
+      - 127.0.0.1:6379
+  to:
+    password: 1a.2b*  #redis密码
+    mode: cluster     #Redis模式，单机：single 集群：cluster 哨兵:sentinel
+    address:          #to数据来源地址，如模式是进群或哨兵，配置单一节点即可
+      - 127.0.0.1:6380
+```
+
+#### 支持高可用
+
+REDISX可进行多节点部署，指向相同Redis To节点的REDISX服务会自动形成主备模式，当REDISX主节点发生异常时，备节点会自动完成主备切换，继续进行数据同步工作，并支持断点续传，保证数据的完整性和连续性。
+
+#### 纵向扩展
+
+REDISX支持对同一集群的不同节点进行单独的同步工作，可以通过配置使REDISX服务于from集群的单一节点，分担数据同步产生的压力，大幅度提高同步效率。
+
+#### 自动修复
+
+Redis节点的状态不会影响到REDISX服务的运行。当Redis节点出现服务down机或者主节点漂移等异常现象时，REDISX可以自动判断选择正常的节点，并开始或中止数据同步工作，而无需关心Redix节点的状态会对REDISX造成影响。
+
+同时通过简单的配置，可以改变REDISX同步工作启停的条件，例如要求Redis进群节点必须完整才进行同步，从而保证数据同步的完整性；或是仅同步Redis正常节点的数据，从而使数据同步不会停滞。
+
+#### 服务监控(完善中)
+
+通过REDISX页面监控功能可以实时展示REDIS以及REDISX节点的工作状态，REDISX的数据同步速度，数据堆积以及REDISX的配置信息。同时现正在逐渐完善REDISX的告警功能，从而使REDISX运行更加稳定。
+
+#### 其它扩展
+
+通过配置可以开启REDIS的双向的数据查询功能，通过页面可以查询From和To服务中的实时数据。
+
 ### 性能测试
 
 CPU为13600KF、内存为DDR5 64G（32G双通道）的电脑上搭建3主3从两套redis集群，发压工具（30并发）和redisx同时运行，在redisx没有特殊指定启动内存大小、没有-server启动、jdk为1.8的形况下，测试结果如下：
 
 ![](images/redisx5w.jpg)
-
-### 准确性测试
-
-在默认模式下（笔记本中测试，因为反复测试切换场景，所以数据传递落后于发布数量）：
-
-Redis：2.8.0（双端单机，此版本Redis不支持集群。Redisx组件2节点）
-
-![](images/2.8.0.png)
-
-Redis：3.0.3（双端集群，3主3从。Redisx组件2节点）
-
-![](images/3.0.0.png)
-
-Redis：4.0.11（双端集群，3主3从。Redisx组件2节点）
-
-![](images/4.0.11.png)
-
-Redis：5.0.0（双端集群，3主3从。Redisx组件2节点）
-
-![](images/5.0.0.png)
-
-Redis：6.0.9（双端集群，3主3从。Redisx组件2节点）
-
-![](images/6.0.9.png)
-
-Redis：7.2.4（双端集群，3主3从。Redisx组件2节点）
-
-![](images/7.2.4.png)
 
 ### 模式支持
 
@@ -99,39 +123,83 @@ Redis：7.2.4（双端集群，3主3从。Redisx组件2节点）
 java -jar redisx.jar redisx.yml
 ```
 
-连接配置文件中参数：
+配置信息描述：
 
 ```yaml
-redisx:         
+redisx:
   from:
   	redis:
-      version: 6.0.9          #From端redis版本，From和To可以不一致（必要参数）
-    password: 1a.2b*          #From端redis密码
-    isCluster: true           #From端redis是否为集群
+  	  #(必填项)from端redis版本，建议该版本等于或低于to端版本，以防止redis指令不兼容导致的同步问题
+      version: 6.0.9
+    #from端redis密码，支持enc加密
+    #哨兵模式下，redis node节点和哨兵节点密码应保持一致
+    password: 1a.2b*
+    #(必填项)from端redis模式，单机：single 集群：cluster 哨兵:sentinel
+    mode: cluster
+    #(redis.from.mode为sentinel时必填)哨兵模式下主节点的mastername
+    masterName: myMaster
+    #(必填项)from端redis节点地址，
+    #集群模式下需配置单个或多个节点地址，建议配置完整的节点地址
+    #哨兵模式下需配置单个或多个哨兵地址，建议配置完整的哨兵节点
     address:
-      - 127.0.0.1:16001       #From端redis集群地址（必要参数，写任意个数即可）
+      - 127.0.0.1:16001
       - 127.0.0.1:16002
       - 127.0.0.1:16003
+    #纵向扩展，为true时，
+    verticalScaling: false
+    connectMaster: true
   to:
-    password: 2b*1a.          #To端redis密码
-    isCluster: true           #To端redis是否为集群
+    #to端redis密码，支持enc加密
+    password: 2b*1a.
+    #(必填项)from端redis模式，单机：single 集群：cluster 哨兵:sentinel
+    mode: cluster
+    #(redis.to.mode为sentinel时必填)哨兵模式下主节点的mastername
+    masterName: myMaster
+    #(必填项)from端redis节点地址，
+    #集群模式下需配置单个或多个节点地址，建议配置完整的节点地址
+    #哨兵模式下需配置单个或多个哨兵地址，建议配置完整的哨兵节点
     address:
-      - 127.0.0.2:16101       #To端redis集群地址（必要参数，写任意个数即可）
+      - 127.0.0.2:16101
       - 127.0.0.2:16102
       - 127.0.0.2:16103
-    flushDb: true             #是否在启动时清空to端数据，默认为false
-    flushSize: 20             #to端写入数据阈值（消息条数）
-    syncWithCheckSlot: false  #当to端集群不完整，是否需要槽信息连续才同步数据，默认为false（仅当to为集群配置生效）
+    #是否在启动时清空to端数据，默认为false
+    flushDb: false
+    #to端写入数据阈值，N条数据的write进行一次flush
+    flushSize: 20
+    #当to端集群不完整，是否需要槽信息连续才同步数据，默认为false（仅当to为集群配置生效）
+    syncWithCheckSlot: false
   console:
-    enable: false             #是否启用控制台，控制台主要用于双向查询数据
-    port: 9999                #控制台发布端口
-    timeout: 5000             #控制台查询时间
-  immediate:                  
-    enable: false             #是否开启强一致模式
-    resendTimes: 3            #强一致模式下写入失败重试次数
-  alwaysFullSync: false       #全局是否强制全量同步数据模式
-  switchFlag: REDISX-AUTHOR:DAHUA&CHANGDONGLIANG&ZHANGHUIHAO&ZHANGSHUHAN      #redisx主从切换标志，在纵向扩展时需要配置
-  syncRdb: false              #是否同步rdb文件，否：只进行增量同步 当alwaysFullSync为true时，本配置强制为true
+    #是否启用控制台，控制台主要用于双向查询数据
+    enable: false
+    #控制台发布端口
+    port: 9999
+    #控制台查询时间
+    timeout: 5000
+  #强一致模式，该模式下，单条数据完成io才会进行偏移量更新
+  #开启后可以降低服务异常导致的数据不一致问题，但会大幅度降低同步效率
+  immediate:
+    #是否开启强一致模式
+    enable: false
+    #强一致模式下写入失败重试次数
+    resendTimes: 3
+  #全局是否强制全量同步数据模式
+  #开启后每次重新开始同步均会进行全量同步，而不进行续传同步
+  #开启后，syncRdb配置强制为true
+  alwaysFullSync: false
+  #redisx主从切换标志,redis-x高可用部署、断点续传会以该标识作为key在to节点中写入实时同步状态信息
+  switchFlag: REDISX-AUTHOR:DAHUA&CHANGDONGLIANG&ZHANGHUIHAO&ZHANGSHUHAN
+  #是否同步存量数据，为false时之同步增量数据
+  syncRdb: true
+#配置文件支持enc加密，加密的配置需要使用'ENC(配置内容)'包裹
+jasypt:
+  encryptor:
+    password: KU1aBcAit9x
+    algorithm: PBEWithMD5AndDES
+    ivGeneratorClassName: org.jasypt.iv.NoIvGenerator
+logging:
+  level:
+    #全局日志级别
+    global: info
 ```
 
 ### 高可用
@@ -156,34 +224,6 @@ http://localhost:9999/console?command=get testKey&type=from
 http://localhost:9999/console?command=get testKey&type=to
 ```
 
-### 建设中问题回顾
 
-#### Rdb流解析时服务断连问题
-
-表象：此问题在建设过程自测中不存在，大批量测试时发现Reids-x组件在同步完Rdb流数据后就会和主/从节点断开连接。
-
-排查：通过分析日志发现系统处理并无异常，通过抓包工具发现大批量测试时系统在处理Rdb流文件时会导致Ack线程没有及时执行，经过分析发现是处理中阻塞主线程导致，调整成异步处理，阻塞等待同时发送心跳。
-
-#### ShutdownHook函数内容部分执行
-
-表象：我们注册了ShutdownHook函数用于处理缓冲区数据不丢失，实际过程中发现此函数只执行部分逻辑，缓冲区数据丢失，由于此函数无法断点调试，我们加了很多日志，测试过程中发现日志打印不全也没有规律。
-
-排查：此问题为两部分：1.逻辑只执行部分导致数据丢失；2.日志输出不全。经过排查发现关闭函数为异步，需要同步阻塞或者添加监听器来等待关闭事件，但是由于程序中只是提交了关闭事件就导致无法平滑关闭程序就中止了，此问题调整成同步等待关闭事件，经过测试数据无丢失问题了。日志打印不全经过分析是因为多个ShutdownHook间是并发执行且无顺序，所以log4j2注册的ShutdownHook事件和我们注册的会冲突，导致有些日志无法记录，此问题是因为恰巧我在调试时使用了sysout输出方式发现sysout可以正常打印而发现，解决方案是关闭log4j2注册的ShutdownHook事件，在我们的ShutdownHook事件最后手动调用log4j2的ShutdownHook事件，经过测试日志可以正常打印。
-
-#### 高可用产生的脑裂问题
-
-表象：双节点同时为主节点，offset发生错乱。
-
-排查：此问题无法完全规避，因为设置10秒等待抢占、1秒写入机制，所以程序恰巧同时执行到此段逻辑都认为自己应该升主，所以导致脑裂。不过此问题可以尽可能规避发生概率，由于java语言对于秒、毫秒、微妙、纳秒等时间精度处理不同，所以将之前的秒单位换成微妙单位（纳秒太夸张），这样虽然设置的时间没变，但是在高精度下尽量规避程序错误认知升主问题，同时加上lua表达式先查再写，尽最大可能规避脑裂问题，经过测试无法复现脑裂问题，但是理论上仍存在脑裂可能。
-
-注：本问题发生在节点间同时启动时，如果我们让节点错峰启动，那么就可完全规避此问题，但是程序是严谨的，我们仍在思考解决方案希望在任何情况下都可以规避此问题。
-
-#### Netty channel isWritable引发的惨案
-
-表象：由于双录项目组试用时发现存在空格回车符同步失败的问题（通过redis client无法写入空格等，我们没有针对空格处理），所以对数据解析过程进行了优化。改造后发现指令同步时会发生同步速率触底，在减少单次写入指令数量后，速率回升，增加单次写入数量，速率降低。
-
-排查：程序中兜底设置了每100毫秒刷新缓冲区一次，但是刷新缓冲区间隔远超100毫秒。通过使用arthas及断点排查等方式，未发现写入及刷新过程耗时。继续排查外层方法，最终发现是channel.isWritable的条件判断导致的，当写入大量数据时，会导isWritable长期处于false阶段，所以无法进行下一次刷新缓冲区操作。
-
-注：Netty对于写入缓冲区设置了高水位（默认64k）和低水位（默认32k），在缓冲区写入数据大小达到了高水位，isWritable就会返回false，这时需要执行刷新缓冲区方法将缓冲区数据大小发送出去降低到低水位后，isWritable才会返回true，由于程序中使用了isWritable判断条件，就导致了程序在发送数据时无法进行缓冲区写入，所以导致tps触底。在减小单词写入指令数量后，可以让缓冲区更快进行刷新，同时水位下降的更快，就可以升高tps，符合表象。
 
 [![LICENSE](https://img.shields.io/badge/license-Anti%20996-blue.svg)](https://github.com/996icu/996.ICU/blob/master/LICENSE)
