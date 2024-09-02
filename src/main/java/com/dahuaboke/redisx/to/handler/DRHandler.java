@@ -2,6 +2,7 @@ package com.dahuaboke.redisx.to.handler;
 
 import com.dahuaboke.redisx.Context;
 import com.dahuaboke.redisx.common.Constants;
+import com.dahuaboke.redisx.common.enums.FlushState;
 import com.dahuaboke.redisx.handler.RedisChannelInboundHandler;
 import com.dahuaboke.redisx.to.ToContext;
 import io.netty.channel.ChannelHandlerContext;
@@ -40,10 +41,16 @@ public class DRHandler extends RedisChannelInboundHandler {
                     toContext.preemptMasterCompulsory();
                 } else {
                     if (toContext.getId().equals(split[1])) { //主节点是自己
+                        //校验清空to数据
+                        if (FlushState.PREPARE == toContext.getFlushState()) {
+                            toContext.setFlushState(FlushState.BEGINNING);
+                        } else {
+                            toContext.preemptMasterCompulsory();
+                        }
                         toContext.isMaster(true);
-                        toContext.preemptMasterCompulsory();
                     } else { //主节点非自己
                         toContext.isMaster(false);
+                        toContext.setFlushState(FlushState.END);
                         toContext.clearAllNodeMessages();
                         String nodeMessagesStr = split[2];
                         if (!"".equals(nodeMessagesStr)) {

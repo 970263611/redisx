@@ -4,7 +4,6 @@ import com.dahuaboke.redisx.common.Constants;
 import com.dahuaboke.redisx.common.enums.Mode;
 import com.dahuaboke.redisx.handler.*;
 import com.dahuaboke.redisx.to.handler.DRHandler;
-import com.dahuaboke.redisx.to.handler.FlushHandler;
 import com.dahuaboke.redisx.to.handler.SyncCommandListener;
 import io.netty.bootstrap.Bootstrap;
 import io.netty.channel.*;
@@ -61,9 +60,6 @@ public class ToClient {
                 }
                 if (hasPassword) {
                     pipeline.addLast(Constants.AUTH_HANDLER_NAME, new AuthHandler(password));
-                }
-                if (toContext.isFlushDb() && !toContext.isFlushDbSuccess()) {
-                    pipeline.addLast(new FlushHandler(toContext));
                 }
                 pipeline.addLast(new RedisDecoder(true));
                 pipeline.addLast(new RedisBulkStringAggregator());

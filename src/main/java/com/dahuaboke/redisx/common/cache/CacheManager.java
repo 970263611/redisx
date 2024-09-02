@@ -2,6 +2,7 @@ package com.dahuaboke.redisx.common.cache;
 
 import com.dahuaboke.redisx.Context;
 import com.dahuaboke.redisx.common.command.from.SyncCommand;
+import com.dahuaboke.redisx.common.enums.FlushState;
 import com.dahuaboke.redisx.common.enums.Mode;
 import com.dahuaboke.redisx.console.ConsoleContext;
 import com.dahuaboke.redisx.from.FromContext;
@@ -43,7 +44,7 @@ public final class CacheManager {
     private Set<ClusterInfoHandler.SlotInfo> toClusterNodesInfo = new HashSet<>();
     private Set<SentinelInfoHandler.SlaveInfo> fromSentinelNodesInfo = new HashSet<>();
     private ConsoleContext consoleContext;
-    private Map<String, Boolean> flushDb = new HashMap();
+    private FlushState flushState = FlushState.END;
     private InetSocketAddress fromSentinelMaster;
     private InetSocketAddress toSentinelMaster;
 
@@ -276,13 +277,12 @@ public final class CacheManager {
         this.consoleContext = consoleContext;
     }
 
-    public boolean isFlushDb(String host, int port) {
-        Boolean b = flushDb.get(host + port);
-        return b == null ? false : b;
+    public FlushState getFlushState() {
+        return flushState;
     }
 
-    public void setFlushDb(String host, int port, boolean flushDb) {
-        this.flushDb.put(host + port, flushDb);
+    public void setFlushState(FlushState flushState) {
+        this.flushState = flushState;
     }
 
     public InetSocketAddress getFromSentinelMaster() {

@@ -2,6 +2,7 @@ package com.dahuaboke.redisx;
 
 import com.dahuaboke.redisx.common.Constants;
 import com.dahuaboke.redisx.common.cache.CacheManager;
+import com.dahuaboke.redisx.common.enums.FlushState;
 import com.dahuaboke.redisx.common.enums.Mode;
 import com.dahuaboke.redisx.common.thread.RedisxThreadFactory;
 import com.dahuaboke.redisx.console.ConsoleContext;
@@ -77,6 +78,9 @@ public class Controller {
         this.verticalScaling = config.isVerticalScaling();
         this.connectFromMaster = config.isConnectMaster();
         cacheManager = new CacheManager(config.getRedisVersion(), fromMode, config.getFromPassword(), toMode, config.getToPassword());
+        if (flushDb) {
+            cacheManager.setFlushState(FlushState.PREPARE);
+        }
     }
 
     public void start() {
@@ -92,14 +96,10 @@ public class Controller {
                 boolean fromIsStarted = cacheManager.fromIsStarted();
                 List<Context> allContexts = cacheManager.getAllContexts();
                 if (cacheManager.toIsStarted()) {
-                    for (Context cont : allContexts) {
-                        if (cont instanceof ToContext) {
-                            ToContext toContext = (ToContext) cont;
-                            if (toContext.isAdapt(toMode, switchFlag)) {
-                                //如果本身是主节点则同时写入偏移量
-                                toContext.preemptMaster();
-                            }
-                        }
+                    if (FlushState.BEGINNING == cacheManager.getFlushState()) {
+                        flushAllTo(allContexts);
+                    } else {
+                        preemptMaster(allContexts);
                     }
                 } else {
                     //识别to集群中存在节点宕机则全部关闭to
@@ -155,6 +155,32 @@ public class Controller {
         if (factory instanceof Log4jContextFactory) {
             Log4jContextFactory contextFactory = (Log4jContextFactory) factory;
             ((DefaultShutdownCallbackRegistry) contextFactory.getShutdownCallbackRegistry()).stop();
+        }
+    }
+
+    private void flushAllTo(List<Context> allContexts) {
+        cacheManager.setFlushState(FlushState.END);
+        for (Context cont : allContexts) {
+            if (cont instanceof ToContext) {
+                ToContext toContext = (ToContext) cont;
+                if (toContext.isAdapt(toMode, switchFlag)) {
+                    toContext.preemptMasterAndFlushAll();
+                } else {
+                    toContext.sendCommand(Constants.FLUSH_ALL_COMMAND, 1000, true, false);
+                }
+            }
+        }
+    }
+
+    private void preemptMaster(List<Context> allContexts) {
+        for (Context cont : allContexts) {
+            if (cont instanceof ToContext) {
+                ToContext toContext = (ToContext) cont;
+                if (toContext.isAdapt(toMode, switchFlag)) {
+                    //如果本身是主节点则同时写入偏移量
+                    toContext.preemptMaster();
+                }
+            }
         }
     }
 

@@ -77,6 +77,7 @@ public class Constants {
     public static final String GET_SLOT_COMMAND = "CLUSTER NODES";
 
     public static final String FLUSH_DB_COMMAND = "flushdb";
+    public static final String FLUSH_ALL_COMMAND = "flushall";
 
     public static final String SENTINEL_GET_MASTER = "SENTINEL GET-MASTER-ADDR-BY-NAME ";
 

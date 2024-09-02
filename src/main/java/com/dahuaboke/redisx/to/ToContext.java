@@ -4,6 +4,7 @@ import com.dahuaboke.redisx.Context;
 import com.dahuaboke.redisx.common.Constants;
 import com.dahuaboke.redisx.common.cache.CacheManager;
 import com.dahuaboke.redisx.common.command.from.SyncCommand;
+import com.dahuaboke.redisx.common.enums.FlushState;
 import com.dahuaboke.redisx.common.enums.Mode;
 import com.dahuaboke.redisx.handler.ClusterInfoHandler;
 import org.slf4j.Logger;
@@ -27,6 +28,7 @@ public class ToContext extends Context {
     private static final Logger logger = LoggerFactory.getLogger(ToContext.class);
     private static final String lua1 = "local v = redis.call('GET',KEYS[1]);\n" + "    if v then\n" + "        return v;\n" + "    else\n" + "        local result = redis.call('SET',KEYS[1],ARGV[1]);\n" + "        return result;\n" + "    end";
     private static final String lua2 = "local v = redis.call('GET',KEYS[1]);\n" + "if string.match(v,ARGV[1]) then\n redis.call('SET',KEYS[1],ARGV[2]);\nend";
+    private static final String luaFlush = "redis.call(flushall);\n" + lua1;
     private int slotBegin;
     private int slotEnd;
     private ToClient toClient;
@@ -101,18 +103,22 @@ public class ToContext extends Context {
 
     @Override
     public String sendCommand(Object command, int timeout) {
-        return sendCommand(command, timeout, false, null);
+        return sendCommand(command, timeout, false, null, false);
     }
 
     public String sendCommand(Object command, int timeout, String key) {
-        return sendCommand(command, timeout, false, key);
+        return sendCommand(command, timeout, false, key, false);
     }
 
     public String sendCommand(Object command, int timeout, boolean unCheck) {
-        return sendCommand(command, timeout, unCheck, null);
+        return sendCommand(command, timeout, unCheck, null, unCheck);
     }
 
-    public String sendCommand(Object command, int timeout, boolean unCheck, String key) {
+    public String sendCommand(Object command, int timeout, boolean unCheck, boolean needIsSuccess) {
+        return sendCommand(command, timeout, unCheck, null, needIsSuccess);
+    }
+
+    public String sendCommand(Object command, int timeout, boolean unCheck, String key, boolean needIsSuccess) {
         if (consoleStart) {
             if (replyQueue == null) {
                 throw new IllegalStateException("By console mode replyQueue need init");
@@ -127,7 +133,7 @@ public class ToContext extends Context {
             }
         } else {
             if (unCheck) {
-                return String.valueOf(toClient.sendCommand(command, true));
+                return String.valueOf(toClient.sendCommand(command, needIsSuccess));
             } else {
                 List<Context> allContexts = cacheManager.getAllContexts();
                 for (Context context : allContexts) {
@@ -140,7 +146,7 @@ public class ToContext extends Context {
                             flag = (String) command;
                         }
                         if (toContext.isAdapt(toMode, flag.getBytes())) {
-                            return toContext.sendCommand(command, 1000, true, null);
+                            return toContext.sendCommand(command, 1000, true, null, true);
                         }
                     }
                 }
@@ -195,6 +201,17 @@ public class ToContext extends Context {
             add(preemptMasterCommand());
         }};
         this.sendCommand(commands, 1000, true);
+    }
+
+    public void preemptMasterAndFlushAll() {
+        List<String> commands = new ArrayList() {{
+            add("EVAL");
+            add(luaFlush);
+            add("1");
+            add(switchFlag);
+            add(preemptMasterCommand());
+        }};
+        this.sendCommand(commands, 1000, true, false);
     }
 
     public void preemptMasterCompulsory() {
@@ -281,14 +298,6 @@ public class ToContext extends Context {
         return flushDb;
     }
 
-    public boolean isFlushDbSuccess() {
-        return cacheManager.isFlushDb(host, port);
-    }
-
-    public void setFlushDbSuccess() {
-        cacheManager.setFlushDb(host, port, true);
-    }
-
     public String getToMasterName() {
         return toMasterName;
     }
@@ -297,21 +306,16 @@ public class ToContext extends Context {
         cacheManager.setToSentinelMaster(new InetSocketAddress(host, port));
     }
 
+    public FlushState getFlushState() {
+        return cacheManager.getFlushState();
+    }
+
+    public void setFlushState(FlushState flushState) {
+        cacheManager.setFlushState(flushState);
+    }
+
     @Override
     public String toString() {
-        return "ToContext{" +
-                "host='" + host + '\'' +
-                ", port=" + port +
-                ", slotBegin=" + slotBegin +
-                ", slotEnd=" + slotEnd +
-                ", immediate=" + immediate +
-                ", immediateResendTimes=" + immediateResendTimes +
-                ", switchFlag='" + switchFlag + '\'' +
-                ", flushSize=" + flushSize +
-                ", isClose=" + isClose +
-                ", consoleStart=" + consoleStart +
-                ", toMode=" + toMode +
-                ", fromMode=" + fromMode +
-                '}';
+        return "ToContext{" + "host='" + host + '\'' + ", port=" + port + ", slotBegin=" + slotBegin + ", slotEnd=" + slotEnd + ", immediate=" + immediate + ", immediateResendTimes=" + immediateResendTimes + ", switchFlag='" + switchFlag + '\'' + ", flushSize=" + flushSize + ", isClose=" + isClose + ", consoleStart=" + consoleStart + ", toMode=" + toMode + ", fromMode=" + fromMode + '}';
     }
 }
