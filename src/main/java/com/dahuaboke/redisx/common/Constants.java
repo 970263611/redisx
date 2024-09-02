@@ -103,6 +103,10 @@ public class Constants {
 
     public static final String REGISTER_HOST = "dahuaboke.com";
 
+    public static final String JASYPT_ALGORITHM = "PBEWithMD5AndDES";
+
+    public static final String JASYPT_IVGENERATORCLASSNAME = "org.jasypt.iv.NoIvGenerator";
+
 
     //RDB
 
