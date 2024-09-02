@@ -176,6 +176,14 @@ public class CacheMonitor {
         headConfig.put("切换标志", switchFlag);
         String logLevelGlobal = config.getLogLevelGlobal();
         headConfig.put("日志级别", logLevelGlobal);
+        String id = cacheManager.getId();
+        headConfig.put("节点标识", id);
+        boolean master = cacheManager.isMaster();
+        headConfig.put("是否主节点", master);
+        boolean fromIsStarted = cacheManager.fromIsStarted();
+        headConfig.put("[From]是否启动", fromIsStarted);
+        boolean isStarted = cacheManager.toIsStarted();
+        headConfig.put("[To]是否启动", fromIsStarted);
     }
 
     private void buildFromConfig(Redisx.Config config) {
