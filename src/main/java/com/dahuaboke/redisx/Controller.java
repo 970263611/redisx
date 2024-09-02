@@ -568,19 +568,19 @@ public class Controller {
 
         @Override
         public void run() {
-            toNodeAddresses.forEach(address -> {
-                String host = address.getHostString();
-                int port = address.getPort();
-                ToNode toNode = new ToNode("Console", cacheManager, host, port, toMode, true, immediate, 0, switchFlag, 0, false, false);
-                consoleContext.setToContext((ToContext) toNode.getContext());
-                toNode.start();
-            });
-            fromNodeAddresses.forEach(address -> {
+            getFromMasterNodesInfo().forEach(address -> {
                 String host = address.getHostString();
                 int port = address.getPort();
                 FromNode fromNode = new FromNode("Console", cacheManager, host, port, true, false, false, false);
                 consoleContext.setFromContext((FromContext) fromNode.getContext());
                 fromNode.start();
+            });
+            getToMasterNodesInfo(false).forEach(address -> {
+                String host = address.getHostString();
+                int port = address.getPort();
+                ToNode toNode = new ToNode("Console", cacheManager, host, port, toMode, true, immediate, 0, switchFlag, 0, false, false);
+                consoleContext.setToContext((ToContext) toNode.getContext());
+                toNode.start();
             });
             ConsoleServer consoleServer = new ConsoleServer(consoleContext, getExecutor("Console-Boss"), getExecutor("Console-Worker"));
             consoleServer.start();
