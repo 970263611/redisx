@@ -131,24 +131,26 @@ public class Controller {
                     //bug do nothing
                     logger.warn("Unknown application state");
                 }
+                //控制台相关
+                if (startConsole) {
+                    if (cacheManager.toIsStarted() && cacheManager.fromIsStarted()) {
+                        if (cacheManager.getConsoleContext() == null) {
+                            ConsoleNode consoleNode = new ConsoleNode("localhost", consolePort, consoleTimeout);
+                            Context context = consoleNode.getContext();
+                            cacheManager.setConsoleContext((ConsoleContext) context);
+                            consoleNode.start();
+                        }
+                    } else {
+                        ConsoleContext consoleContext = cacheManager.getConsoleContext();
+                        if (consoleContext != null) {
+                            consoleContext.close();
+                        }
+                    }
+                }
             } catch (Exception e) {
                 logger.error("Controller schedule error {}", e);
             }
         }, 5000, 1000000, TimeUnit.MICROSECONDS); //用微秒减少主从抢占脑裂问题，纳秒个人感觉太夸张了
-        //控制台相关
-        if (startConsole && cacheManager.toIsStarted() && cacheManager.fromIsStarted()) {
-            if (cacheManager.getConsoleContext() == null) {
-                ConsoleNode consoleNode = new ConsoleNode("localhost", consolePort, consoleTimeout);
-                Context context = consoleNode.getContext();
-                cacheManager.setConsoleContext((ConsoleContext) context);
-                consoleNode.start();
-            }
-        } else {
-            ConsoleContext consoleContext = cacheManager.getConsoleContext();
-            if (consoleContext != null) {
-                consoleContext.close();
-            }
-        }
     }
 
     public Executor getExecutor(String name) {

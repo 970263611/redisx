@@ -67,15 +67,8 @@ public class ConsoleServer {
                 channel = serverBootstrap.bind(port).sync().channel();
             }
             logger.info("Publish console server at [{}:{}]", host, port);
-            channel.closeFuture().addListener((ChannelFutureListener) future -> {
-                consoleContext.setClose(true);
-            }).sync();
         } catch (Exception e) {
             logger.error("Publish at {{}:{}] exception", host, port, e);
-        } finally {
-            bossGroup.shutdownGracefully();
-            workerGroup.shutdownGracefully();
-            destroy();
         }
     }
 
@@ -84,11 +77,21 @@ public class ConsoleServer {
      */
     public void destroy() {
         consoleContext.setClose(true);
-        if (channel != null) {
-            String host = consoleContext.getHost();
-            int port = consoleContext.getPort();
+        if (channel != null && channel.isActive()) {
             channel.close();
-            logger.info("Close console [{}:{}]", host, port);
+            try {
+                channel.closeFuture().addListener((ChannelFutureListener) channelFuture -> {
+                    if (channelFuture.isSuccess()) {
+                        bossGroup.shutdownGracefully();
+                        workerGroup.shutdownGracefully();
+                        logger.info("Close [From] [{}:{}]", consoleContext.getHost(), consoleContext.getPort());
+                    } else {
+                        logger.error("Close [From] error", channelFuture.cause());
+                    }
+                }).sync();
+            } catch (InterruptedException e) {
+                logger.error("Close [From] error", e);
+            }
         }
     }
 }

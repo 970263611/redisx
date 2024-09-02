@@ -80,6 +80,7 @@ public class ConsoleContext extends Context {
             iterator1.remove();
             toContext.close();
         }
+        cacheManager.remove(this);
     }
 
     public void setConsoleServer(ConsoleServer consoleServer) {

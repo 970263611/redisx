@@ -69,41 +69,45 @@ public class CacheMonitor {
     }
 
     public void addFromSentinelMessage() {
-        InetSocketAddress fromSentinelMaster = cacheManager.getFromSentinelMaster();
-        fromClusterNodesMap.add(new HashMap<String, String>() {{
-            put("host", fromSentinelMaster.getHostString());
-            put("port", String.valueOf(fromSentinelMaster.getPort()));
-            put("type", "master");
-            put("active", "true");
-        }});
-        Set<SentinelInfoHandler.SlaveInfo> fromSentinelNodesInfo = cacheManager.getFromSentinelNodesInfo();
-        fromSentinelNodesInfo.forEach(f -> {
+        if (Mode.SENTINEL == cacheManager.getFromMode()) {
+            InetSocketAddress fromSentinelMaster = cacheManager.getFromSentinelMaster();
             fromClusterNodesMap.add(new HashMap<String, String>() {{
-                put("host", f.getIp());
-                put("port", String.valueOf(f.getPort()));
-                put("type", "slave");
-                put("active", String.valueOf(f.isActive()));
+                put("host", fromSentinelMaster.getHostString());
+                put("port", String.valueOf(fromSentinelMaster.getPort()));
+                put("type", "master");
+                put("active", "true");
             }});
-        });
+            Set<SentinelInfoHandler.SlaveInfo> fromSentinelNodesInfo = cacheManager.getFromSentinelNodesInfo();
+            fromSentinelNodesInfo.forEach(f -> {
+                fromClusterNodesMap.add(new HashMap<String, String>() {{
+                    put("host", f.getIp());
+                    put("port", String.valueOf(f.getPort()));
+                    put("type", "slave");
+                    put("active", String.valueOf(f.isActive()));
+                }});
+            });
+        }
     }
 
     public void addToSentinelMessage() {
-        InetSocketAddress toSentinelMaster = cacheManager.getToSentinelMaster();
-        toClusterNodesMap.add(new HashMap<String, String>() {{
-            put("host", toSentinelMaster.getHostString());
-            put("port", String.valueOf(toSentinelMaster.getPort()));
-            put("type", "master");
-            put("active", "true");
-        }});
-        Set<SentinelInfoHandler.SlaveInfo> toSentinelNodesInfo = cacheManager.getToSentinelNodesInfo();
-        toSentinelNodesInfo.forEach(t -> {
+        if (Mode.SENTINEL == cacheManager.getToMode()) {
+            InetSocketAddress toSentinelMaster = cacheManager.getToSentinelMaster();
             toClusterNodesMap.add(new HashMap<String, String>() {{
-                put("host", t.getIp());
-                put("port", String.valueOf(t.getPort()));
-                put("type", "slave");
-                put("active", String.valueOf(t.isActive()));
+                put("host", toSentinelMaster.getHostString());
+                put("port", String.valueOf(toSentinelMaster.getPort()));
+                put("type", "master");
+                put("active", "true");
             }});
-        });
+            Set<SentinelInfoHandler.SlaveInfo> toSentinelNodesInfo = cacheManager.getToSentinelNodesInfo();
+            toSentinelNodesInfo.forEach(t -> {
+                toClusterNodesMap.add(new HashMap<String, String>() {{
+                    put("host", t.getIp());
+                    put("port", String.valueOf(t.getPort()));
+                    put("type", "slave");
+                    put("active", String.valueOf(t.isActive()));
+                }});
+            });
+        }
     }
 
     public void addClusterMessage() {
@@ -112,29 +116,33 @@ public class CacheMonitor {
     }
 
     private void addFromClusterMessage() {
-        Set<ClusterInfoHandler.SlotInfo> fromClusterNodesInfo = cacheManager.getFromClusterNodesInfo();
-        fromClusterNodesInfo.forEach(f -> {
-            fromClusterNodesMap.add(new HashMap<String, String>() {{
-                put("host", f.getIp());
-                put("port", String.valueOf(f.getPort()));
-                put("masterId", f.getMasterId());
-                put("type", String.valueOf(f.isMaster()));
-                put("active", String.valueOf(f.isActive()));
-            }});
-        });
+        if (Mode.CLUSTER == cacheManager.getFromMode()) {
+            Set<ClusterInfoHandler.SlotInfo> fromClusterNodesInfo = cacheManager.getFromClusterNodesInfo();
+            fromClusterNodesInfo.forEach(f -> {
+                fromClusterNodesMap.add(new HashMap<String, String>() {{
+                    put("host", f.getIp());
+                    put("port", String.valueOf(f.getPort()));
+                    put("masterId", f.getMasterId());
+                    put("type", String.valueOf(f.isMaster()));
+                    put("active", String.valueOf(f.isActive()));
+                }});
+            });
+        }
     }
 
     private void addToClusterMessage() {
-        Set<ClusterInfoHandler.SlotInfo> toClusterNodesInfo = cacheManager.getToClusterNodesInfo();
-        toClusterNodesInfo.forEach(t -> {
-            toClusterNodesMap.add(new HashMap<String, String>() {{
-                put("host", t.getIp());
-                put("port", String.valueOf(t.getPort()));
-                put("masterId", t.getMasterId());
-                put("type", String.valueOf(t.isMaster()));
-                put("active", String.valueOf(t.isActive()));
-            }});
-        });
+        if (Mode.CLUSTER == cacheManager.getToMode()) {
+            Set<ClusterInfoHandler.SlotInfo> toClusterNodesInfo = cacheManager.getToClusterNodesInfo();
+            toClusterNodesInfo.forEach(t -> {
+                toClusterNodesMap.add(new HashMap<String, String>() {{
+                    put("host", t.getIp());
+                    put("port", String.valueOf(t.getPort()));
+                    put("masterId", t.getMasterId());
+                    put("type", String.valueOf(t.isMaster()));
+                    put("active", String.valueOf(t.isActive()));
+                }});
+            });
+        }
     }
 
     private void addRedisxNodesMessage() {

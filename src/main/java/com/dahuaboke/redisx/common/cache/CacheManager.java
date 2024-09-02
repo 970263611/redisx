@@ -98,6 +98,8 @@ public final class CacheManager {
         contexts.remove(context);
         if (context instanceof ToContext) {
             cache.remove(context);
+        } else if (context instanceof ConsoleContext) {
+            consoleContext = null;
         }
     }
 
@@ -358,6 +360,14 @@ public final class CacheManager {
 
     public void setErrorCount(String host, int port, Long err) {
         this.errorCount.put(host + port, err);
+    }
+
+    public Mode getFromMode() {
+        return fromMode;
+    }
+
+    public Mode getToMode() {
+        return toMode;
     }
 
     public static class NodeMessage {
