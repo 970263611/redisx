@@ -182,8 +182,8 @@ public class CacheMonitor {
         headConfig.put("是否主节点", master);
         boolean fromIsStarted = cacheManager.fromIsStarted();
         headConfig.put("[From]是否启动", fromIsStarted);
-        boolean isStarted = cacheManager.toIsStarted();
-        headConfig.put("[To]是否启动", fromIsStarted);
+        boolean toIsStarted = cacheManager.toIsStarted();
+        headConfig.put("[To]是否启动", toIsStarted);
     }
 
     private void buildFromConfig(Redisx.Config config) {
