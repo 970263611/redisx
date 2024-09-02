@@ -28,7 +28,7 @@ public class SyncCommandListener extends ChannelInboundHandlerAdapter {
     }
 
     @Override
-    public void handlerAdded(ChannelHandlerContext ctx) throws Exception {
+    public void channelActive(ChannelHandlerContext ctx) throws Exception {
         int flushSize = toContext.getFlushSize();
         Thread thread = new Thread(() -> {
             Channel channel = ctx.channel();

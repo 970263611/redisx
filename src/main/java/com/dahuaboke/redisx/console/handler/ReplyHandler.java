@@ -24,7 +24,7 @@ public class ReplyHandler extends SimpleChannelInboundHandler<ReplyCommand> {
                 HttpResponseStatus.OK,
                 Unpooled.wrappedBuffer(reply.getBytes()));
         response.headers()
-                .set("Content-Type", "text/plain")
+                .set("Content-Type", "application/json")
                 .setInt("Content-Length", response.content().readableBytes());
         ctx.writeAndFlush(response);
         ctx.close();
