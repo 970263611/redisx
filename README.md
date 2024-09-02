@@ -151,11 +151,11 @@ redisx:
   to:
     #to端redis密码，支持enc加密
     password: 2b*1a.
-    #(必填项)from端redis模式，单机：single 集群：cluster 哨兵:sentinel
+    #(必填项)to端redis模式，单机：single 集群：cluster 哨兵:sentinel
     mode: cluster
     #(redis.to.mode为sentinel时必填)哨兵模式下主节点的mastername
     masterName: myMaster
-    #(必填项)from端redis节点地址，
+    #(必填项)to端redis节点地址，
     #集群模式下需配置单个或多个节点地址，建议配置完整的节点地址
     #哨兵模式下需配置单个或多个哨兵地址，建议配置完整的哨兵节点
     address:

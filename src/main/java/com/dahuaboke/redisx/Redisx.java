@@ -31,7 +31,7 @@ public class Redisx {
 
     public static class Config implements FieldOrmCheck {
 
-        @FieldOrm(value = "redisx.from.mode", defaultValue = "cluster", setType = String.class)
+        @FieldOrm(value = "redisx.from.mode", required = true, setType = String.class)
         private Mode fromMode;
 
         @FieldOrm(value = "redisx.from.masterName")
@@ -40,10 +40,13 @@ public class Redisx {
         @FieldOrm(value = "redisx.from.address", required = true)
         private List<InetSocketAddress> fromAddresses;
 
+        @FieldOrm(value = "redisx.from.username")
+        private String fromUsername;
+
         @FieldOrm(value = "redisx.from.password")
         private String fromPassword;
 
-        @FieldOrm(value = "redisx.to.mode", defaultValue = "cluster", setType = String.class)
+        @FieldOrm(value = "redisx.to.mode", required = true, setType = String.class)
         private Mode toMode;
 
         @FieldOrm(value = "redisx.to.masterName")
@@ -51,6 +54,9 @@ public class Redisx {
 
         @FieldOrm(value = "redisx.to.address", required = true)
         private List<InetSocketAddress> toAddresses;
+
+        @FieldOrm(value = "redisx.to.username")
+        private String toUsername;
 
         @FieldOrm(value = "redisx.to.password")
         private String toPassword;
@@ -61,7 +67,7 @@ public class Redisx {
         @FieldOrm(value = "redisx.console.enable", defaultValue = "false")
         private boolean consoleEnable;
 
-        @FieldOrm(value = "redisx.console.timeout", defaultValue = "18080")
+        @FieldOrm(value = "redisx.console.port", defaultValue = "18080")
         private int consolePort;
 
         @FieldOrm(value = "redisx.console.timeout", defaultValue = "5000")
@@ -111,6 +117,12 @@ public class Redisx {
             //强制全量同步必须同步rdb文件
             if (this.isAlwaysFullSync()) {
                 this.setSyncRdb(true);
+            }
+            if(StringUtils.isNotEmpty(this.fromPassword) && StringUtils.isNotEmpty(this.fromUsername)) {
+                this.fromPassword = this.fromUsername + " " + this.fromPassword;
+            }
+            if(StringUtils.isNotEmpty(this.toPassword) && StringUtils.isNotEmpty(this.toUsername)) {
+                this.toPassword = this.toUsername + " " + this.toPassword;
             }
         }
 

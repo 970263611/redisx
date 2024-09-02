@@ -5,6 +5,8 @@ import com.dahuaboke.redisx.common.enums.Mode;
 import com.dahuaboke.redisx.common.utils.FieldOrmUtil;
 import com.dahuaboke.redisx.common.utils.StringUtils;
 import com.dahuaboke.redisx.common.utils.YamlUtil;
+import org.apache.logging.log4j.Level;
+import org.apache.logging.log4j.core.config.Configurator;
 import org.junit.After;
 import org.junit.Before;
 import org.junit.Test;
@@ -42,6 +44,8 @@ public class RedissonCountTest {
 
     //类型
     private Mode serverType = null;
+
+    private String loglevel = "warn";
     //*********** 配置项 终 ***********//
 
 
@@ -51,6 +55,7 @@ public class RedissonCountTest {
 
     @Before
     public void init() {
+        Configurator.setRootLevel(Level.getLevel(loglevel));
         Redisx.Config yamlConfig = new Redisx.Config();
         FieldOrmUtil.MapToBean(YamlUtil.parseYamlParam(null), yamlConfig);
         if(serverType == null){

@@ -98,6 +98,12 @@ public class YamlUtil {
         if (password == null || password.length() == 0) {
             return;
         }
+        if(StringUtils.isEmpty(algorithm)){
+            algorithm = Constants.JASYPT_ALGORITHM;
+        }
+        if(StringUtils.isEmpty(ivGeneratorClassName)){
+            ivGeneratorClassName = Constants.JASYPT_IVGENERATORCLASSNAME;
+        }
         JasyptUtil jasyptUtil = StringUtils.isNotEmpty(algorithm) ? new JasyptUtil(password, algorithm, ivGeneratorClassName) : new JasyptUtil(password);
         for (Map.Entry<String, Object> entry : map.entrySet()) {
             if (entry.getValue() instanceof String) {
