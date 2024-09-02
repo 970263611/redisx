@@ -57,6 +57,9 @@ public class SyncCommandListener extends ChannelInboundHandlerAdapter {
                                                 if (channelFutureIsSuccess) {
                                                     messageWrited = true;
                                                     updateOffset(syncCommand);
+                                                    if (toContext.isConsoleStart()) {
+                                                        toContext.addWriteCount();
+                                                    }
                                                 } else {
                                                     continue;
                                                 }
@@ -71,10 +74,18 @@ public class SyncCommandListener extends ChannelInboundHandlerAdapter {
                                             logger.error("Write command or offset awaiter error", e);
                                         }
                                     }
+                                    if (!messageWrited) {
+                                        if (toContext.isConsoleStart()) {
+                                            toContext.addErrorCount();
+                                        }
+                                    }
                                 } else {
                                     updateOffset(syncCommand);
                                     ctx.write(redisMessage);
                                     flushThreshold++;
+                                    if (toContext.isConsoleStart()) {
+                                        toContext.addWriteCount();
+                                    }
                                 }
                             }
                             if (flushThreshold > flushSize || (System.currentTimeMillis() - timeThreshold > 100)) {

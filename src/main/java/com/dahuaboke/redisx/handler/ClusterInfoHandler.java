@@ -171,11 +171,15 @@ public class ClusterInfoHandler extends RedisChannelInboundHandler {
         }
 
         public boolean isActiveMaster() {
-            return "master".equals(flags) && isActive();
+            return isMaster() && isActive();
         }
 
         public boolean isActive() {
             return "connected".equals(linkState);
+        }
+
+        public boolean isMaster() {
+            return "master".equals(flags);
         }
     }
 }

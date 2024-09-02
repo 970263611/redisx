@@ -118,6 +118,7 @@ public class SentinelInfoHandler extends RedisChannelInboundHandler {
             fromContext.setFromNodesInfoGetSuccess();
         } else if (context instanceof ToContext) {
             ToContext toContext = (ToContext) context;
+            toContext.addSentinelSlaveInfo(slaveInfos);
             for (SlaveInfo slaveInfo : slaveInfos) {
                 if (slaveInfo.isActive()) {
                     toContext.setSentinelMasterInfo(slaveInfo.getMasterHost(), slaveInfo.getMasterPort());

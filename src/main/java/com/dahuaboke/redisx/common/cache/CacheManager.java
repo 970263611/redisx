@@ -1,6 +1,7 @@
 package com.dahuaboke.redisx.common.cache;
 
 import com.dahuaboke.redisx.Context;
+import com.dahuaboke.redisx.common.LimitedList;
 import com.dahuaboke.redisx.common.command.from.SyncCommand;
 import com.dahuaboke.redisx.common.enums.FlushState;
 import com.dahuaboke.redisx.common.enums.Mode;
@@ -43,10 +44,14 @@ public final class CacheManager {
     private Set<ClusterInfoHandler.SlotInfo> fromClusterNodesInfo = new HashSet<>();
     private Set<ClusterInfoHandler.SlotInfo> toClusterNodesInfo = new HashSet<>();
     private Set<SentinelInfoHandler.SlaveInfo> fromSentinelNodesInfo = new HashSet<>();
+    private Set<SentinelInfoHandler.SlaveInfo> toSentinelNodesInfo = new HashSet<>();
     private ConsoleContext consoleContext;
     private FlushState flushState = FlushState.END;
     private InetSocketAddress fromSentinelMaster;
     private InetSocketAddress toSentinelMaster;
+    private Map<String, LimitedList<Long>> fromWriteCount = new HashMap<>();
+    private Map<String, LimitedList<Long>> toWriteCount = new HashMap<>();
+    private Map<String, Long> errorCount = new HashMap<>();
 
     public CacheManager(String redisVersion, Mode fromMode, String fromPassword, Mode toMode, String toPassword) {
         this.redisVersion = redisVersion;
@@ -235,6 +240,18 @@ public final class CacheManager {
         this.fromSentinelNodesInfo.add(fromSentinelNodeInfo);
     }
 
+    public Set<SentinelInfoHandler.SlaveInfo> getToSentinelNodesInfo() {
+        return toSentinelNodesInfo;
+    }
+
+    public void addToSentinelNodesInfo(SentinelInfoHandler.SlaveInfo toSentinelNodeInfo) {
+        this.toSentinelNodesInfo.add(toSentinelNodeInfo);
+    }
+
+    public void addToSentinelNodesInfo(List<SentinelInfoHandler.SlaveInfo> toSentinelNodesInfo) {
+        this.toSentinelNodesInfo.addAll(toSentinelNodesInfo);
+    }
+
     public SentinelInfoHandler.SlaveInfo getFromSentinelNodeInfoByIpAndPort(String ip, int port) {
         for (SentinelInfoHandler.SlaveInfo slaveInfo : fromSentinelNodesInfo) {
             if (ip.equals(slaveInfo.getIp()) && port == slaveInfo.getPort()) {
@@ -299,6 +316,48 @@ public final class CacheManager {
 
     public void setToSentinelMaster(InetSocketAddress toSentinelMaster) {
         this.toSentinelMaster = toSentinelMaster;
+    }
+
+    public Map<String, LimitedList<Long>> getFromWriteCount() {
+        return fromWriteCount;
+    }
+
+    public LimitedList<Long> getFromWriteCount(String host, int port) {
+        return fromWriteCount.get(host + ":" + port);
+    }
+
+    public void addFromWriteCount(String host, int port, Long fromCount) {
+        String key = host + ":" + port;
+        if (this.fromWriteCount.containsKey(key)) {
+            fromWriteCount.get(key).add(fromCount);
+        } else {
+            fromWriteCount.put(key, new LimitedList<>(60));
+        }
+    }
+
+    public Map<String, LimitedList<Long>> getToWriteCount() {
+        return toWriteCount;
+    }
+
+    public LimitedList<Long> getToWriteCount(String host, int port) {
+        return toWriteCount.get(host + ":" + port);
+    }
+
+    public void addToWriteCount(String host, int port, Long toCount) {
+        String key = host + ":" + port;
+        if (this.toWriteCount.containsKey(key)) {
+            toWriteCount.get(key).add(toCount);
+        } else {
+            toWriteCount.put(key, new LimitedList<>(60));
+        }
+    }
+
+    public Long getErrorCount(String host, int port) {
+        return errorCount.get(host + port);
+    }
+
+    public void setErrorCount(String host, int port, Long err) {
+        this.errorCount.put(host + port, err);
     }
 
     public static class NodeMessage {

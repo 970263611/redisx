@@ -7,6 +7,7 @@ import com.dahuaboke.redisx.common.command.from.SyncCommand;
 import com.dahuaboke.redisx.common.enums.FlushState;
 import com.dahuaboke.redisx.common.enums.Mode;
 import com.dahuaboke.redisx.handler.ClusterInfoHandler;
+import com.dahuaboke.redisx.handler.SentinelInfoHandler;
 import org.slf4j.Logger;
 import org.slf4j.LoggerFactory;
 
@@ -306,12 +307,32 @@ public class ToContext extends Context {
         cacheManager.setToSentinelMaster(new InetSocketAddress(host, port));
     }
 
+    public void addSentinelSlaveInfo(List<SentinelInfoHandler.SlaveInfo> toSentinelNodesInfo) {
+        cacheManager.addToSentinelNodesInfo(toSentinelNodesInfo);
+    }
+
     public FlushState getFlushState() {
         return cacheManager.getFlushState();
     }
 
     public void setFlushState(FlushState flushState) {
         cacheManager.setFlushState(flushState);
+    }
+
+    public int getSlotBegin() {
+        return slotBegin;
+    }
+
+    public int getSlotEnd() {
+        return slotEnd;
+    }
+
+    public void putWriteCount() {
+        cacheManager.addToWriteCount(host, port, writeCount);
+    }
+
+    public Long getWriteTps() {
+        return cacheManager.getToWriteCount(host, port).getTps();
     }
 
     @Override

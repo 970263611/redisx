@@ -2,7 +2,6 @@ package com.dahuaboke.redisx.from.handler;
 
 import com.dahuaboke.redisx.common.Constants;
 import com.dahuaboke.redisx.common.cache.CacheManager;
-import com.dahuaboke.redisx.common.enums.Mode;
 import com.dahuaboke.redisx.from.FromContext;
 import io.netty.channel.Channel;
 import io.netty.channel.ChannelHandlerContext;

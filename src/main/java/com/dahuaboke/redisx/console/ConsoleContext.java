@@ -2,6 +2,7 @@ package com.dahuaboke.redisx.console;
 
 import com.dahuaboke.redisx.Context;
 import com.dahuaboke.redisx.common.cache.CacheManager;
+import com.dahuaboke.redisx.common.cache.CacheMonitor;
 import com.dahuaboke.redisx.common.enums.Mode;
 import com.dahuaboke.redisx.from.FromContext;
 import com.dahuaboke.redisx.to.ToContext;
@@ -25,9 +26,11 @@ public class ConsoleContext extends Context {
     private List<ToContext> toContexts = new ArrayList();
     private List<FromContext> fromContexts = new ArrayList();
     private ConsoleServer consoleServer;
+    private CacheMonitor cacheMonitor;
 
-    public ConsoleContext(CacheManager cacheManager, String host, int port, int timeout, Mode toMode, Mode fromMode) {
+    public ConsoleContext(CacheManager cacheManager, CacheMonitor cacheMonitor, String host, int port, int timeout, Mode toMode, Mode fromMode) {
         super(cacheManager, host, port, fromMode, toMode, true);
+        this.cacheMonitor = cacheMonitor;
         this.timeout = timeout;
     }
 
@@ -81,5 +84,9 @@ public class ConsoleContext extends Context {
 
     public void setConsoleServer(ConsoleServer consoleServer) {
         this.consoleServer = consoleServer;
+    }
+
+    public CacheMonitor getCacheMonitor() {
+        return cacheMonitor;
     }
 }

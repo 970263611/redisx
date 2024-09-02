@@ -237,4 +237,12 @@ public class FromContext extends Context {
     public void addSentinelSlaveInfo(SentinelInfoHandler.SlaveInfo fromSentinelNodeInfo) {
         cacheManager.addFromSentinelNodesInfo(fromSentinelNodeInfo);
     }
+
+    public void putWriteCount() {
+        cacheManager.addFromWriteCount(host, port, writeCount);
+    }
+
+    public Long getWriteTps() {
+        return cacheManager.getFromWriteCount(host, port).getTps();
+    }
 }

@@ -2,6 +2,7 @@ package com.dahuaboke.redisx;
 
 import com.dahuaboke.redisx.common.Constants;
 import com.dahuaboke.redisx.common.cache.CacheManager;
+import com.dahuaboke.redisx.common.cache.CacheMonitor;
 import com.dahuaboke.redisx.common.enums.FlushState;
 import com.dahuaboke.redisx.common.enums.Mode;
 import com.dahuaboke.redisx.common.thread.RedisxThreadFactory;
@@ -39,6 +40,7 @@ public class Controller {
     private Mode fromMode;
     private Mode toMode;
     private CacheManager cacheManager;
+    private CacheMonitor cacheMonitor;
     private boolean immediate;
     private int immediateResendTimes;
     private String switchFlag;
@@ -81,6 +83,10 @@ public class Controller {
         if (flushDb) {
             cacheManager.setFlushState(FlushState.PREPARE);
         }
+        if (startConsole) {
+            cacheMonitor = new CacheMonitor(cacheManager);
+            cacheMonitor.setConfig(config);
+        }
     }
 
     public void start() {
@@ -99,7 +105,7 @@ public class Controller {
                     if (FlushState.BEGINNING == cacheManager.getFlushState()) {
                         flushAllTo(allContexts);
                     } else {
-                        preemptMaster(allContexts);
+                        preemptMasterAndMonitor(allContexts);
                     }
                 } else {
                     //识别to集群中存在节点宕机则全部关闭to
@@ -172,13 +178,21 @@ public class Controller {
         }
     }
 
-    private void preemptMaster(List<Context> allContexts) {
+    private void preemptMasterAndMonitor(List<Context> allContexts) {
         for (Context cont : allContexts) {
-            if (cont instanceof ToContext) {
+            if (cont instanceof FromContext) {
+                FromContext fromContext = (FromContext) cont;
+                if (startConsole) {
+                    fromContext.putWriteCount();
+                }
+            } else if (cont instanceof ToContext) {
                 ToContext toContext = (ToContext) cont;
                 if (toContext.isAdapt(toMode, switchFlag)) {
                     //如果本身是主节点则同时写入偏移量
                     toContext.preemptMaster();
+                }
+                if (startConsole) {
+                    toContext.putWriteCount();
                 }
             }
         }
@@ -547,7 +561,7 @@ public class Controller {
             this.host = host;
             this.port = port;
             this.timeout = timeout;
-            consoleContext = new ConsoleContext(cacheManager, this.host, this.port, this.timeout, toMode, fromMode);
+            consoleContext = new ConsoleContext(cacheManager, cacheMonitor, this.host, this.port, this.timeout, toMode, fromMode);
         }
 
         @Override
