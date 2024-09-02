@@ -20,7 +20,8 @@ public class Context {
     private static final Logger logger = LoggerFactory.getLogger(Context.class);
     protected BlockingDeque<String> replyQueue;
     protected boolean isClose = false;
-    protected boolean consoleStart;
+    protected boolean startConsole;
+    protected boolean startByConsole;
     protected CacheManager cacheManager;
     protected String host;
     protected int port;
@@ -29,13 +30,14 @@ public class Context {
     protected Long writeCount = 0L;
     protected Long errorCount = 0L;
 
-    public Context(CacheManager cacheManager, String host, int port, Mode fromMode, Mode toMode, boolean consoleStart) {
+    public Context(CacheManager cacheManager, String host, int port, Mode fromMode, Mode toMode, boolean startConsole, boolean startByConsole) {
         this.cacheManager = cacheManager;
         this.host = host;
         this.port = port;
         this.fromMode = fromMode;
         this.toMode = toMode;
-        this.consoleStart = consoleStart;
+        this.startConsole = startConsole;
+        this.startByConsole = startByConsole;
     }
 
     public boolean isAdapt(Mode mode, byte[] command) {
@@ -97,8 +99,8 @@ public class Context {
         return fromMode;
     }
 
-    public boolean isConsoleStart() {
-        return consoleStart;
+    public boolean startByConsole() {
+        return startByConsole;
     }
 
     public String getHost() {
@@ -130,5 +132,9 @@ public class Context {
 
     public Long getErrorCount() {
         return cacheManager.getErrorCount(host, port);
+    }
+
+    public boolean isStartConsole() {
+        return startConsole;
     }
 }

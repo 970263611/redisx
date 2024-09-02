@@ -51,9 +51,9 @@ public class ConsoleServer {
                         @Override
                         protected void initChannel(Channel channel) throws Exception {
                             ChannelPipeline pipeline = channel.pipeline();
+                            pipeline.addLast(new PrintHandler());
                             pipeline.addLast(new HttpServerCodec());
                             pipeline.addLast(new HttpObjectAggregator(512 * 1024));
-                            pipeline.addLast(new PrintHandler());
                             pipeline.addLast(new ConsoleHandler());
                             pipeline.addLast(new SearchHandler(consoleContext));
                             pipeline.addLast(new MonitorHandler(consoleContext));

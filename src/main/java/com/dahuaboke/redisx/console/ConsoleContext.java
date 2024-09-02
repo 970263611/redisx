@@ -29,7 +29,7 @@ public class ConsoleContext extends Context {
     private CacheMonitor cacheMonitor;
 
     public ConsoleContext(CacheManager cacheManager, CacheMonitor cacheMonitor, String host, int port, int timeout, Mode toMode, Mode fromMode) {
-        super(cacheManager, host, port, fromMode, toMode, true);
+        super(cacheManager, host, port, fromMode, toMode, true, false);
         this.cacheMonitor = cacheMonitor;
         this.timeout = timeout;
     }

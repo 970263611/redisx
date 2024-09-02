@@ -38,9 +38,9 @@ public class FromContext extends Context {
     private String fromMasterName;
     private boolean connectFromMaster;
 
-    public FromContext(CacheManager cacheManager, String host, int port, boolean consoleStart, Mode fromMode, Mode toMode, boolean alwaysFullSync, boolean syncRdb, boolean isNodesInfoContext, String fromMasterName, boolean connectFromMaster) {
-        super(cacheManager, host, port, fromMode, toMode, consoleStart);
-        if (consoleStart) {
+    public FromContext(CacheManager cacheManager, String host, int port, boolean startConsole, boolean startByConsole, Mode fromMode, Mode toMode, boolean alwaysFullSync, boolean syncRdb, boolean isNodesInfoContext, String fromMasterName, boolean connectFromMaster) {
+        super(cacheManager, host, port, fromMode, toMode, startConsole, startByConsole);
+        if (startByConsole) {
             replyQueue = new LinkedBlockingDeque();
         }
         this.alwaysFullSync = alwaysFullSync;
@@ -66,7 +66,7 @@ public class FromContext extends Context {
     }
 
     public boolean publish(SyncCommand command) {
-        if (!consoleStart) {
+        if (!startByConsole) {
             command.buildCommand();
             return cacheManager.publish(command);
         } else {

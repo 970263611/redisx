@@ -209,7 +209,7 @@ public class Controller {
         fromMasterNodesInfo.forEach(address -> {
             String host = address.getHostString();
             int port = address.getPort();
-            FromNode fromNode = new FromNode("Sync", cacheManager, host, port, false, alwaysFullSync, syncRdb, false);
+            FromNode fromNode = new FromNode("Sync", cacheManager, host, port, startConsole, false, alwaysFullSync, syncRdb, false);
             fromNode.start();
             if (fromNode.isStarted(5000)) {
                 cacheManager.register(fromNode.getContext());
@@ -227,7 +227,7 @@ public class Controller {
         for (InetSocketAddress address : toMasterNodesInfo) {
             String host = address.getHostString();
             int port = address.getPort();
-            ToNode toNode = new ToNode("Sync", cacheManager, host, port, toMode, false, immediate, immediateResendTimes, switchFlag, toFlushSize, false, flushDb);
+            ToNode toNode = new ToNode("Sync", cacheManager, host, port, toMode, startConsole, false, immediate, immediateResendTimes, switchFlag, toFlushSize, false, flushDb);
             toNode.start();
             if (toNode.isStarted(5000)) {
                 Context context = toNode.getContext();
@@ -291,7 +291,7 @@ public class Controller {
             for (InetSocketAddress address : fromNodeAddresses) {
                 String host = address.getHostString();
                 int port = address.getPort();
-                FromNode fromNode = new FromNode("GetFromNodesInfo", cacheManager, host, port, false, false, false, true);
+                FromNode fromNode = new FromNode("GetFromNodesInfo", cacheManager, host, port, startConsole, false, false, false, true);
                 fromNode.start();
                 if (fromNode.isStarted(5000)) {
                     FromContext context = (FromContext) fromNode.getContext();
@@ -395,7 +395,7 @@ public class Controller {
             for (InetSocketAddress address : toNodeAddresses) {
                 String host = address.getHostString();
                 int port = address.getPort();
-                ToNode toNode = new ToNode("GetToNodesInfo", cacheManager, host, port, toMode, false, false, 0, switchFlag, 0, true, false);
+                ToNode toNode = new ToNode("GetToNodesInfo", cacheManager, host, port, toMode, startConsole, false, false, 0, switchFlag, 0, true, false);
                 toNode.start();
                 if (toNode.isStarted(5000)) {
                     ToContext context = (ToContext) toNode.getContext();
@@ -491,14 +491,14 @@ public class Controller {
         private int port;
         private ToContext toContext;
 
-        public ToNode(String threadNamePrefix, CacheManager cacheManager, String host, int port, Mode toMode, boolean consoleStart, boolean immediate, int immediateResendTimes, String switchFlag, int flushSize, boolean isNodesInfoContext, boolean flushDb) {
+        public ToNode(String threadNamePrefix, CacheManager cacheManager, String host, int port, Mode toMode, boolean startConsole, boolean startByConsole, boolean immediate, int immediateResendTimes, String switchFlag, int flushSize, boolean isNodesInfoContext, boolean flushDb) {
             this.name = Constants.PROJECT_NAME + "-" + threadNamePrefix + "-ToNode-" + host + "-" + port;
             this.setName(name);
             this.cacheManager = cacheManager;
             this.host = host;
             this.port = port;
             //放在构造方法而不是run，因为兼容console模式，需要收集context，否则可能收集到null
-            this.toContext = new ToContext(cacheManager, host, port, fromMode, toMode, consoleStart, immediate, immediateResendTimes, switchFlag, flushSize, isNodesInfoContext, flushDb, toMasterName);
+            this.toContext = new ToContext(cacheManager, host, port, fromMode, toMode, startConsole, startByConsole, immediate, immediateResendTimes, switchFlag, flushSize, isNodesInfoContext, flushDb, toMasterName);
         }
 
         @Override
@@ -525,13 +525,13 @@ public class Controller {
         private int port;
         private FromContext fromContext;
 
-        public FromNode(String threadNamePrefix, CacheManager cacheManager, String host, int port, boolean consoleStart, boolean alwaysFullSync, boolean syncRdb, boolean isNodesInfoContext) {
+        public FromNode(String threadNamePrefix, CacheManager cacheManager, String host, int port, boolean startConsole, boolean startByConsole, boolean alwaysFullSync, boolean syncRdb, boolean isNodesInfoContext) {
             this.name = Constants.PROJECT_NAME + "-" + threadNamePrefix + "-FromNode - " + host + " - " + port;
             this.setName(name);
             this.host = host;
             this.port = port;
             //放在构造方法而不是run，因为兼容console模式，需要收集console，否则可能收集到null
-            this.fromContext = new FromContext(cacheManager, host, port, consoleStart, fromMode, toMode, alwaysFullSync, syncRdb, isNodesInfoContext, fromMasterName, connectFromMaster);
+            this.fromContext = new FromContext(cacheManager, host, port, startConsole, startByConsole, fromMode, toMode, alwaysFullSync, syncRdb, isNodesInfoContext, fromMasterName, connectFromMaster);
         }
 
         @Override
@@ -571,14 +571,14 @@ public class Controller {
             getFromMasterNodesInfo().forEach(address -> {
                 String host = address.getHostString();
                 int port = address.getPort();
-                FromNode fromNode = new FromNode("Console", cacheManager, host, port, true, false, false, false);
+                FromNode fromNode = new FromNode("Console", cacheManager, host, port, startConsole, true, false, false, false);
                 consoleContext.setFromContext((FromContext) fromNode.getContext());
                 fromNode.start();
             });
             getToMasterNodesInfo(false).forEach(address -> {
                 String host = address.getHostString();
                 int port = address.getPort();
-                ToNode toNode = new ToNode("Console", cacheManager, host, port, toMode, true, immediate, 0, switchFlag, 0, false, false);
+                ToNode toNode = new ToNode("Console", cacheManager, host, port, toMode, startConsole, true, immediate, 0, switchFlag, 0, false, false);
                 consoleContext.setToContext((ToContext) toNode.getContext());
                 toNode.start();
             });

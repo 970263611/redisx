@@ -62,7 +62,7 @@ public class FromClient {
                         if (hasPassword) {
                             pipeline.addLast(Constants.AUTH_HANDLER_NAME, new AuthHandler(password));
                         }
-                        if (!fromContext.isConsoleStart() && !fromContext.isNodesInfoContext()) {
+                        if (!fromContext.startByConsole() && !fromContext.isNodesInfoContext()) {
                             pipeline.addLast(Constants.INIT_SYNC_HANDLER_NAME, new SyncInitializationHandler(fromContext));
                             pipeline.addLast(new PreDistributeHandler(fromContext));
                             pipeline.addLast(Constants.OFFSET_DECODER_NAME, new OffsetCommandDecoder(fromContext));

@@ -79,11 +79,11 @@ public class DRHandler extends RedisChannelInboundHandler {
         } else {
             if (reply.startsWith(Constants.ERROR_REPLY_PREFIX)) {
                 logger.error("Receive redis error reply [{}]", reply);
-                if (toContext.isConsoleStart()) {
+                if (toContext.isStartConsole()) {
                     toContext.addErrorCount();
                 }
             }
-            if (toContext.isConsoleStart()) {
+            if (toContext.startByConsole()) {
                 toContext.callBack(reply);
             }
         }

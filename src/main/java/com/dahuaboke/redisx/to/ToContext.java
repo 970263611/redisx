@@ -42,9 +42,9 @@ public class ToContext extends Context {
     private boolean flushDb;
     private String toMasterName;
 
-    public ToContext(CacheManager cacheManager, String host, int port, Mode fromMode, Mode toMode, boolean consoleStart, boolean immediate, int immediateResendTimes, String switchFlag, int flushSize, boolean isNodesInfoContext, boolean flushDb, String toMasterName) {
-        super(cacheManager, host, port, fromMode, toMode, consoleStart);
-        if (consoleStart) {
+    public ToContext(CacheManager cacheManager, String host, int port, Mode fromMode, Mode toMode, boolean startConsole, boolean startByConsole, boolean immediate, int immediateResendTimes, String switchFlag, int flushSize, boolean isNodesInfoContext, boolean flushDb, String toMasterName) {
+        super(cacheManager, host, port, fromMode, toMode, startConsole, startByConsole);
+        if (startByConsole) {
             replyQueue = new LinkedBlockingDeque();
         }
         this.immediate = immediate;
@@ -76,7 +76,7 @@ public class ToContext extends Context {
     }
 
     public boolean callBack(String reply) {
-        if (consoleStart) {
+        if (startByConsole) {
             if (replyQueue == null) {
                 throw new IllegalStateException("By console mode replyQueue need init");
             } else {
@@ -120,7 +120,7 @@ public class ToContext extends Context {
     }
 
     public String sendCommand(Object command, int timeout, boolean unCheck, String key, boolean needIsSuccess) {
-        if (consoleStart) {
+        if (startByConsole) {
             if (replyQueue == null) {
                 throw new IllegalStateException("By console mode replyQueue need init");
             } else {
@@ -337,6 +337,6 @@ public class ToContext extends Context {
 
     @Override
     public String toString() {
-        return "ToContext{" + "host='" + host + '\'' + ", port=" + port + ", slotBegin=" + slotBegin + ", slotEnd=" + slotEnd + ", immediate=" + immediate + ", immediateResendTimes=" + immediateResendTimes + ", switchFlag='" + switchFlag + '\'' + ", flushSize=" + flushSize + ", isClose=" + isClose + ", consoleStart=" + consoleStart + ", toMode=" + toMode + ", fromMode=" + fromMode + '}';
+        return "ToContext{" + "host='" + host + '\'' + ", port=" + port + ", slotBegin=" + slotBegin + ", slotEnd=" + slotEnd + ", immediate=" + immediate + ", immediateResendTimes=" + immediateResendTimes + ", switchFlag='" + switchFlag + '\'' + ", flushSize=" + flushSize + ", isClose=" + isClose + ", startByConsole=" + startByConsole + ", toMode=" + toMode + ", fromMode=" + fromMode + '}';
     }
 }

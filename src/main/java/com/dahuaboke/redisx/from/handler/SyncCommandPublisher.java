@@ -35,12 +35,12 @@ public class SyncCommandPublisher extends SimpleChannelInboundHandler<SyncComman
             command.setSyncLength(commandLength);
             boolean success = fromContext.publish(command);
             if (success) {
-                if (fromContext.isConsoleStart()) {
+                if (fromContext.isStartConsole()) {
                     fromContext.addWriteCount();
                 }
                 logger.debug("Success sync command [{}], length [{}]", command.getStringCommand(), commandLength);
             } else {
-                if (fromContext.isConsoleStart()) {
+                if (fromContext.isStartConsole()) {
                     fromContext.addErrorCount();
                 }
                 logger.error("Sync command [{}] failed, length [{}]", command.getStringCommand(), commandLength);
