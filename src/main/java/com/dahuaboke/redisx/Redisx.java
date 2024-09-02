@@ -103,7 +103,7 @@ public class Redisx {
         @FieldOrm(value = "redisx.from.verticalScaling", defaultValue = "false")
         private boolean verticalScaling;
 
-        @FieldOrm(value = "redisx.from.connectMaster", defaultValue = "true")
+        @FieldOrm(value = "redisx.from.connectMaster", defaultValue = "false")
         private boolean connectMaster;
 
         @Override

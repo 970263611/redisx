@@ -185,7 +185,7 @@ public class Controller {
             if (cont instanceof FromContext) {
                 FromContext fromContext = (FromContext) cont;
                 if (startConsole) {
-                    fromContext.putWriteCount();
+                    fromContext.putWriteCount(true);
                 }
             } else if (cont instanceof ToContext) {
                 ToContext toContext = (ToContext) cont;
@@ -194,7 +194,7 @@ public class Controller {
                     toContext.preemptMaster();
                 }
                 if (startConsole) {
-                    toContext.putWriteCount();
+                    toContext.putWriteCount(false);
                 }
             }
         }
@@ -503,7 +503,9 @@ public class Controller {
 
         @Override
         public void run() {
-            cacheManager.registerTo(this.toContext);
+            if (!toContext.startByConsole) {
+                cacheManager.registerTo(this.toContext);
+            }
             ToClient toClient = new ToClient(this.toContext, getExecutor("ToEventLoop-" + host + ":" + port));
             this.toContext.setClient(toClient);
             toClient.start(flag);

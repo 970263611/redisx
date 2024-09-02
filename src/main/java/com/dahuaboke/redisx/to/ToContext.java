@@ -327,14 +327,6 @@ public class ToContext extends Context {
         return slotEnd;
     }
 
-    public void putWriteCount() {
-        cacheManager.addToWriteCount(host, port, writeCount);
-    }
-
-    public Long getWriteTps() {
-        return cacheManager.getToWriteCount(host, port).getTps();
-    }
-
     @Override
     public String toString() {
         return "ToContext{" + "host='" + host + '\'' + ", port=" + port + ", slotBegin=" + slotBegin + ", slotEnd=" + slotEnd + ", immediate=" + immediate + ", immediateResendTimes=" + immediateResendTimes + ", switchFlag='" + switchFlag + '\'' + ", flushSize=" + flushSize + ", isClose=" + isClose + ", startByConsole=" + startByConsole + ", toMode=" + toMode + ", fromMode=" + fromMode + '}';
