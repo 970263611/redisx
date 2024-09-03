@@ -237,4 +237,8 @@ public class FromContext extends Context {
     public void addSentinelSlaveInfo(SentinelInfoHandler.SlaveInfo fromSentinelNodeInfo) {
         cacheManager.addFromSentinelNodesInfo(fromSentinelNodeInfo);
     }
+
+    public void setFromStarted(boolean started) {
+        cacheManager.setFromIsStarted(started);
+    }
 }

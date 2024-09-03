@@ -47,4 +47,10 @@ public class SyncCommandPublisher extends SimpleChannelInboundHandler<SyncComman
             }
         }
     }
+
+    @Override
+    public void channelInactive(ChannelHandlerContext ctx) throws Exception {
+        fromContext.setFromStarted(false);
+        super.channelInactive(ctx);
+    }
 }

@@ -97,8 +97,6 @@ public class SyncCommandListener extends ChannelInboundHandlerAdapter {
                                 timeThreshold = System.currentTimeMillis();
                             }
                         }
-                    } else {
-                        toContext.setToStarted(false);
                     }
                 } catch (Exception e) {
                     logger.error("Sync command thread find error", e);
@@ -118,5 +116,11 @@ public class SyncCommandListener extends ChannelInboundHandlerAdapter {
             fromContext.setOffset(offset);
             logger.trace("Write command [{}] length [{}], now offset [{}]", syncCommand.getStringCommand(), length, offset);
         }
+    }
+
+    @Override
+    public void channelInactive(ChannelHandlerContext ctx) throws Exception {
+        toContext.setToStarted(false);
+        super.channelInactive(ctx);
     }
 }
