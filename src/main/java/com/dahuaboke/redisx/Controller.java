@@ -58,6 +58,10 @@ public class Controller {
     private boolean verticalScaling;
     private boolean connectFromMaster;
     private boolean consoleSearch;
+    private boolean timedExitEnable;
+    private boolean timedExitForce;
+    private int timedExitDuration;
+    private long programCloseTime;
 
     public Controller(Redisx.Config config) {
         this.fromNodeAddresses = config.getFromAddresses();
@@ -78,15 +82,19 @@ public class Controller {
         this.flushDb = config.isFlushDb();
         this.verticalScaling = config.isVerticalScaling();
         this.connectFromMaster = config.isConnectMaster();
-        cacheManager = new CacheManager(config.getRedisVersion(), fromMode, config.getFromPassword(), toMode, config.getToPassword());
+        this.cacheManager = new CacheManager(config.getRedisVersion(), fromMode, config.getFromPassword(), toMode, config.getToPassword());
         if (flushDb) {
-            cacheManager.setFlushState(FlushState.PREPARE);
+            this.cacheManager.setFlushState(FlushState.PREPARE);
         }
         if (startConsole) {
-            cacheMonitor = new CacheMonitor(cacheManager);
-            cacheMonitor.setConfig(config);
+            this.cacheMonitor = new CacheMonitor(cacheManager);
+            this.cacheMonitor.setConfig(config);
         }
-        consoleSearch = config.isConsoleSearch();
+        this.consoleSearch = config.isConsoleSearch();
+        this.timedExitEnable = config.isTimedExitEnable();
+        this.timedExitForce = config.isTimedExitForce();
+        this.timedExitDuration = config.getTimedExitDuration();
+        this.programCloseTime = System.currentTimeMillis() + this.timedExitDuration * 1000;
     }
 
     public void start() {
@@ -98,6 +106,8 @@ public class Controller {
         //需要确保上一次执行结束再执行下一次任务
         controllerPool.scheduleAtFixedRate(() -> {
             try {
+                //判断是否需要退出程序
+                checkTimedExit();
                 boolean isMaster = cacheManager.isMaster();
                 boolean fromIsStarted = cacheManager.fromIsStarted();
                 List<Context> allContexts = cacheManager.getAllContexts();
@@ -155,6 +165,12 @@ public class Controller {
     public Executor getExecutor(String name) {
         RedisxThreadFactory defaultThreadFactory = new RedisxThreadFactory(Constants.PROJECT_NAME + "-" + name);
         return new ThreadPerTaskExecutor(defaultThreadFactory);
+    }
+
+    private void checkTimedExit() {
+        if (timedExitEnable && System.currentTimeMillis() > programCloseTime) {
+            System.exit(0);
+        }
     }
 
     private void closeLog4jShutdownHook() {
@@ -286,7 +302,8 @@ public class Controller {
             LogManager.shutdown();
         });
         shutdownHookThread.setName(Constants.PROJECT_NAME + "-ShutdownHook");
-        if (!immediate) {
+        //非强一致和未开启定时关闭和未开启强制关闭参数时注册hool
+        if (!immediate && !(timedExitEnable && timedExitForce)) {
             closeLog4jShutdownHook();
             Runtime.getRuntime().addShutdownHook(shutdownHookThread);
         }

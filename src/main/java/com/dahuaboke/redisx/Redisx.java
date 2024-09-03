@@ -106,6 +106,15 @@ public class Redisx {
         @FieldOrm(value = "redisx.console.search", defaultValue = "false")
         private boolean consoleSearch;
 
+        @FieldOrm(value = "redisx.timedExit.enable", defaultValue = "false")
+        private boolean timedExitEnable;
+
+        @FieldOrm(value = "redisx.timedExit.force", defaultValue = "false")
+        private boolean timedExitForce;
+
+        @FieldOrm(value = "redisx.console.search", defaultValue = "-1")
+        private int timedExitDuration;
+
         @Override
         public void check() {
             if (Mode.SENTINEL == this.fromMode && StringUtils.isEmpty(this.fromMasterName)) {
@@ -323,6 +332,30 @@ public class Redisx {
 
         public void setConsoleSearch(boolean consoleSearch) {
             this.consoleSearch = consoleSearch;
+        }
+
+        public boolean isTimedExitEnable() {
+            return timedExitEnable;
+        }
+
+        public void setTimedExitEnable(boolean timedExitEnable) {
+            this.timedExitEnable = timedExitEnable;
+        }
+
+        public int getTimedExitDuration() {
+            return timedExitDuration;
+        }
+
+        public void setTimedExitDuration(int timedExitDuration) {
+            this.timedExitDuration = timedExitDuration;
+        }
+
+        public boolean isTimedExitForce() {
+            return timedExitForce;
+        }
+
+        public void setTimedExitForce(boolean timedExitForce) {
+            this.timedExitForce = timedExitForce;
         }
     }
 }
