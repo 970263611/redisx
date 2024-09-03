@@ -14,12 +14,14 @@ public class PrintHandler extends ChannelInboundHandlerAdapter {
 
     @Override
     public void channelRead(ChannelHandlerContext ctx, Object msg) throws Exception {
-        ByteBuf in = (ByteBuf) msg;
-        StringBuilder sb = new StringBuilder();
-        sb.append("\r\n<").append(Thread.currentThread().getName()).append(">")
-                .append("<redis massage> = ").append(in).append("\r\n");
-        sb.append(ByteBufUtil.prettyHexDump(in));
-        logger.trace(sb.toString());
+        if(msg != null && msg instanceof ByteBuf  ) {
+            ByteBuf in = (ByteBuf) msg;
+            StringBuilder sb = new StringBuilder();
+            sb.append("\r\n<").append(Thread.currentThread().getName()).append(">")
+                    .append("<redis massage> = ").append(in).append("\r\n");
+            sb.append(ByteBufUtil.prettyHexDump(in));
+            logger.trace(sb.toString());
+        }
         ctx.fireChannelRead(msg);
     }
 }
