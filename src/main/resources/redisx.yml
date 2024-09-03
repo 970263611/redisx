@@ -30,10 +30,10 @@ redisx:
   #  alwaysFullSync: false
   #  switchFlag: REDISX-AUTHOR:DAHUA&CHANGDONGLIANG&ZHANGHUIHAO&ZHANGSHUHAN
   #  syncRdb: true
-  timedExit:
-    enable: false
-    force: false
-    duration: 60
+#  timedExit:
+#    enable: false
+#    force: false
+#    duration: -1
 
 #jasypt:
 #  encryptor:
