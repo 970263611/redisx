@@ -65,7 +65,7 @@ redisx:
 
 REDISX可进行多节点部署，指向相同Redis To节点的REDISX服务会自动形成主备模式，当REDISX主节点发生异常时，备节点会自动完成主备切换，继续进行数据同步工作，并支持断点续传，保证数据的完整性和连续性。
 
-#### 纵向扩展
+#### 垂直扩展
 
 REDISX支持对同一集群的不同节点进行单独的同步工作，可以通过配置使REDISX服务于from集群的单一节点，分担数据同步产生的压力，大幅度提高同步效率。
 
@@ -78,6 +78,10 @@ Redis节点的状态不会影响到REDISX服务的运行。当Redis节点出现�
 #### 服务监控(完善中)
 
 通过REDISX页面监控功能可以实时展示REDIS以及REDISX节点的工作状态，REDISX的数据同步速度，数据堆积以及REDISX的配置信息。同时现正在逐渐完善REDISX的告警功能，从而使REDISX运行更加稳定。
+
+#### 定时退出功能
+
+支持设置一定时间后同步服务自动退出，满足一次性同步的场景。
 
 #### 其它扩展
 
@@ -128,53 +132,45 @@ java -jar redisx.jar redisx.yml
 ```yaml
 redisx:
   from:
-  	redis:
-  	  #(必填项)from端redis版本，建议该版本等于或低于to端版本，以防止redis指令不兼容导致的同步问题
+    redis:
+      #(必填项)from端redis版本，建议该版本不高于to端版本，防止因redis指令不兼容导致的同步问题
       version: 6.0.9
-    #from端redis密码，支持enc加密
-    #哨兵模式下，redis node节点和哨兵节点密码应保持一致
-    password: 1a.2b*
-    #(必填项)from端redis模式，单机：single 集群：cluster 哨兵:sentinel
-    mode: cluster
-    #(redis.from.mode为sentinel时必填)哨兵模式下主节点的mastername
-    masterName: myMaster
-    #(必填项)from端redis节点地址，
-    #集群模式下需配置单个或多个节点地址，建议配置完整的节点地址
-    #哨兵模式下需配置单个或多个哨兵地址，建议配置完整的哨兵节点
-    address:
-      - 127.0.0.1:16001
-      - 127.0.0.1:16002
-      - 127.0.0.1:16003
-    #纵向扩展，为true时，
-    verticalScaling: false
-    connectMaster: true
+      #from端redis密码。哨兵模式下数据节点和哨兵节点密码应保持一致
+      password: 1a.2b*
+      #(必填项)from端redis模式，单机：single 集群：cluster 哨兵:sentinel
+      mode: cluster
+      #(redis.from.mode为sentinel时必填)哨兵模式下主节点的mastername
+      masterName: myMaster
+      #(必填项)from端redis节点地址，可配置单个或多个节点地址
+      address:
+        - 127.0.0.1:16001
+      #纵向扩展，为true时，
+      verticalScaling: false
+      #是否强制连接主节点
+      connectMaster: true
   to:
-    #to端redis密码，支持enc加密
+    #to端redis密码
     password: 2b*1a.
     #(必填项)to端redis模式，单机：single 集群：cluster 哨兵:sentinel
     mode: cluster
     #(redis.to.mode为sentinel时必填)哨兵模式下主节点的mastername
     masterName: myMaster
-    #(必填项)to端redis节点地址，
-    #集群模式下需配置单个或多个节点地址，建议配置完整的节点地址
-    #哨兵模式下需配置单个或多个哨兵地址，建议配置完整的哨兵节点
+    #(必填项)to端redis节点地址，可配置单个或多个节点地址
     address:
       - 127.0.0.2:16101
-      - 127.0.0.2:16102
-      - 127.0.0.2:16103
-    #是否在启动时清空to端数据，默认为false
+    #是否在启动时清空to端数据
     flushDb: false
-    #to端写入数据阈值，N条数据的write进行一次flush
-    flushSize: 20
-    #当to端集群不完整，是否需要槽信息连续才同步数据，默认为false（仅当to为集群配置生效）
-    syncWithCheckSlot: false
+    #to端单次写入数据阈值
+    flushSize: 50
   console:
-    #是否启用控制台，控制台主要用于双向查询数据
+    #是否启用控制台
     enable: false
-    #控制台发布端口
-    port: 9999
-    #控制台查询时间
+    #是否开启控制台双向查询数据功能
+    search: false
+    #控制台响应超时时间
     timeout: 5000
+    #控制台发布端口
+    port: 18080
   #强一致模式，该模式下，单条数据完成io才会进行偏移量更新
   #开启后可以降低服务异常导致的数据不一致问题，但会大幅度降低同步效率
   immediate:
@@ -186,10 +182,18 @@ redisx:
   #开启后每次重新开始同步均会进行全量同步，而不进行续传同步
   #开启后，syncRdb配置强制为true
   alwaysFullSync: false
-  #redisx主从切换标志,redis-x高可用部署、断点续传会以该标识作为key在to节点中写入实时同步状态信息
+  #redisx主从切换标志
   switchFlag: REDISX-AUTHOR:DAHUA&CHANGDONGLIANG&ZHANGHUIHAO&ZHANGSHUHAN
-  #是否同步存量数据，为false时之同步增量数据
+  #是否同步存量数据
   syncRdb: true
+  #定时退出
+  timedExit:
+    #是否开启定时退出
+    enable: false
+    #是否执行关闭钩子函数
+    force: false
+    #定时时长，单位：秒，小于0则定时退出功能失效
+    duration: -1
 #配置文件支持enc加密，加密的配置需要使用'ENC(配置内容)'包裹
 jasypt:
   encryptor:

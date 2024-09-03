@@ -12,10 +12,12 @@ import io.netty.channel.nio.NioEventLoopGroup;
 import io.netty.channel.socket.nio.NioServerSocketChannel;
 import io.netty.handler.codec.http.HttpObjectAggregator;
 import io.netty.handler.codec.http.HttpServerCodec;
+import io.netty.handler.timeout.IdleStateHandler;
 import org.slf4j.Logger;
 import org.slf4j.LoggerFactory;
 
 import java.util.concurrent.Executor;
+import java.util.concurrent.TimeUnit;
 
 /**
  * 2024/5/15 9:49
@@ -52,6 +54,7 @@ public class ConsoleServer {
                         protected void initChannel(Channel channel) throws Exception {
                             ChannelPipeline pipeline = channel.pipeline();
                             pipeline.addLast(new PrintHandler());
+                            pipeline.addLast(new IdleStateHandler(0, 0, consoleContext.getTimeout(), TimeUnit.MILLISECONDS));
                             pipeline.addLast(new HttpServerCodec());
                             pipeline.addLast(new HttpObjectAggregator(512 * 1024));
                             pipeline.addLast(new ConsoleHandler());

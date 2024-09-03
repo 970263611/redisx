@@ -96,4 +96,8 @@ public class ConsoleContext extends Context {
     public boolean isConsoleSearch() {
         return consoleSearch;
     }
+
+    public int getTimeout() {
+        return timeout;
+    }
 }
