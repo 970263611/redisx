@@ -202,6 +202,7 @@ public final class CacheManager {
                 fromContext.close();
             }
         }
+        setFromIsStarted(false);
     }
 
     public void closeAllTo() {

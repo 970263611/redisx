@@ -19,9 +19,9 @@ redisx:
       - xxx.xxx.xxx.xxx:port
 #    flushDb: false
 #    flushSize: 50
-#    syncWithCheckSlot: false
-#  console:
+  console:
 #    enable: false
+     search: true
 #    port: 18080
 #    timeout: 5000
 #  immediate:

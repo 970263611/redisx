@@ -27,11 +27,13 @@ public class ConsoleContext extends Context {
     private List<FromContext> fromContexts = new ArrayList();
     private ConsoleServer consoleServer;
     private CacheMonitor cacheMonitor;
+    private boolean consoleSearch;
 
-    public ConsoleContext(CacheManager cacheManager, CacheMonitor cacheMonitor, String host, int port, int timeout, Mode toMode, Mode fromMode) {
+    public ConsoleContext(CacheManager cacheManager, CacheMonitor cacheMonitor, String host, int port, int timeout, Mode toMode, Mode fromMode, boolean consoleSearch) {
         super(cacheManager, host, port, fromMode, toMode, true, false);
         this.cacheMonitor = cacheMonitor;
         this.timeout = timeout;
+        this.consoleSearch = consoleSearch;
     }
 
     public void setToContext(ToContext toContext) {
@@ -89,5 +91,9 @@ public class ConsoleContext extends Context {
 
     public CacheMonitor getCacheMonitor() {
         return cacheMonitor;
+    }
+
+    public boolean isConsoleSearch() {
+        return consoleSearch;
     }
 }

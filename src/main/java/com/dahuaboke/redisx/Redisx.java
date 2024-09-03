@@ -97,14 +97,14 @@ public class Redisx {
         @FieldOrm(value = "redisx.to.flushDb", defaultValue = "false")
         private boolean flushDb;
 
-        @FieldOrm(value = "redisx.to.syncWithCheckSlot", defaultValue = "false")
-        private boolean syncWithCheckSlot;
-
         @FieldOrm(value = "redisx.from.verticalScaling", defaultValue = "false")
         private boolean verticalScaling;
 
         @FieldOrm(value = "redisx.from.connectMaster", defaultValue = "false")
         private boolean connectMaster;
+
+        @FieldOrm(value = "redisx.console.search", defaultValue = "false")
+        private boolean consoleSearch;
 
         @Override
         public void check() {
@@ -269,14 +269,6 @@ public class Redisx {
             this.flushDb = flushDb;
         }
 
-        public boolean isSyncWithCheckSlot() {
-            return syncWithCheckSlot;
-        }
-
-        public void setSyncWithCheckSlot(boolean syncWithCheckSlot) {
-            this.syncWithCheckSlot = syncWithCheckSlot;
-        }
-
         public Mode getFromMode() {
             return fromMode;
         }
@@ -325,6 +317,12 @@ public class Redisx {
             this.connectMaster = connectMaster;
         }
 
+        public boolean isConsoleSearch() {
+            return consoleSearch;
+        }
 
+        public void setConsoleSearch(boolean consoleSearch) {
+            this.consoleSearch = consoleSearch;
+        }
     }
 }
