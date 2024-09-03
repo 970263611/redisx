@@ -24,6 +24,7 @@ import org.slf4j.LoggerFactory;
 
 import java.net.InetSocketAddress;
 import java.util.ArrayList;
+import java.util.Date;
 import java.util.Iterator;
 import java.util.List;
 import java.util.concurrent.*;
@@ -99,6 +100,9 @@ public class Controller {
 
     public void start() {
         logger.info("Application global id is {}", cacheManager.getId());
+        if (timedExitEnable) {
+            logger.warn("Application config [redisx.timedExit.enable] is {}, " + "[redisx.timedExit.force] is {} , " + "[redisx.timedExit.duration] is {}s ", timedExitEnable, timedExitForce, timedExitDuration);
+        }
         //关闭netty内存监测，不准
         System.setProperty("io.netty.leakDetection.level", "disabled");
         //注册shutdownhook
@@ -169,6 +173,7 @@ public class Controller {
 
     private void checkTimedExit() {
         if (timedExitEnable && System.currentTimeMillis() > programCloseTime) {
+            logger.info("Timed exit for application : {}", new Date(programCloseTime));
             System.exit(0);
         }
     }

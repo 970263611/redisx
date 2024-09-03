@@ -10,6 +10,7 @@ import java.io.FileInputStream;
 import java.io.FileNotFoundException;
 import java.util.HashMap;
 import java.util.Map;
+import java.util.Properties;
 
 /**
  * 2024/6/20 15:12
@@ -28,22 +29,15 @@ public class YamlUtil {
      */
     public static Map<String, Object> parseYamlParam(String[] args) {
         try {
-            Map<String, String> argsMap = new HashMap<>();
-            if (args != null && args.length > 0) {
-                for (int a = 0; a < args.length; a++) {
-                    if (a == 0) {
-                        argsMap.put(Constants.CONFIG_PATH, args[a]);
-                    } else {
-                        String[] arrs = args[a].split("=");
-                        if (arrs.length != 2 || StringUtils.isEmpty(arrs[0]) || StringUtils.isEmpty(arrs[1])) {
-                            throw new IllegalArgumentException("The command line parameter is incorrect : " + args[a]);
-                        }
-                        argsMap.put(arrs[0], arrs[1]);
-                    }
+            String configPath = args == null || args.length == 0 ? null : args[0];
+            Map<String, Object> paramMap = parseConfig(configPath);
+            Properties properties = System.getProperties();
+            for (String str : properties.stringPropertyNames()) {
+                String val = properties.getProperty(str);
+                if (StringUtils.isNotEmpty(str) && StringUtils.isNotEmpty(val)) {
+                    paramMap.put(str, val);
                 }
             }
-            Map<String, Object> paramMap = parseConfig(argsMap.get(Constants.CONFIG_PATH));
-            paramMap.putAll(argsMap);
             decryptMap(paramMap);
             return paramMap;
         } catch (Exception e) {
@@ -98,10 +92,10 @@ public class YamlUtil {
         if (password == null || password.length() == 0) {
             return;
         }
-        if(StringUtils.isEmpty(algorithm)){
+        if (StringUtils.isEmpty(algorithm)) {
             algorithm = Constants.JASYPT_ALGORITHM;
         }
-        if(StringUtils.isEmpty(ivGeneratorClassName)){
+        if (StringUtils.isEmpty(ivGeneratorClassName)) {
             ivGeneratorClassName = Constants.JASYPT_IVGENERATORCLASSNAME;
         }
         JasyptUtil jasyptUtil = StringUtils.isNotEmpty(algorithm) ? new JasyptUtil(password, algorithm, ivGeneratorClassName) : new JasyptUtil(password);

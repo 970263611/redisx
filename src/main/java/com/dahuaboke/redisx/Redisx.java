@@ -112,7 +112,7 @@ public class Redisx {
         @FieldOrm(value = "redisx.timedExit.force", defaultValue = "false")
         private boolean timedExitForce;
 
-        @FieldOrm(value = "redisx.console.search", defaultValue = "-1")
+        @FieldOrm(value = "redisx.timedExit.duration", defaultValue = "-1")
         private int timedExitDuration;
 
         @Override
@@ -133,8 +133,11 @@ public class Redisx {
             if (StringUtils.isNotEmpty(this.toPassword) && StringUtils.isNotEmpty(this.toUsername)) {
                 this.toPassword = this.toUsername + " " + this.toPassword;
             }
-            if (immediateResendTimes < 1) {
-                immediateResendTimes = 1;
+            if (this.immediateResendTimes < 1) {
+                this.immediateResendTimes = 1;
+            }
+            if (this.timedExitDuration <= 0) {
+                this.timedExitEnable = false;
             }
         }
 
