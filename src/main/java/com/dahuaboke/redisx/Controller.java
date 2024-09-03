@@ -111,6 +111,7 @@ public class Controller {
                     //识别to集群中存在节点宕机则全部关闭to
                     isMaster = false;
                     cacheManager.closeAllTo();
+                    Thread.sleep(5000);
                 }
                 if (isMaster && !fromIsStarted) { //抢占到主节点，from未启动
                     logger.info("Upgrade master and starting from clients");

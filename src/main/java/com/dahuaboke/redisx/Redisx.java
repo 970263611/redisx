@@ -79,7 +79,7 @@ public class Redisx {
         @FieldOrm(value = "redisx.alwaysFullSync", defaultValue = "false")
         private boolean alwaysFullSync;
 
-        @FieldOrm(value = "redisx.immediate.resendTimes", defaultValue = "0")
+        @FieldOrm(value = "redisx.immediate.resendTimes", defaultValue = "1")
         private int immediateResendTimes;
 
         @FieldOrm(value = "redisx.from.redis.version", required = true)
@@ -118,11 +118,14 @@ public class Redisx {
             if (this.isAlwaysFullSync()) {
                 this.setSyncRdb(true);
             }
-            if(StringUtils.isNotEmpty(this.fromPassword) && StringUtils.isNotEmpty(this.fromUsername)) {
+            if (StringUtils.isNotEmpty(this.fromPassword) && StringUtils.isNotEmpty(this.fromUsername)) {
                 this.fromPassword = this.fromUsername + " " + this.fromPassword;
             }
-            if(StringUtils.isNotEmpty(this.toPassword) && StringUtils.isNotEmpty(this.toUsername)) {
+            if (StringUtils.isNotEmpty(this.toPassword) && StringUtils.isNotEmpty(this.toUsername)) {
                 this.toPassword = this.toUsername + " " + this.toPassword;
+            }
+            if (immediateResendTimes < 1) {
+                immediateResendTimes = 1;
             }
         }
 
