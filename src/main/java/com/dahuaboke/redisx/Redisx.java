@@ -23,7 +23,7 @@ public class Redisx {
 
     public static void main(String[] args) {
         Config config = new Config();
-        FieldOrmUtil.MapToBean(YamlUtil.parseYamlParam(args), config);
+        FieldOrmUtil.MapToBean(YamlUtil.parseYamlParam(args == null || args.length == 0 ? null : args[0]), config);
         Configurator.setRootLevel(Level.getLevel(config.getLogLevelGlobal()));
         Controller controller = new Controller(config);
         controller.start();

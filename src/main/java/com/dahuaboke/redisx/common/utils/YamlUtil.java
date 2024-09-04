@@ -27,9 +27,8 @@ public class YamlUtil {
      * @param args
      * @return
      */
-    public static Map<String, Object> parseYamlParam(String[] args) {
+    public static Map<String, Object> parseYamlParam(String configPath) {
         try {
-            String configPath = args == null || args.length == 0 ? null : args[0];
             Map<String, Object> paramMap = parseConfig(configPath);
             Properties properties = System.getProperties();
             for (String str : properties.stringPropertyNames()) {
