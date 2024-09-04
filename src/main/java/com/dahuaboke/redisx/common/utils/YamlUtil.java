@@ -59,7 +59,6 @@ public class YamlUtil {
             }
         }
         Map<String, Object> config = new HashMap();
-        decryptMap(config);
         parseConfig(null, map, config);
         return config;
     }
@@ -101,7 +100,7 @@ public class YamlUtil {
         for (Map.Entry<String, Object> entry : map.entrySet()) {
             if (entry.getValue() instanceof String) {
                 String s = (String) entry.getValue();
-                if (s.startsWith("ENC(") && s.startsWith(")")) {
+                if (s.startsWith("ENC(") && s.endsWith(")")) {
                     s = s.substring(4, s.length() - 1);
                     map.put(entry.getKey(), jasyptUtil.decrypt(s));
                 }
