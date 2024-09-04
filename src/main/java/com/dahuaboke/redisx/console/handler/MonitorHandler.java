@@ -1,10 +1,10 @@
 package com.dahuaboke.redisx.console.handler;
 
+import com.alibaba.fastjson2.JSON;
 import com.dahuaboke.redisx.common.cache.CacheMonitor;
 import com.dahuaboke.redisx.common.command.console.MonitorCommand;
 import com.dahuaboke.redisx.common.command.console.ReplyCommand;
 import com.dahuaboke.redisx.console.ConsoleContext;
-import com.fasterxml.jackson.databind.ObjectMapper;
 import io.netty.channel.ChannelHandlerContext;
 import io.netty.channel.SimpleChannelInboundHandler;
 
@@ -16,7 +16,6 @@ import java.util.Map;
  */
 public class MonitorHandler extends SimpleChannelInboundHandler<MonitorCommand> {
 
-    private ObjectMapper objectMapper = new ObjectMapper();
     private ConsoleContext consoleContext;
 
     public MonitorHandler(ConsoleContext consoleContext) {
@@ -27,7 +26,7 @@ public class MonitorHandler extends SimpleChannelInboundHandler<MonitorCommand> 
     protected void channelRead0(ChannelHandlerContext ctx, MonitorCommand monitorCommand) throws Exception {
         CacheMonitor cacheMonitor = consoleContext.getCacheMonitor();
         Map result = cacheMonitor.buildMonitor();
-        String reply = objectMapper.writeValueAsString(result);
+        String reply = JSON.toJSONString(result);
         ctx.fireChannelRead(new ReplyCommand(reply));
     }
 }

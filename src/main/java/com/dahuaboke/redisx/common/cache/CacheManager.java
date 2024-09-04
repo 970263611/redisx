@@ -115,7 +115,7 @@ public final class CacheManager {
             if (k.isAdapt(toMode, key)) {
                 boolean offer = v.offer(command);
                 int size = v.size();
-                if (size > 10000) {
+                if (size > 10000  && size / 1000 * 1000 == size) {
                     logger.warn("Cache has command size [{}]", size);
                 }
                 if (!offer) {
