@@ -89,11 +89,11 @@ public class FromClient {
         ChannelFuture sync = bootstrap.connect(masterHost, masterPort).addListener((ChannelFutureListener) future -> {
             if (future.isSuccess()) {
                 logger.info("[From] started at [{}:{}]", masterHost, masterPort);
+                flag.countDown();
             }
             if (future.cause() != null) {
                 logger.info("[From] start error", future.cause());
             }
-            flag.countDown();
         });
         channel = sync.channel();
         fromContext.setFromChannel(channel);

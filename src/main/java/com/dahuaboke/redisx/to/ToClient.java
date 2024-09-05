@@ -81,11 +81,11 @@ public class ToClient {
         ChannelFuture sync = bootstrap.connect(host, port).addListener((ChannelFutureListener) future -> {
             if (future.isSuccess()) {
                 logger.info("[To] started at [{}:{}]", host, port);
+                flag.countDown();
             }
             if (future.cause() != null) {
                 logger.info("[To] start error", future.cause());
             }
-            flag.countDown();
         });
         channel = sync.channel();
     }

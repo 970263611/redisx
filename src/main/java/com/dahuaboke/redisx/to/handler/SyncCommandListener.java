@@ -42,50 +42,54 @@ public class SyncCommandListener extends ChannelInboundHandlerAdapter {
                             boolean immediate = toContext.isImmediate();
                             if (syncCommand != null) {
                                 RedisMessage redisMessage = syncCommand.getCommand();
-                                if (immediate && syncCommand.isNeedAddLengthToOffset()) { //强一致模式 && 需要记录偏移量（非rdb数据）
-                                    boolean messageWrited = false;
-                                    boolean offsetWrited = false;
-                                    int retryTimes = 0;
-                                    int immediateResendTimes = toContext.getImmediateResendTimes();
-                                    while (retryTimes < immediateResendTimes && (!messageWrited || !offsetWrited)) {
-                                        try {
-                                            retryTimes++;
-                                            if (!messageWrited) {
-                                                ChannelFuture channelFuture = ctx.writeAndFlush(redisMessage);
-                                                channelFuture.await();
-                                                boolean channelFutureIsSuccess = channelFuture.isSuccess();
-                                                if (channelFutureIsSuccess) {
-                                                    messageWrited = true;
-                                                    updateOffset(syncCommand);
-                                                    if (toContext.isStartConsole()) {
-                                                        toContext.addWriteCount();
+                                if (redisMessage != null) {
+                                    if (immediate && syncCommand.isNeedAddLengthToOffset()) { //强一致模式 && 需要记录偏移量（非rdb数据）
+                                        boolean messageWrited = false;
+                                        boolean offsetWrited = false;
+                                        int retryTimes = 0;
+                                        int immediateResendTimes = toContext.getImmediateResendTimes();
+                                        while (retryTimes < immediateResendTimes && (!messageWrited || !offsetWrited)) {
+                                            try {
+                                                retryTimes++;
+                                                if (!messageWrited) {
+                                                    ChannelFuture channelFuture = ctx.writeAndFlush(redisMessage);
+                                                    channelFuture.await();
+                                                    boolean channelFutureIsSuccess = channelFuture.isSuccess();
+                                                    if (channelFutureIsSuccess) {
+                                                        messageWrited = true;
+                                                        updateOffset(syncCommand);
+                                                        if (toContext.isStartConsole()) {
+                                                            toContext.addWriteCount();
+                                                        }
+                                                    } else {
+                                                        continue;
                                                     }
-                                                } else {
-                                                    continue;
                                                 }
-                                            }
-                                            if (!offsetWrited) {
-                                                if (toContext.preemptMasterCompulsoryWithCheckId()) {
-                                                    offsetWrited = true;
-                                                    logger.trace("[immediate] write success");
+                                                if (!offsetWrited) {
+                                                    if (toContext.preemptMasterCompulsoryWithCheckId()) {
+                                                        offsetWrited = true;
+                                                        logger.trace("[immediate] write success");
+                                                    }
                                                 }
+                                            } catch (InterruptedException e) {
+                                                logger.error("Write command or offset awaiter error", e);
                                             }
-                                        } catch (InterruptedException e) {
-                                            logger.error("Write command or offset awaiter error", e);
                                         }
-                                    }
-                                    if (!messageWrited) {
+                                        if (!messageWrited) {
+                                            if (toContext.isStartConsole()) {
+                                                toContext.addErrorCount();
+                                            }
+                                        }
+                                    } else {
+                                        updateOffset(syncCommand);
+                                        ctx.write(redisMessage);
+                                        flushThreshold++;
                                         if (toContext.isStartConsole()) {
-                                            toContext.addErrorCount();
+                                            toContext.addWriteCount();
                                         }
                                     }
                                 } else {
-                                    updateOffset(syncCommand);
-                                    ctx.write(redisMessage);
-                                    flushThreshold++;
-                                    if (toContext.isStartConsole()) {
-                                        toContext.addWriteCount();
-                                    }
+                                    logger.error("RedisMessage is null {}", syncCommand.getStringCommand());
                                 }
                             }
                             if (flushThreshold > flushSize || (System.currentTimeMillis() - timeThreshold > 100)) {

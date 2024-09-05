@@ -232,14 +232,17 @@ public class Controller {
             int port = address.getPort();
             FromNode fromNode = new FromNode("Sync", cacheManager, host, port, startConsole, false, alwaysFullSync, syncRdb, false);
             fromNode.start();
+            Context context = fromNode.getContext();
             if (fromNode.isStarted(5000)) {
-                Context context = fromNode.getContext();
                 if (context == null) {
                     logger.error("[{}:{}] context is null", host, port);
                 }
                 cacheManager.register(fromNode.getContext());
             } else {
                 logger.error("[{}:{}] node start failed, close all [to] node", host, port);
+                if (context != null) {
+                    context.setClose(true);
+                }
                 success = false;
                 break;
             }
@@ -259,14 +262,18 @@ public class Controller {
             int port = address.getPort();
             ToNode toNode = new ToNode("Sync", cacheManager, host, port, toMode, startConsole, false, immediate, immediateResendTimes, switchFlag, toFlushSize, false, flushDb);
             toNode.start();
+            Context context = toNode.getContext();
             if (toNode.isStarted(5000)) {
-                Context context = toNode.getContext();
                 if (context == null) {
                     logger.error("[{}:{}] context is null", host, port);
                 }
                 cacheManager.register(context);
             } else {
                 logger.error("[{}:{}] node start failed, close all [to] node", host, port);
+                if (context != null) {
+                    logger.error("[{}:{}] context is null", host, port);
+                    context.setClose(true);
+                }
                 success = false;
                 break;
             }
