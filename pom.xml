@@ -74,6 +74,7 @@
 
     <build>
         <!-- 打包后的名字 -->
+        <finalName>redisx</finalName>
         <plugins>
             <!--(start) for package jar with dependencies -->
             <plugin>
@@ -86,9 +87,11 @@
                             <mainClass>com.dahuaboke.redisx.Redisx</mainClass>
                         </manifest>
                     </archive>
-                    <descriptors>
-                        <descriptor>${project.basedir}/assembly.xml</descriptor>
-                    </descriptors>
+                    <descriptorRefs>
+                        <descriptorRef>jar-with-dependencies</descriptorRef>
+                    </descriptorRefs>
+                    <appendAssemblyId>false</appendAssemblyId>
+                    <attach>false</attach>
                 </configuration>
                 <executions>
                     <execution>
