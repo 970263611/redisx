@@ -29,7 +29,7 @@ public class ToContext extends Context {
     private static final Logger logger = LoggerFactory.getLogger(ToContext.class);
     private static final String lua1 = "local v = redis.call('GET',KEYS[1]);\n" + "    if v then\n" + "        return v;\n" + "    else\n" + "        local result = redis.call('SET',KEYS[1],ARGV[1]);\n" + "        return result;\n" + "    end";
     private static final String lua2 = "local v = redis.call('GET',KEYS[1]);\n" + "if string.match(v,ARGV[1]) then\n redis.call('SET',KEYS[1],ARGV[2]);\nend";
-    private static final String luaFlush = "redis.call(flushall);\n" + lua1;
+    private static final String luaFlush = "redis.call('flushall');\n" + lua1;
     private int slotBegin;
     private int slotEnd;
     private ToClient toClient;
