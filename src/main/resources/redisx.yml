@@ -2,34 +2,34 @@ redisx:
   from:
     redis:
       version: x.x.x
-    #username:
-    #password:
     mode: cluster
-    #masterName:
+#    username:
+#    password:
+#    masterName:
     address:
       - xxx.xxx.xxx.xxx:port
-  #    verticalScaling: false
-  #    connectMaster: true
+#    verticalScaling: false
+#    connectMaster: true
   to:
-    #username:
-    #password:
     mode: cluster
-    #masterName:
+#    username:
+#    password:
+#    masterName:
     address:
       - xxx.xxx.xxx.xxx:port
-  #    flushDb: false
-  #    flushSize: 50
-  #  console:
-  #    enable: false
-  #    search: false
-  #    port: 18080
-  #    timeout: 5000
-  #  immediate:
-  #    enable: false
-  #    resendTimes: 1
-  #  alwaysFullSync: false
-  #  switchFlag: REDISX-AUTHOR:DAHUA&CHANGDONGLIANG&ZHANGHUIHAO&ZHANGSHUHAN
-  #  syncRdb: true
+#    flushDb: false
+#    flushSize: 50
+#  console:
+#    enable: false
+#    search: false
+#    port: 18080
+#    timeout: 5000
+#  immediate:
+#    enable: false
+#    resendTimes: 1
+#  alwaysFullSync: false
+#  switchFlag: REDISX-AUTHOR:DAHUA&CHANGDONGLIANG&ZHANGHUIHAO&ZHANGSHUHAN
+#  syncRdb: true
 #  timedExit:
 #    enable: false
 #    force: false
@@ -40,7 +40,7 @@ redisx:
 #    password:
 #    algorithm: PBEWithMD5AndDES
 #    ivGeneratorClassName: org.jasypt.iv.NoIvGenerator
-
+#
 #logging:
 #  level:
 #    global: info
