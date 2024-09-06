@@ -68,6 +68,10 @@ public abstract class RedisChannelInboundHandler extends SimpleChannelInboundHan
             for (RedisMessage child : ((ArrayRedisMessage) msg).children()) {
                 parseRedisMessage(child, syncCommand);
             }
+        }else if (msg instanceof InlineCommandRedisMessage) {
+            String content = ((InlineCommandRedisMessage) msg).content();
+            syncCommand.appendCommand(content);
+            syncCommand.appendLength(1 + String.valueOf(content.length()).length() + 2 + content.getBytes().length + 2);
         } else {
             throw new CodecException("Unknown message type: " + msg);
         }
