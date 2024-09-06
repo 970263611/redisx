@@ -38,7 +38,7 @@ public class FromContext extends Context {
     private String fromMasterName;
     private boolean connectFromMaster;
 
-    public FromContext(CacheManager cacheManager, String host, int port, boolean startConsole, boolean startByConsole, Mode fromMode, Mode toMode, boolean alwaysFullSync, boolean syncRdb, boolean isNodesInfoContext, String fromMasterName, boolean connectFromMaster) {
+    public FromContext(CacheManager cacheManager, String host, int port, boolean startConsole, boolean startByConsole, Mode fromMode, Mode toMode, boolean alwaysFullSync, boolean syncRdb, boolean isNodesInfoContext, String fromMasterName, boolean connectFromMaster, boolean isGetMasterNodeInfo) {
         super(cacheManager, host, port, fromMode, toMode, startConsole, startByConsole);
         if (startByConsole) {
             replyQueue = new LinkedBlockingDeque();
@@ -59,6 +59,7 @@ public class FromContext extends Context {
                 throw new IllegalStateException("Slot info error");
             }
         }
+        this.isGetMasterNodeInfo = isGetMasterNodeInfo;
     }
 
     public String getId() {

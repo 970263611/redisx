@@ -29,6 +29,7 @@ public class Context {
     protected Mode fromMode;
     private Long writeCount = 0L;
     private Long errorCount = 0L;
+    protected boolean isGetMasterNodeInfo;
 
     public Context(CacheManager cacheManager, String host, int port, Mode fromMode, Mode toMode, boolean startConsole, boolean startByConsole) {
         this.cacheManager = cacheManager;
@@ -141,7 +142,7 @@ public class Context {
     public void putWriteCount(boolean isFrom) {
         if (isFrom) {
             cacheManager.addFromWriteCount(host, port, writeCount);
-        }else{
+        } else {
             cacheManager.addToWriteCount(host, port, writeCount);
         }
     }
@@ -149,8 +150,12 @@ public class Context {
     public Long getWriteTps(boolean isFrom) {
         if (isFrom) {
             return cacheManager.getFromWriteCount(host, port).getTps();
-        }else{
+        } else {
             return cacheManager.getToWriteCount(host, port).getTps();
         }
+    }
+
+    public boolean isGetMasterNodeInfo() {
+        return isGetMasterNodeInfo;
     }
 }

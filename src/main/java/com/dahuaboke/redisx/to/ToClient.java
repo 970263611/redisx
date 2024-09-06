@@ -69,7 +69,7 @@ public class ToClient {
                         pipeline.addLast(Constants.CLUSTER_HANDLER_NAME, new ClusterInfoHandler(toContext, hasPassword));
                     }
                     if (Mode.SENTINEL == toContext.getToMode()) {
-                        pipeline.addLast(Constants.SENTINEL_HANDLER_NAME, new SentinelInfoHandler(toContext, toContext.getToMasterName()));
+                        pipeline.addLast(Constants.SENTINEL_HANDLER_NAME, new SentinelInfoHandler(toContext, toContext.getToMasterName(), toContext.isGetMasterNodeInfo()));
                     }
                 } else {
                     pipeline.addLast(new DRHandler(toContext));

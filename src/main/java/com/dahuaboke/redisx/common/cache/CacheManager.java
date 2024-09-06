@@ -255,10 +255,6 @@ public final class CacheManager {
         this.toSentinelNodesInfo.add(toSentinelNodeInfo);
     }
 
-    public void addToSentinelNodesInfo(List<SentinelInfoHandler.SlaveInfo> toSentinelNodesInfo) {
-        this.toSentinelNodesInfo.addAll(toSentinelNodesInfo);
-    }
-
     public SentinelInfoHandler.SlaveInfo getFromSentinelNodeInfoByIpAndPort(String ip, int port) {
         for (SentinelInfoHandler.SlaveInfo slaveInfo : fromSentinelNodesInfo) {
             if (ip.equals(slaveInfo.getIp()) && port == slaveInfo.getPort()) {

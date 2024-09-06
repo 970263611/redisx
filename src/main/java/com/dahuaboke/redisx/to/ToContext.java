@@ -42,7 +42,7 @@ public class ToContext extends Context {
     private boolean flushDb;
     private String toMasterName;
 
-    public ToContext(CacheManager cacheManager, String host, int port, Mode fromMode, Mode toMode, boolean startConsole, boolean startByConsole, boolean immediate, int immediateResendTimes, String switchFlag, int flushSize, boolean isNodesInfoContext, boolean flushDb, String toMasterName) {
+    public ToContext(CacheManager cacheManager, String host, int port, Mode fromMode, Mode toMode, boolean startConsole, boolean startByConsole, boolean immediate, int immediateResendTimes, String switchFlag, int flushSize, boolean isNodesInfoContext, boolean flushDb, String toMasterName, boolean isGetMasterNodeInfo) {
         super(cacheManager, host, port, fromMode, toMode, startConsole, startByConsole);
         if (startByConsole) {
             replyQueue = new LinkedBlockingDeque();
@@ -65,6 +65,7 @@ public class ToContext extends Context {
                 throw new IllegalStateException("Slot info error");
             }
         }
+        this.isGetMasterNodeInfo = isGetMasterNodeInfo;
     }
 
     public String getId() {
@@ -307,8 +308,8 @@ public class ToContext extends Context {
         cacheManager.setToSentinelMaster(new InetSocketAddress(host, port));
     }
 
-    public void addSentinelSlaveInfo(List<SentinelInfoHandler.SlaveInfo> toSentinelNodesInfo) {
-        cacheManager.addToSentinelNodesInfo(toSentinelNodesInfo);
+    public void addSentinelSlaveInfo(SentinelInfoHandler.SlaveInfo toSentinelNodeInfo) {
+        cacheManager.addToSentinelNodesInfo(toSentinelNodeInfo);
     }
 
     public FlushState getFlushState() {

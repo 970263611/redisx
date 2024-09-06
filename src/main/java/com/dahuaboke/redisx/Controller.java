@@ -230,7 +230,7 @@ public class Controller {
         for (InetSocketAddress address : fromMasterNodesInfo) {
             String host = address.getHostString();
             int port = address.getPort();
-            FromNode fromNode = new FromNode("Sync", cacheManager, host, port, startConsole, false, alwaysFullSync, syncRdb, false);
+            FromNode fromNode = new FromNode("Sync", cacheManager, host, port, startConsole, false, alwaysFullSync, syncRdb, false, false);
             fromNode.start();
             Context context = fromNode.getContext();
             if (fromNode.isStarted(5000)) {
@@ -260,7 +260,7 @@ public class Controller {
         for (InetSocketAddress address : toMasterNodesInfo) {
             String host = address.getHostString();
             int port = address.getPort();
-            ToNode toNode = new ToNode("Sync", cacheManager, host, port, toMode, startConsole, false, immediate, immediateResendTimes, switchFlag, toFlushSize, false, flushDb);
+            ToNode toNode = new ToNode("Sync", cacheManager, host, port, toMode, startConsole, false, immediate, immediateResendTimes, switchFlag, toFlushSize, false, flushDb, false);
             toNode.start();
             Context context = toNode.getContext();
             if (toNode.isStarted(5000)) {
@@ -325,28 +325,11 @@ public class Controller {
         if (Mode.CLUSTER == fromMode) {
             cacheManager.clearFromNodesInfo();
         }
-        if (Mode.CLUSTER == fromMode || Mode.SENTINEL == fromMode) {
-            for (InetSocketAddress address : fromNodeAddresses) {
-                String host = address.getHostString();
-                int port = address.getPort();
-                FromNode fromNode = new FromNode("GetFromNodesInfo", cacheManager, host, port, startConsole, false, false, false, true);
-                fromNode.start();
-                if (fromNode.isStarted(5000)) {
-                    FromContext context = (FromContext) fromNode.getContext();
-                    try {
-                        if (context == null) {
-                            logger.error("[{}:{}] context is null", host, port);
-                        }
-                        if (context.nodesInfoGetSuccess(5000)) {
-                            break;
-                        }
-                    } finally {
-                        context.close();
-                    }
-                } else {
-                    logger.error("[{}:{}] nodes info get failed", host, port);
-                }
-            }
+        if (Mode.CLUSTER == fromMode) {
+            rangeFromNodeAddresses(false);
+        } else if (Mode.SENTINEL == fromMode) {
+            rangeFromNodeAddresses(true);
+            rangeFromNodeAddresses(false);
         }
         if (Mode.CLUSTER == fromMode) {
             if (cacheManager.getFromClusterNodesInfo().isEmpty()) {
@@ -449,28 +432,11 @@ public class Controller {
         if (Mode.CLUSTER == toMode) {
             cacheManager.clearToNodesInfo();
         }
-        if (Mode.CLUSTER == toMode || Mode.SENTINEL == toMode) {
-            for (InetSocketAddress address : toNodeAddresses) {
-                String host = address.getHostString();
-                int port = address.getPort();
-                ToNode toNode = new ToNode("GetToNodesInfo", cacheManager, host, port, toMode, startConsole, false, false, 0, switchFlag, 0, true, false);
-                toNode.start();
-                if (toNode.isStarted(5000)) {
-                    ToContext context = (ToContext) toNode.getContext();
-                    try {
-                        if (context == null) {
-                            logger.error("[{}:{}] context is null", host, port);
-                        }
-                        if (context.nodesInfoGetSuccess(5000)) {
-                            break;
-                        }
-                    } finally {
-                        context.close();
-                    }
-                } else {
-                    logger.error("[{}:{}] nodes info get failed", host, port);
-                }
-            }
+        if (Mode.CLUSTER == toMode) {
+            rangeToNodeAddresses(false);
+        } else if (Mode.SENTINEL == toMode) {
+            rangeToNodeAddresses(true);
+            rangeToNodeAddresses(false);
         }
         if (Mode.CLUSTER == toMode) {
             if (cacheManager.getToClusterNodesInfo().isEmpty()) {
@@ -519,6 +485,54 @@ public class Controller {
         return toNodeAddresses;
     }
 
+    private void rangeFromNodeAddresses(boolean isGetMasterNodeInfo) {
+        for (InetSocketAddress address : fromNodeAddresses) {
+            String host = address.getHostString();
+            int port = address.getPort();
+            FromNode fromNode = new FromNode("GetFromNodesInfo", cacheManager, host, port, startConsole, false, false, false, true, isGetMasterNodeInfo);
+            fromNode.start();
+            if (fromNode.isStarted(5000)) {
+                FromContext context = (FromContext) fromNode.getContext();
+                try {
+                    if (context == null) {
+                        logger.error("[{}:{}] context is null", host, port);
+                    }
+                    if (context.nodesInfoGetSuccess(5000)) {
+                        break;
+                    }
+                } finally {
+                    context.close();
+                }
+            } else {
+                logger.error("[{}:{}] nodes info get failed", host, port);
+            }
+        }
+    }
+
+    private void rangeToNodeAddresses(boolean isGetMasterNodeInfo) {
+        for (InetSocketAddress address : toNodeAddresses) {
+            String host = address.getHostString();
+            int port = address.getPort();
+            ToNode toNode = new ToNode("GetToNodesInfo", cacheManager, host, port, toMode, startConsole, false, false, 0, switchFlag, 0, true, false, isGetMasterNodeInfo);
+            toNode.start();
+            if (toNode.isStarted(5000)) {
+                ToContext context = (ToContext) toNode.getContext();
+                try {
+                    if (context == null) {
+                        logger.error("[{}:{}] context is null", host, port);
+                    }
+                    if (context.nodesInfoGetSuccess(5000)) {
+                        break;
+                    }
+                } finally {
+                    context.close();
+                }
+            } else {
+                logger.error("[{}:{}] nodes info get failed", host, port);
+            }
+        }
+    }
+
     /**
      * Node 部分
      */
@@ -547,14 +561,14 @@ public class Controller {
         private int port;
         private ToContext toContext;
 
-        public ToNode(String threadNamePrefix, CacheManager cacheManager, String host, int port, Mode toMode, boolean startConsole, boolean startByConsole, boolean immediate, int immediateResendTimes, String switchFlag, int flushSize, boolean isNodesInfoContext, boolean flushDb) {
+        public ToNode(String threadNamePrefix, CacheManager cacheManager, String host, int port, Mode toMode, boolean startConsole, boolean startByConsole, boolean immediate, int immediateResendTimes, String switchFlag, int flushSize, boolean isNodesInfoContext, boolean flushDb, boolean isGetMasterNodeInfo) {
             this.name = Constants.PROJECT_NAME + "-" + threadNamePrefix + "-ToNode-" + host + "-" + port;
             this.setName(name);
             this.cacheManager = cacheManager;
             this.host = host;
             this.port = port;
             //放在构造方法而不是run，因为兼容console模式，需要收集context，否则可能收集到null
-            this.toContext = new ToContext(cacheManager, host, port, fromMode, toMode, startConsole, startByConsole, immediate, immediateResendTimes, switchFlag, flushSize, isNodesInfoContext, flushDb, toMasterName);
+            this.toContext = new ToContext(cacheManager, host, port, fromMode, toMode, startConsole, startByConsole, immediate, immediateResendTimes, switchFlag, flushSize, isNodesInfoContext, flushDb, toMasterName, isGetMasterNodeInfo);
         }
 
         @Override
@@ -583,13 +597,13 @@ public class Controller {
         private int port;
         private FromContext fromContext;
 
-        public FromNode(String threadNamePrefix, CacheManager cacheManager, String host, int port, boolean startConsole, boolean startByConsole, boolean alwaysFullSync, boolean syncRdb, boolean isNodesInfoContext) {
+        public FromNode(String threadNamePrefix, CacheManager cacheManager, String host, int port, boolean startConsole, boolean startByConsole, boolean alwaysFullSync, boolean syncRdb, boolean isNodesInfoContext, boolean isGetMasterNodeInfo) {
             this.name = Constants.PROJECT_NAME + "-" + threadNamePrefix + "-FromNode - " + host + " - " + port;
             this.setName(name);
             this.host = host;
             this.port = port;
             //放在构造方法而不是run，因为兼容console模式，需要收集console，否则可能收集到null
-            this.fromContext = new FromContext(cacheManager, host, port, startConsole, startByConsole, fromMode, toMode, alwaysFullSync, syncRdb, isNodesInfoContext, fromMasterName, connectFromMaster);
+            this.fromContext = new FromContext(cacheManager, host, port, startConsole, startByConsole, fromMode, toMode, alwaysFullSync, syncRdb, isNodesInfoContext, fromMasterName, connectFromMaster, isGetMasterNodeInfo);
         }
 
         @Override
@@ -630,14 +644,14 @@ public class Controller {
                 getFromMasterNodesInfo().forEach(address -> {
                     String host = address.getHostString();
                     int port = address.getPort();
-                    FromNode fromNode = new FromNode("Console", cacheManager, host, port, startConsole, true, false, false, false);
+                    FromNode fromNode = new FromNode("Console", cacheManager, host, port, startConsole, true, false, false, false, false);
                     consoleContext.setFromContext((FromContext) fromNode.getContext());
                     fromNode.start();
                 });
                 getToMasterNodesInfo().forEach(address -> {
                     String host = address.getHostString();
                     int port = address.getPort();
-                    ToNode toNode = new ToNode("Console", cacheManager, host, port, toMode, startConsole, true, immediate, 0, switchFlag, 0, false, false);
+                    ToNode toNode = new ToNode("Console", cacheManager, host, port, toMode, startConsole, true, immediate, 0, switchFlag, 0, false, false, false);
                     consoleContext.setToContext((ToContext) toNode.getContext());
                     toNode.start();
                 });

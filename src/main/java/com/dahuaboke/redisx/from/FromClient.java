@@ -76,7 +76,7 @@ public class FromClient {
                                 pipeline.addLast(Constants.CLUSTER_HANDLER_NAME, new ClusterInfoHandler(fromContext, hasPassword));
                             }
                             if (Mode.SENTINEL == fromContext.getFromMode()) {
-                                pipeline.addLast(Constants.SENTINEL_HANDLER_NAME, new SentinelInfoHandler(fromContext, fromContext.getFromMasterName()));
+                                pipeline.addLast(Constants.SENTINEL_HANDLER_NAME, new SentinelInfoHandler(fromContext, fromContext.getFromMasterName(), fromContext.isGetMasterNodeInfo()));
                             }
                         } else {
                             pipeline.addLast(new MessagePostProcessor(fromContext));
