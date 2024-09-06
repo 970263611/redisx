@@ -20,15 +20,15 @@ redisx:
 #    flushDb: false
 #    flushSize: 50
 #  console:
-#    enable: false
+#    enable: true
 #    search: false
-#    port: 18080
+#    port: 15967
 #    timeout: 5000
 #  immediate:
 #    enable: false
 #    resendTimes: 1
 #  alwaysFullSync: false
-#  switchFlag: REDISX-AUTHOR:DAHUA&CHANGDONGLIANG&ZHANGHUIHAO&ZHANGSHUHAN
+#  switchFlag: REDISX-AUTHOR:DAHUA&CHANGDONGLIANG&ZHANGHUIHAO&ZHANGSHUHAN&ZHANGYING&CHENYU&MAMING
 #  syncRdb: true
 #  timedExit:
 #    enable: false

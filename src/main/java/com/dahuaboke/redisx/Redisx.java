@@ -64,10 +64,13 @@ public class Redisx {
         @FieldOrm(value = "redisx.to.flushSize", defaultValue = "50")
         private int toFlushSize;
 
-        @FieldOrm(value = "redisx.console.enable", defaultValue = "false")
+        @FieldOrm(value = "redisx.console.enable", defaultValue = "true")
         private boolean consoleEnable;
 
-        @FieldOrm(value = "redisx.console.port", defaultValue = "18080")
+        @FieldOrm(value = "redisx.console.search", defaultValue = "false")
+        private boolean consoleSearch;
+
+        @FieldOrm(value = "redisx.console.port", defaultValue = "15967")
         private int consolePort;
 
         @FieldOrm(value = "redisx.console.timeout", defaultValue = "5000")
@@ -102,9 +105,6 @@ public class Redisx {
 
         @FieldOrm(value = "redisx.from.connectMaster", defaultValue = "false")
         private boolean connectMaster;
-
-        @FieldOrm(value = "redisx.console.search", defaultValue = "false")
-        private boolean consoleSearch;
 
         @FieldOrm(value = "redisx.timedExit.enable", defaultValue = "false")
         private boolean timedExitEnable;
