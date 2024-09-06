@@ -498,6 +498,9 @@ public class Controller {
                         logger.error("[{}:{}] context is null", host, port);
                     }
                     if (context.nodesInfoGetSuccess(5000)) {
+                        if (isGetMasterNodeInfo) {
+                            context.reSetNodesInfoFlag();
+                        }
                         break;
                     }
                 } finally {
@@ -522,6 +525,9 @@ public class Controller {
                         logger.error("[{}:{}] context is null", host, port);
                     }
                     if (context.nodesInfoGetSuccess(5000)) {
+                        if (isGetMasterNodeInfo) {
+                            context.reSetNodesInfoFlag();
+                        }
                         break;
                     }
                 } finally {

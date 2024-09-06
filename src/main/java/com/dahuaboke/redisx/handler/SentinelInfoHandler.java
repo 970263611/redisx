@@ -83,16 +83,18 @@ public class SentinelInfoHandler extends RedisChannelInboundHandler {
                 FromContext fromContext = (FromContext) context;
                 fromContext.setSentinelMasterInfo(masterIp, masterPort);
                 ctx.pipeline().remove(this);
+                fromContext.setFromNodesInfoGetSuccess();
             } else if (context instanceof ToContext) {
                 ToContext toContext = (ToContext) context;
                 toContext.setSentinelMasterInfo(masterIp, masterPort);
                 ctx.pipeline().remove(this);
+                toContext.setToNodesInfoGetSuccess();
             }
         }
     }
 
     private void parseSlaveMessage(ChannelHandlerContext ctx, String msg) {
-        logger.info("Beginning sentinel slave message parse");
+        logger.info("Beginning sentinel slave message parse = {}" , msg);
         List<SlaveInfo> slaveInfos = new ArrayList<>();//这个就是解析后的从节点集合
         String[] arrs = msg.split(" ");
         Map<String, Object> map = new HashMap<>();

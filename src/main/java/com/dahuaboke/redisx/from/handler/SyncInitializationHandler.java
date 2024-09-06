@@ -57,13 +57,13 @@ public class SyncInitializationHandler extends ChannelInboundHandlerAdapter {
                                     state = SENT_CAPA;
                                 }
                                 channel.writeAndFlush(Constants.CONFIG_PORT_COMMAND_PREFIX);
-                                logger.debug("Sent replconf listening-port command [{}]", Constants.CONFIG_PORT_COMMAND_PREFIX);
+                                logger.info("Sent replconf listening-port command [{}]", Constants.CONFIG_PORT_COMMAND_PREFIX);
                             }
                             if (Constants.OK_COMMAND.equalsIgnoreCase(reply) && state == SENT_PORT) {
                                 clearReply(ctx);
                                 state = SENT_CAPA;
                                 channel.writeAndFlush(Constants.CONFIG_CAPA_COMMAND);
-                                logger.debug("Sent replconf capa eof command");
+                                logger.info("Sent replconf capa eof command");
                                 continue;
                             }
                             if (Constants.OK_COMMAND.equalsIgnoreCase(reply) && state == SENT_CAPA) {
@@ -87,19 +87,19 @@ public class SyncInitializationHandler extends ChannelInboundHandlerAdapter {
                                     command = Constants.CONFIG_SYNC_COMMAND;
                                 }
                                 channel.writeAndFlush(command);
-                                logger.debug("Sent " + command + " command");
+                                logger.info("Sentpsync " + command + " command");
                             }
                             if (state == SENT_PSYNC) {
                                 ChannelPipeline pipeline = channel.pipeline();
                                 pipeline.remove(this);
-                                logger.debug("Sent all sync command");
+                                logger.info("Sent all sync command");
                                 break;
                             }
                         } else {
                             if (state == null) {
                                 state = INIT;
                                 channel.writeAndFlush(Constants.PING_COMMAND);
-                                logger.debug("Sent ping command");
+                                logger.info("Sent ping command");
                             }
                         }
                     }

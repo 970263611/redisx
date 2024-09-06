@@ -292,6 +292,10 @@ public class ToContext extends Context {
         }
     }
 
+    public void reSetNodesInfoFlag() {
+        nodesInfoFlag = new CountDownLatch(1);
+    }
+
     public boolean isNodesInfoContext() {
         return isNodesInfoContext;
     }

@@ -69,7 +69,9 @@ public class ConsoleContext extends Context {
     }
 
     public void close() {
-        consoleServer.destroy();
+        if(consoleServer != null){
+            consoleServer.destroy();
+        }
         Iterator<FromContext> iterator = fromContexts.iterator();
         while (iterator.hasNext()) {
             FromContext fromContext = iterator.next();
