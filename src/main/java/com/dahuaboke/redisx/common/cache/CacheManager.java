@@ -104,7 +104,11 @@ public final class CacheManager {
     }
 
     public boolean checkHasNeedWriteCommand(Context context) {
-        return cache.get(context).size() > 0;
+        return getOverstockSize(context) > 0;
+    }
+
+    public int getOverstockSize(Context context) {
+        return cache.get(context).size();
     }
 
     public boolean publish(SyncCommand command) {
@@ -115,7 +119,7 @@ public final class CacheManager {
             if (k.isAdapt(toMode, key)) {
                 boolean offer = v.offer(command);
                 int size = v.size();
-                if (size > 10000  && size / 1000 * 1000 == size) {
+                if (size > 10000 && size / 1000 * 1000 == size) {
                     logger.warn("Cache has command size [{}]", size);
                 }
                 if (!offer) {

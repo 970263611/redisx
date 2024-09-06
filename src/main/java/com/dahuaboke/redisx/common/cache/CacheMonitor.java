@@ -167,6 +167,7 @@ public class CacheMonitor {
                     put("slot", toContext.getSlotBegin() + "-" + toContext.getSlotEnd());
                     put("count", toContext.getWriteCount());
                     put("tps", toContext.getWriteTps(false));
+                    put("overstock", cacheManager.getOverstockSize(toContext));
                     put("error", toContext.getErrorCount() == null ? 0 : toContext.getErrorCount());
                 }});
             }
