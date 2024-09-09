@@ -76,7 +76,7 @@ public class FromContext extends Context {
         if (!startByConsole) {
             command.buildCommand();
             if (command.isNeedAddLengthToOffset()) {
-                offsetCache.put(command, null);
+                offsetCache.put(command, -1);
             }
             return cacheManager.publish(command);
         } else {
@@ -175,7 +175,7 @@ public class FromContext extends Context {
         Set<SyncCommand> keys = offsetCache.keySet();
         for (SyncCommand key : keys) {
             Integer value = offsetCache.get(key);
-            if (value != null) {
+            if (value != -1) {
                 long offset = getOffset();
                 setOffset(offset + value);
                 offsetCache.remove(key);
