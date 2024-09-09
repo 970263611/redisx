@@ -286,8 +286,32 @@ public class Controller {
             logger.info("Shutdown hook thread is starting");
             controllerPool.shutdown();
             logger.info("Update offset thread shutdown");
-            cacheManager.closeAllFrom();
+            /**
+             * from先关
+             * to后关
+             */
             List<Context> allContexts = cacheManager.getAllContexts();
+            while (true) {
+                boolean allowClose = true;
+                Iterator<Context> iterator = allContexts.iterator();
+                while (iterator.hasNext()) {
+                    Context cont = iterator.next();
+                    if (cont instanceof FromContext) {
+                        FromContext fromContext = (FromContext) cont;
+                        if (!fromContext.isClose()) {
+                            if (fromContext.checkCacheOffsetIsEmpty()) {
+                                iterator.remove();
+                                fromContext.close();
+                            }
+                            allowClose = false;
+                            break;
+                        }
+                    }
+                }
+                if (allowClose) {
+                    break;
+                }
+            }
             while (true) {
                 boolean allowClose = true;
                 Iterator<Context> iterator = allContexts.iterator();
@@ -295,7 +319,7 @@ public class Controller {
                     Context cont = iterator.next();
                     if (cont instanceof ToContext) {
                         ToContext toContext = (ToContext) cont;
-                        if (!toContext.isClose) {
+                        if (!toContext.isClose()) {
                             if (!cacheManager.checkHasNeedWriteCommand(toContext)) {
                                 iterator.remove();
                                 toContext.close();
