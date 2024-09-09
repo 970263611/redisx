@@ -93,6 +93,7 @@ public class FromClient {
             }
             if (future.cause() != null) {
                 logger.info("[From] start error", future.cause());
+                group.shutdownGracefully();
             }
         });
         channel = sync.channel();
@@ -110,10 +111,9 @@ public class FromClient {
      */
     public void destroy() {
         fromContext.setClose(true);
-        if (channel != null && channel.isActive()) {
-            channel.close();
+        if (channel != null) {
             try {
-                channel.closeFuture().addListener((ChannelFutureListener) channelFuture -> {
+                channel.close().addListener((ChannelFutureListener) channelFuture -> {
                     if (channelFuture.isSuccess()) {
                         group.shutdownGracefully();
                         logger.info("Close [From] [{}:{}]", fromContext.getHost(), fromContext.getPort());
@@ -121,7 +121,8 @@ public class FromClient {
                         logger.error("Close [From] error", channelFuture.cause());
                     }
                 }).sync();
-            } catch (InterruptedException e) {
+            } catch (Exception e) {
+                group.shutdownGracefully();
                 logger.error("Close [From] error", e);
             }
         }

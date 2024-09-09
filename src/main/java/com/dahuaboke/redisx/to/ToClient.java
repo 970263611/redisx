@@ -85,6 +85,7 @@ public class ToClient {
             }
             if (future.cause() != null) {
                 logger.info("[To] start error", future.cause());
+                group.shutdownGracefully();
             }
         });
         channel = sync.channel();
@@ -121,7 +122,7 @@ public class ToClient {
      */
     public void destroy() {
         toContext.setClose(true);
-        if (channel != null && channel.isActive()) {
+        if (channel != null) {
             String host = toContext.getHost();
             int port = toContext.getPort();
             Channel flush = channel.flush();
@@ -130,9 +131,8 @@ public class ToClient {
             } else {
                 logger.error("Flush data error [{}] [{}]", host, port);
             }
-            channel.close();
             try {
-                channel.closeFuture().addListener((ChannelFutureListener) channelFuture -> {
+                channel.close().addListener((ChannelFutureListener) channelFuture -> {
                     if (channelFuture.isSuccess()) {
                         group.shutdownGracefully();
                         logger.info("Close [To] [{}:{}]", host, port);
@@ -140,9 +140,12 @@ public class ToClient {
                         logger.error("Close [To] error", channelFuture.cause());
                     }
                 }).sync();
-            } catch (InterruptedException e) {
+            } catch (Exception e) {
+                group.shutdownGracefully();
                 logger.error("Close [To] error", e);
             }
+        } else {
+            group.shutdownGracefully();
         }
     }
 }
