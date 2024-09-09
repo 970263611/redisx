@@ -38,12 +38,16 @@ public class RedissonCountTest {
     private String fromAddress = null;
 
     //哨兵必填
-    private String masterName = null;
+    private String masterNameFrom = null;
+
+    private String masterNameTo = null;
 
     private String password = null;
 
     //类型
-    private Mode serverType = null;
+    private Mode serverTypeFrom = null;
+
+    private Mode serverTypeTo = null;
 
     private String loglevel = "warn";
     //*********** 配置项 终 ***********//
@@ -58,8 +62,11 @@ public class RedissonCountTest {
         Configurator.setRootLevel(Level.getLevel(loglevel));
         Redisx.Config yamlConfig = new Redisx.Config();
         FieldOrmUtil.MapToBean(YamlUtil.parseYamlParam(null), yamlConfig);
-        if(serverType == null){
-            serverType = yamlConfig.getFromMode();
+        if(serverTypeFrom == null){
+            serverTypeFrom = yamlConfig.getFromMode();
+        }
+        if(serverTypeTo == null){
+            serverTypeTo = yamlConfig.getToMode();
         }
         if(StringUtils.isEmpty(toAddress)){
             InetSocketAddress inetSocketAddress = yamlConfig.getToAddresses().get(0);
@@ -69,8 +76,11 @@ public class RedissonCountTest {
             InetSocketAddress inetSocketAddress = yamlConfig.getFromAddresses().get(0);
             fromAddress = "redis://" + inetSocketAddress.getHostString() + ":" + inetSocketAddress.getPort();
         }
-        if(StringUtils.isEmpty(masterName)){
-            masterName = yamlConfig.getFromMasterName();
+        if(StringUtils.isEmpty(masterNameFrom)){
+            masterNameFrom = yamlConfig.getFromMasterName();
+        }
+        if(StringUtils.isEmpty(masterNameTo)){
+            masterNameTo = yamlConfig.getToMasterName();
         }
         if(StringUtils.isEmpty(password)){
             password = yamlConfig.getFromPassword();
@@ -79,15 +89,19 @@ public class RedissonCountTest {
         toConfig.setCodec(new StringCodec());
         Config fromConfig = new Config();
         fromConfig.setCodec(new StringCodec());
-        if (Mode.CLUSTER == serverType) {
-            toConfig.useClusterServers().addNodeAddress(toAddress).setPassword(password);
+        if (Mode.CLUSTER == serverTypeFrom) {
             fromConfig.useClusterServers().addNodeAddress(fromAddress).setPassword(password);
-        } else if (Mode.SINGLE == serverType) {
-            toConfig.useSingleServer().setAddress(toAddress).setPassword(password);
+        } else if (Mode.SINGLE == serverTypeFrom) {
             fromConfig.useSingleServer().setAddress(fromAddress).setPassword(password);
         } else {
-            toConfig.useSentinelServers().addSentinelAddress(toAddress).setCheckSentinelsList(false).setMasterName(masterName).setPassword(password).setSentinelPassword(password);
-            fromConfig.useSentinelServers().addSentinelAddress(fromAddress).setCheckSentinelsList(false).setMasterName(masterName).setPassword(password).setSentinelPassword(password);
+            fromConfig.useSentinelServers().addSentinelAddress(fromAddress).setCheckSentinelsList(false).setMasterName(masterNameFrom).setPassword(password).setSentinelPassword(password);
+        }
+        if (Mode.CLUSTER == serverTypeTo) {
+            toConfig.useClusterServers().addNodeAddress(toAddress).setPassword(password);
+        } else if (Mode.SINGLE == serverTypeTo) {
+            toConfig.useSingleServer().setAddress(toAddress).setPassword(password);
+        } else {
+            toConfig.useSentinelServers().addSentinelAddress(toAddress).setCheckSentinelsList(false).setMasterName(masterNameTo).setPassword(password).setSentinelPassword(password);
         }
         try {
             this.toClient = Redisson.create(toConfig);
