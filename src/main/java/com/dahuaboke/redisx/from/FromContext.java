@@ -12,6 +12,9 @@ import org.slf4j.Logger;
 import org.slf4j.LoggerFactory;
 
 import java.net.InetSocketAddress;
+import java.util.Iterator;
+import java.util.LinkedHashMap;
+import java.util.Map;
 import java.util.concurrent.CountDownLatch;
 import java.util.concurrent.LinkedBlockingDeque;
 import java.util.concurrent.TimeUnit;
@@ -37,6 +40,8 @@ public class FromContext extends Context {
     private CountDownLatch nodesInfoFlag;
     private String fromMasterName;
     private boolean connectFromMaster;
+    private Map<SyncCommand, Integer> offsetCache = new LinkedHashMap<>();
+    private long waitCommandTime = System.currentTimeMillis();
 
     public FromContext(CacheManager cacheManager, String host, int port, boolean startConsole, boolean startByConsole, Mode fromMode, Mode toMode, boolean alwaysFullSync, boolean syncRdb, boolean isNodesInfoContext, String fromMasterName, boolean connectFromMaster, boolean isGetMasterNodeInfo) {
         super(cacheManager, host, port, fromMode, toMode, startConsole, startByConsole);
@@ -69,6 +74,9 @@ public class FromContext extends Context {
     public boolean publish(SyncCommand command) {
         if (!startByConsole) {
             command.buildCommand();
+            if (command.isNeedAddLengthToOffset()) {
+                offsetCache.put(command, null);
+            }
             return cacheManager.publish(command);
         } else {
             if (replyQueue == null) {
@@ -157,6 +165,27 @@ public class FromContext extends Context {
                 long offset = getOffset() + unSyncCommandLength;
                 fromChannel.writeAndFlush(Constants.ACK_COMMAND_PREFIX + offset);
                 logger.trace("Ack offset [{}]", offset);
+            }
+        }
+    }
+
+    public void cacheOffset(SyncCommand syncCommand) {
+        offsetCache.put(syncCommand, syncCommand.getSyncLength());
+        Iterator<Map.Entry<SyncCommand, Integer>> iterator = offsetCache.entrySet().iterator();
+        while (iterator.hasNext()) {
+            Map.Entry<SyncCommand, Integer> next = iterator.next();
+            Integer value = next.getValue();
+            if (next.getValue() != null) {
+                long offset = getOffset();
+                setOffset(offset + value);
+                iterator.remove();
+                waitCommandTime = System.currentTimeMillis();
+            } else {
+                if (System.currentTimeMillis() - waitCommandTime > 5000) {
+                    cacheManager.setFromIsStarted(false);
+                } else {
+                    break;
+                }
             }
         }
     }

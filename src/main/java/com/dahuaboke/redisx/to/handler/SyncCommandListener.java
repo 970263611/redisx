@@ -13,6 +13,9 @@ import io.netty.handler.codec.redis.RedisMessage;
 import org.slf4j.Logger;
 import org.slf4j.LoggerFactory;
 
+import java.util.LinkedList;
+import java.util.List;
+
 /**
  * 2024/5/13 10:37
  * auth: dahua
@@ -34,6 +37,7 @@ public class SyncCommandListener extends ChannelInboundHandlerAdapter {
             Channel channel = ctx.channel();
             int flushThreshold = 0;
             long timeThreshold = System.currentTimeMillis();
+            List<SyncCommand> commandListTemp = new LinkedList<>();
             while (!toContext.isClose()) {
                 try {
                     if (channel.isActive()) {
@@ -81,7 +85,7 @@ public class SyncCommandListener extends ChannelInboundHandlerAdapter {
                                             }
                                         }
                                     } else {
-                                        updateOffset(syncCommand);
+                                        commandListTemp.add(syncCommand);
                                         ctx.write(redisMessage);
                                         flushThreshold++;
                                         if (toContext.isStartConsole()) {
@@ -95,6 +99,7 @@ public class SyncCommandListener extends ChannelInboundHandlerAdapter {
                             if (flushThreshold > flushSize || (System.currentTimeMillis() - timeThreshold > 100)) {
                                 if (flushThreshold > 0) {
                                     ctx.flush();
+                                    updateOffset(commandListTemp);
                                     logger.debug("Flush data success [{}]", flushThreshold);
                                     flushThreshold = 0;
                                 }
@@ -113,12 +118,19 @@ public class SyncCommandListener extends ChannelInboundHandlerAdapter {
 
     private void updateOffset(SyncCommand syncCommand) {
         FromContext fromContext = (FromContext) syncCommand.getContext();
-        int length = syncCommand.getSyncLength();
-        long offset = fromContext.getOffset();
         if (syncCommand.isNeedAddLengthToOffset()) {
-            offset += length;
-            fromContext.setOffset(offset);
-            logger.trace("Write command [{}] length [{}], now offset [{}]", syncCommand.getStringCommand(), length, offset);
+            fromContext.cacheOffset(syncCommand);
+            logger.trace("Write command [{}] length [{}]", syncCommand.getStringCommand(), syncCommand.getSyncLength());
+        }
+    }
+
+    private void updateOffset(List<SyncCommand> syncCommandList) {
+        for (SyncCommand syncCommand : syncCommandList) {
+            FromContext fromContext = (FromContext) syncCommand.getContext();
+            if (syncCommand.isNeedAddLengthToOffset()) {
+                fromContext.cacheOffset(syncCommand);
+                logger.trace("Write command [{}] length [{}]", syncCommand.getStringCommand(), syncCommand.getSyncLength());
+            }
         }
     }
 
