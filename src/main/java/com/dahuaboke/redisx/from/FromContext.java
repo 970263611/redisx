@@ -1,6 +1,7 @@
 package com.dahuaboke.redisx.from;
 
 import com.dahuaboke.redisx.Context;
+import com.dahuaboke.redisx.common.ConcurrentLinkedMap;
 import com.dahuaboke.redisx.common.Constants;
 import com.dahuaboke.redisx.common.cache.CacheManager;
 import com.dahuaboke.redisx.common.command.from.SyncCommand;
@@ -12,9 +13,6 @@ import org.slf4j.Logger;
 import org.slf4j.LoggerFactory;
 
 import java.net.InetSocketAddress;
-import java.util.Map;
-import java.util.Set;
-import java.util.concurrent.ConcurrentSkipListMap;
 import java.util.concurrent.CountDownLatch;
 import java.util.concurrent.LinkedBlockingDeque;
 import java.util.concurrent.TimeUnit;
@@ -40,9 +38,7 @@ public class FromContext extends Context {
     private CountDownLatch nodesInfoFlag;
     private String fromMasterName;
     private boolean connectFromMaster;
-    private Map<SyncCommand, Integer> offsetCache = new ConcurrentSkipListMap<>();
-
-    private long waitCommandTime = System.currentTimeMillis();
+    private ConcurrentLinkedMap<SyncCommand, Integer> offsetCache = new ConcurrentLinkedMap<>();
 
     public FromContext(CacheManager cacheManager, String host, int port, boolean startConsole, boolean startByConsole, Mode fromMode, Mode toMode, boolean alwaysFullSync, boolean syncRdb, boolean isNodesInfoContext, String fromMasterName, boolean connectFromMaster, boolean isGetMasterNodeInfo) {
         super(cacheManager, host, port, fromMode, toMode, startConsole, startByConsole);
@@ -76,7 +72,7 @@ public class FromContext extends Context {
         if (!startByConsole) {
             command.buildCommand();
             if (command.isNeedAddLengthToOffset()) {
-                offsetCache.put(command, -1);
+                offsetCache.putIndex(command);
             }
             return cacheManager.publish(command);
         } else {
@@ -171,15 +167,14 @@ public class FromContext extends Context {
     }
 
     public void cacheOffset(SyncCommand syncCommand) {
-        offsetCache.put(syncCommand, syncCommand.getSyncLength());
-        Set<SyncCommand> keys = offsetCache.keySet();
-        for (SyncCommand key : keys) {
-            Integer value = offsetCache.get(key);
-            if (value != -1) {
+        offsetCache.putValue(syncCommand, syncCommand.getSyncLength());
+        SyncCommand command;
+        while ((command = offsetCache.getFirstKey()) != null) {
+            Integer value = offsetCache.get(command);
+            if (value != null) {
                 long offset = getOffset();
                 setOffset(offset + value);
-                offsetCache.remove(key);
-                waitCommandTime = System.currentTimeMillis();
+                offsetCache.removeKey(command);
             } else {
                 break;
             }
