@@ -233,11 +233,11 @@ public class Controller {
             FromNode fromNode = new FromNode("Sync", cacheManager, host, port, startConsole, false, alwaysFullSync, syncRdb, false, false);
             fromNode.start();
             Context context = fromNode.getContext();
+            cacheManager.register(fromNode.getContext());
             if (fromNode.isStarted(5000)) {
                 if (context == null) {
                     logger.error("[{}:{}] context is null", host, port);
                 }
-                cacheManager.register(fromNode.getContext());
             } else {
                 logger.error("[{}:{}] node start failed, close all [to] node", host, port);
                 if (context != null) {
