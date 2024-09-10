@@ -167,7 +167,7 @@ public class FromContext extends Context {
         }
     }
 
-    public void offsetAddUp(){
+    public synchronized void offsetAddUp(){
         SyncCommand command;
         while ((command = offsetCache.getFirstKey()) != null) {
             Integer value = offsetCache.get(command);
