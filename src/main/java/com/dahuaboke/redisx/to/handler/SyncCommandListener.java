@@ -100,6 +100,7 @@ public class SyncCommandListener extends ChannelInboundHandlerAdapter {
                                 if (flushThreshold > 0) {
                                     ctx.flush();
                                     updateOffset(commandListTemp);
+                                    commandListTemp.clear();
                                     logger.debug("Flush data success [{}]", flushThreshold);
                                     flushThreshold = 0;
                                 }

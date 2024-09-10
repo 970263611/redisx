@@ -286,32 +286,20 @@ public class Controller {
             logger.info("Shutdown hook thread is starting");
             controllerPool.shutdown();
             logger.info("Update offset thread shutdown");
-            /**
-             * from先关
-             * to后关
-             */
             List<Context> allContexts = cacheManager.getAllContexts();
-            while (true) {
-                boolean allowClose = true;
-                Iterator<Context> iterator = allContexts.iterator();
-                while (iterator.hasNext()) {
-                    Context cont = iterator.next();
-                    if (cont instanceof FromContext) {
-                        FromContext fromContext = (FromContext) cont;
-                        if (!fromContext.isClose()) {
-                            if (fromContext.checkCacheOffsetIsEmpty()) {
-                                iterator.remove();
-                                fromContext.close();
-                            }
-                            allowClose = false;
-                            break;
-                        }
-                    }
+            List<FromContext> fromContextList = new ArrayList<>();//保留全部from
+            List<ToContext> toContextList = new ArrayList<>();//保留全部to
+            for(Context context : allContexts) {
+                if (context instanceof FromContext) {
+                    fromContextList.add((FromContext) context);
                 }
-                if (allowClose) {
-                    break;
+                if (context instanceof ToContext) {
+                    toContextList.add((ToContext) context);
                 }
             }
+            //关闭全部from,阻绝新数据
+            cacheManager.closeAllFrom();
+            //跑完所有积压数据
             while (true) {
                 boolean allowClose = true;
                 Iterator<Context> iterator = allContexts.iterator();
@@ -322,7 +310,6 @@ public class Controller {
                         if (!toContext.isClose()) {
                             if (!cacheManager.checkHasNeedWriteCommand(toContext)) {
                                 iterator.remove();
-                                toContext.close();
                             }
                             allowClose = false;
                             break;
@@ -333,6 +320,20 @@ public class Controller {
                     break;
                 }
             }
+            //最后核算一次偏移量
+            fromContextList.forEach(ct -> {
+                ct.offsetAddUp();
+            });
+            //等待最后一次同步偏移量，等两秒
+            try {
+                Thread.sleep(2000);
+            } catch (InterruptedException e) {
+                throw new RuntimeException(e);
+            }
+            //关闭所有的to
+            toContextList.forEach(ct -> {
+                ct.close();
+            });
             logger.info("Application exit success");
             //否则日志不一定打印，因为shutdownHook顺序无法保证
             LogManager.shutdown();
