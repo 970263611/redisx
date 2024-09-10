@@ -26,8 +26,6 @@ public class Constants {
 
     public static final String FULLRESYNC = "+FULLRESYNC";
 
-    public static final AttributeKey<Long> OFFSET = AttributeKey.valueOf("offset");
-
     public static final AttributeKey<String> SYNC_REPLY = AttributeKey.valueOf("syncReply");
 
     public static final AttributeKey<Boolean> RDB_STREAM_NEXT = AttributeKey.valueOf("rdbStreamNext");

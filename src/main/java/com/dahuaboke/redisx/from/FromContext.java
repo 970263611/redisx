@@ -151,14 +151,7 @@ public class FromContext extends Context {
     public void ackOffset() {
         if (fromChannel != null && fromChannel.isActive() && fromChannel.pipeline().get(Constants.INIT_SYNC_HANDLER_NAME) == null) {
             offsetAddUp();
-            Long offsetSession = fromChannel.attr(Constants.OFFSET).get();
             CacheManager.NodeMessage nodeMessage = getNodeMessage();
-            if (offsetSession != null && offsetSession > -1L) {
-                if (nodeMessage == null) {
-                    setOffset(offsetSession);
-                }
-                fromChannel.attr(Constants.OFFSET).set(-1L);
-            }
             if (nodeMessage != null) {
                 long offset = getOffset() + unSyncCommandLength;
                 fromChannel.writeAndFlush(Constants.ACK_COMMAND_PREFIX + offset);
@@ -167,9 +160,9 @@ public class FromContext extends Context {
         }
     }
 
-    public synchronized void offsetAddUp(){
+    public synchronized void offsetAddUp() {
         SyncCommand command;
-        while ((command = offsetCache.getFirstKey()) != null) {
+        while (offsetCache != null && (command = offsetCache.getFirstKey()) != null) {
             Integer value = offsetCache.get(command);
             if (value != null) {
                 long offset = getOffset();
@@ -182,7 +175,9 @@ public class FromContext extends Context {
     }
 
     public void cacheOffset(SyncCommand syncCommand) {
-        offsetCache.putValue(syncCommand, syncCommand.getSyncLength());
+        if (!isClose) {
+            offsetCache.putValue(syncCommand, syncCommand.getSyncLength());
+        }
     }
 
     public boolean checkCacheOffsetIsEmpty() {

@@ -324,14 +324,12 @@ public class Controller {
             fromContextList.forEach(ct -> {
                 ct.offsetAddUp();
             });
-            //等待最后一次同步偏移量，等两秒
-            try {
-                Thread.sleep(2000);
-            } catch (InterruptedException e) {
-                throw new RuntimeException(e);
-            }
             //关闭所有的to
             toContextList.forEach(ct -> {
+                if (ct.isAdapt(toMode, switchFlag)) {
+                    //如果本身是主节点则同时写入偏移量
+                    ct.preemptMaster();
+                }
                 ct.close();
             });
             logger.info("Application exit success");

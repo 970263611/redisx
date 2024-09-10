@@ -66,11 +66,11 @@ public class RdbByteStreamDecoder extends ChannelInboundHandlerAdapter {
                     if (isEofOrSizeStr.startsWith("EOF")) {//EOF类型看收尾
                         eofEnd = Unpooled.copiedBuffer(isEofOrSizeStr.substring(4, isEofOrSizeStr.length()).getBytes());//获取eof收尾的40位长度的校验码
                         rdbType = RdbType.TYPE_EOF;//设置解析类型位eof类型
-                        logger.info("RdbType is " + rdbType.name() + ",Rdb EOF is " + eofEnd.toString(Charset.defaultCharset()) + ",current data length is = " + tempRdb.readableBytes());
+                        logger.info("RdbType is " + rdbType.name() + ",Rdb EOF is " + eofEnd.toString(Charset.defaultCharset()));
                     } else {//LENGTH类型数长度
                         length = Integer.parseInt(isEofOrSizeStr);//获取rdb总长度
                         rdbType = RdbType.TYPE_LENGTH;//设置解析类型位length类型
-                        logger.info("RdbType is " + rdbType.name() + ",RdbLength is " + length + ",current data length is = " + tempRdb.readableBytes());
+                        logger.info("RdbType is " + rdbType.name() + ",RdbLength is " + length);
                     }
                 }
 
@@ -88,7 +88,7 @@ public class RdbByteStreamDecoder extends ChannelInboundHandlerAdapter {
                             commondBuf = tempRdb.slice(length, tempRdb.writerIndex() - length);
                             rdbType = RdbType.END;
                         }
-                        logger.info("RdbType is " + rdbType.name() + ",RdbLength is " + length + ",current data length is = " + tempRdb.readableBytes());
+                        logger.debug("RdbType is " + rdbType.name() + ",RdbLength is " + length + ",current data length is = " + tempRdb.readableBytes());
                     } else if (RdbType.TYPE_EOF == rdbType) {
                         int searchIndex = tempRdb.writerIndex() >= 40 ? tempRdb.writerIndex() - 40 : 0;//防止拆包，从总体缓存的后40位开始检索
                         tempRdb.writeBytes(rdb);//把内容写入缓存
@@ -101,7 +101,7 @@ public class RdbByteStreamDecoder extends ChannelInboundHandlerAdapter {
                             commondBuf = tempRdb.slice(index + 40, tempRdb.writerIndex() - index - 40);//命令内容
                         }
                         tempRdb.readerIndex(0);
-                        logger.info("RdbType is " + rdbType.name() + ",current data length is = " + tempRdb.readableBytes());
+                        logger.debug("RdbType is " + rdbType.name() + ",current data length is = " + tempRdb.readableBytes());
                     }
 
                     if (RdbType.END == rdbType) {//开始解析Rdb
