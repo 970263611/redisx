@@ -226,6 +226,11 @@ public class Controller {
             logger.error("[From] master nodes info can not get");
             return;
         }
+        try {
+            Thread.sleep(2000);
+        } catch (InterruptedException e) {
+            throw new RuntimeException(e);
+        }
         boolean success = true;
         for (InetSocketAddress address : fromMasterNodesInfo) {
             String host = address.getHostString();
