@@ -10,9 +10,11 @@
 
 ### 名词解释
 
-From：数据来源的Redis集群对应Redisx中的节点。
+From：数据来源Redis节点的统称。
 
-To：需要被同步数据的Redis集群对应Redisx中的节点。
+To：数据存入Redis节点的同城。
+
+Redisx或RX:  流复制工具的名称和简称
 
 
 
@@ -164,13 +166,13 @@ redisx:
     flushSize: 50
   console:
     #是否启用控制台
-    enable: false
+    enable: true
     #是否开启控制台双向查询数据功能
     search: false
     #控制台响应超时时间
     timeout: 5000
     #控制台发布端口
-    port: 18080
+    port: 15967
   #强一致模式，该模式下，单条数据完成io才会进行偏移量更新
   #开启后可以降低服务异常导致的数据不一致问题，但会大幅度降低同步效率
   immediate:
@@ -226,6 +228,292 @@ http://${ip}:${port}/console?command=${command}&type=from/to
 如：
 http://localhost:9999/console?command=get testKey&type=from
 http://localhost:9999/console?command=get testKey&type=to
+```
+
+### 场景介绍
+
+#### 常规模式
+
+适用场景
+
+高效数据同步场景
+
+配置信息
+
+```
+redisx:
+  from:
+    redis:
+      version: x.x.x
+    mode: cluster
+    password: 1a.2b*
+#   masterName:
+    address:
+      - xxx.xxx.xxx.xxx:port
+      ...
+  to:
+    mode: cluster
+    password: 1a.2b*
+#   masterName:
+    address:
+      - xxx.xxx.xxx.xxx:port
+      ...
+```
+
+功能描述
+
+1、高效同步，批量提交，单个To节点‘每50条数据或间隔最大100毫秒’进行一次数据提交和偏移量刷新
+
+2、From端优先选从节点连接，无从选主
+
+3、Redis服务异常时中断同步，Redis服务正常时自动开始同步
+
+4、支持存量RDB数据同步，支持中断续传
+
+数据差异(仅异常情况下才可能产生)
+
+1、From节点故障或Redisx正常关闭(kill)，无数据差异
+
+2、单次To节点故障，可能出现不大于 ‘To数量 * flushDb’数据差异
+
+3、Redisx通过强制中断(kill -9)，可能出现不大于 ‘To数量 * flushDb’数据差异
+
+
+
+#### 强一致模式
+
+适用场景
+
+数据量较小，但对一致性要求较高
+
+配置信息
+
+常规模式配置中，加入如下配置
+
+```
+ redisx:
+   immediate:
+     enable: true
+     resendTimes: 1
+```
+
+功能描述
+
+1、效率较低，单条提交，单个To节点‘每1条数据’进行一次数据提交及I/O操作结果确认，偏移量刷新及结果确认
+
+2、From端优先选从节点连接，无从选主
+
+3、Redis服务异常时中断同步，Redis服务正常时自动开始同步
+
+4、支持存量RDB数据同步，支持中断续传
+
+数据差异(仅异常情况下才可能产生)
+
+1、From节点故障或Redisx正常关闭(kill)，无数据差异
+
+2、单次To节点故障，可能出现不大于 ‘To数量’数据差异
+
+3、Redisx通过强制中断(kill -9)，可能出现不大于 ‘To数量’数据差异
+
+
+
+#### 垂直拆分模式
+
+适用场景
+
+集群模式，数据量极大，对同步效率要求极高
+
+配置信息
+
+Redisx1：
+
+```
+redisx:
+  from:
+    redis:
+      version: x.x.x
+    mode: cluster
+    password: 1a.2b*
+#   masterName:
+    address:
+      - From节点1
+      ...
+    verticalScaling: true
+  to:
+    mode: cluster
+    password: 1a.2b*
+#   masterName:
+    address:
+      - xxx.xxx.xxx.xxx:port
+      ...
+  switchFlag: REDISX-...每组Redisx服务必须不一致，同组主备Redisx服务须一致
+```
+
+Redisx2:
+
+```
+redisx:
+  from:
+    redis:
+      version: x.x.x
+    mode: cluster
+    password: 1a.2b*
+#   masterName:
+    address:
+      - From节点2
+      ...
+    verticalScaling: true
+  to:
+    mode: cluster
+    password: 1a.2b*
+#   masterName:
+    address:
+      - xxx.xxx.xxx.xxx:port
+      ...
+  switchFlag: REDISX-...每组Redisx服务必须不一致，同组主备Redisx服务须一致
+```
+
+...
+
+功能描述
+
+1、仅对配置中的From节点数据进行同步，不扩展至整个From集群数据
+
+2、From端仅选择配置节点
+
+3、Redis服务异常时中断同步，Redis服务正常时自动开始同步
+
+4、支持存量RDB数据同步，支持中断续传
+
+数据差异(仅异常情况下才可能产生)
+
+1、From节点故障或Redisx正常关闭(kill)，无数据差异
+
+2、单次To节点故障，可能出现不大于 ‘To数量’数据差异
+
+3、Redisx通过强制中断(kill -9)，可能出现不大于 ‘To数量’数据差异
+
+
+
+#### 定时中断模式
+
+适用场景
+
+一次性同步，短期同步
+
+配置信息
+
+常规模式或强一致模式配置中，加入如下配置
+
+```
+redisx:
+  timedExit:
+    enable: true
+    force: true  #是否开启中断补偿，及中断时队列中的堆积数据是否完全同步；默认false
+    duration: 1000   #多久关闭，单位秒
+```
+
+功能描述
+
+1、同步效率同常规模式或强一致模式，运行设定时长后，自动关闭
+
+2、From端优先选从节点连接，无从选主
+
+3、Redis服务异常时中断同步，Redis服务正常时自动开始同步
+
+4、支持存量RDB数据同步，支持中断续传
+
+数据差异(仅异常情况下才可能产生)
+
+同常规模式或强一致模式
+
+#### 仅主节点模式
+
+适用场景
+
+主节点性能较好，数据实时性要求较高
+
+配置信息
+
+常规模式或强一致模式配置中，加入如下配置(垂直扩展下该配置无效)
+
+```
+redisx:
+  connectMaster: true
+```
+
+功能描述
+
+1、同步效率同常规模式或强一致模式
+
+2、仅连接From主节点
+
+3、Redis服务异常时中断同步，Redis服务正常时自动开始同步
+
+4、支持存量RDB数据同步，支持中断续传
+
+数据差异(仅异常情况下才可能产生)
+
+同常规模式或强一致模式
+
+#### 其它功能
+
+##### 1、配置加密
+
+功能描述
+
+密码加密，支持jasypt密码加解密操作，加密配置放入ENC(...)括号中
+
+配置信息
+
+```
+redisx:
+  from:
+    password: ENC(...)
+jasypt:
+  encryptor:
+    password: U8eT6mld1
+    algorithm: PBEWithMD5AndDES
+    ivGeneratorClassName: org.jasypt.iv.NoIvGenerator
+```
+
+##### 2、To端数据清理
+
+功能描述
+
+全局首次启动时清理To端数据，适用于To端脏数据清理
+
+配置信息
+
+```
+redisx:
+  flushDb: true #默认false
+```
+
+##### 3、仅全量同步
+
+功能描述
+
+不再中断续传，每次均进行全量同步。数据完整性强，适用于数据量小，要求数据完整的场景
+
+配置信息
+
+```
+redisx:
+  alwaysFullSync: true #默认false
+```
+
+##### 4、仅增量同步
+
+功能描述
+
+不再同步存量RDB数据，仅同步Redisx服务启动后产生的增量数据；若开启仅全量同步，该配置失效。
+
+配置信息
+
+```
+redisx:
+  syncRdb: false #默认true
 ```
 
 
