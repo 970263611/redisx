@@ -4,6 +4,7 @@ import com.dahuaboke.redisx.common.Constants;
 import com.dahuaboke.redisx.common.enums.Mode;
 import com.dahuaboke.redisx.handler.*;
 import com.dahuaboke.redisx.to.handler.DRHandler;
+import com.dahuaboke.redisx.to.handler.FlushDbHandler;
 import com.dahuaboke.redisx.to.handler.SyncCommandListener;
 import io.netty.bootstrap.Bootstrap;
 import io.netty.channel.*;
@@ -72,6 +73,9 @@ public class ToClient {
                         pipeline.addLast(Constants.SENTINEL_HANDLER_NAME, new SentinelInfoHandler(toContext, toContext.getToMasterName(), toContext.isGetMasterNodeInfo()));
                     }
                 } else {
+                    if (toContext.fromIsAlwaysFullSync() && toContext.isFlushDb()) {
+                        pipeline.addLast(new FlushDbHandler(toContext));
+                    }
                     pipeline.addLast(new DRHandler(toContext));
                     pipeline.addLast(new SyncCommandListener(toContext));
                     pipeline.addLast(new DirtyDataHandler());

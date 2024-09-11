@@ -52,13 +52,15 @@ public final class CacheManager {
     private Map<String, LimitedList<Long>> fromWriteCount = new HashMap<>();
     private Map<String, LimitedList<Long>> toWriteCount = new HashMap<>();
     private Map<String, Long> errorCount = new HashMap<>();
+    private boolean alwaysFullSync;
 
-    public CacheManager(String redisVersion, Mode fromMode, String fromPassword, Mode toMode, String toPassword) {
+    public CacheManager(String redisVersion, Mode fromMode, String fromPassword, Mode toMode, String toPassword, boolean alwaysFullSync) {
         this.redisVersion = redisVersion;
         this.fromMode = fromMode;
         this.fromPassword = fromPassword;
         this.toMode = toMode;
         this.toPassword = toPassword;
+        this.alwaysFullSync = alwaysFullSync;
     }
 
     /**
@@ -369,6 +371,10 @@ public final class CacheManager {
 
     public Mode getToMode() {
         return toMode;
+    }
+
+    public boolean isAlwaysFullSync() {
+        return alwaysFullSync;
     }
 
     public static class NodeMessage {

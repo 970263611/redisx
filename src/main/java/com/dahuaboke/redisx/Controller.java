@@ -83,7 +83,7 @@ public class Controller {
         this.flushDb = config.isFlushDb();
         this.verticalScaling = config.isVerticalScaling();
         this.connectFromMaster = config.isConnectMaster();
-        this.cacheManager = new CacheManager(config.getRedisVersion(), fromMode, config.getFromPassword(), toMode, config.getToPassword());
+        this.cacheManager = new CacheManager(config.getRedisVersion(), fromMode, config.getFromPassword(), toMode, config.getToPassword(), config.isAlwaysFullSync());
         if (flushDb) {
             this.cacheManager.setFlushState(FlushState.PREPARE);
         }
@@ -184,11 +184,7 @@ public class Controller {
         for (Context cont : allContexts) {
             if (cont instanceof ToContext) {
                 ToContext toContext = (ToContext) cont;
-                if (toContext.isAdapt(toMode, switchFlag)) {
-                    toContext.preemptMasterAndFlushAll();
-                } else {
-                    toContext.sendCommand(Constants.FLUSH_ALL_COMMAND, 1000, true, false);
-                }
+                toContext.flushMyself();
             }
         }
     }

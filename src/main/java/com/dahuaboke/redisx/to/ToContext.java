@@ -332,6 +332,18 @@ public class ToContext extends Context {
         return slotEnd;
     }
 
+    public boolean fromIsAlwaysFullSync() {
+        return cacheManager.isAlwaysFullSync();
+    }
+
+    public void flushMyself() {
+        if (isAdapt(toMode, switchFlag)) {
+            preemptMasterAndFlushAll();
+        } else {
+            sendCommand(Constants.FLUSH_ALL_COMMAND, 1000, true, false);
+        }
+    }
+
     @Override
     public String toString() {
         return "ToContext{" + "host='" + host + '\'' + ", port=" + port + ", slotBegin=" + slotBegin + ", slotEnd=" + slotEnd + ", immediate=" + immediate + ", immediateResendTimes=" + immediateResendTimes + ", switchFlag='" + switchFlag + '\'' + ", flushSize=" + flushSize + ", isClose=" + isClose + ", startByConsole=" + startByConsole + ", toMode=" + toMode + ", fromMode=" + fromMode + '}';
