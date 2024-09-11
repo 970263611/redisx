@@ -12,11 +12,9 @@
 
 Redisx:  流复制工具的名称
 
-From：数据来源Redis节点的统称。
+From：数据来源Redis端节点的统称
 
-To：数据存入Redis节点的同城。
-
-Down：指服务宕机
+To：数据存入Redis端节点的统称
 
 ### 启动环境
 
