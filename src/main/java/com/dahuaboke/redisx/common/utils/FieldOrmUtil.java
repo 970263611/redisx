@@ -1,7 +1,7 @@
 package com.dahuaboke.redisx.common.utils;
 
 import com.dahuaboke.redisx.common.annotation.FieldOrm;
-import com.dahuaboke.redisx.common.interfaces.FieldOrmCheck;
+import com.dahuaboke.redisx.common.annotation.FieldOrmCheck;
 
 import java.lang.reflect.Field;
 import java.lang.reflect.InvocationTargetException;

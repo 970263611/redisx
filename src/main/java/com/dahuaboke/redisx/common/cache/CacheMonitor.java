@@ -74,16 +74,16 @@ public class CacheMonitor {
             fromClusterNodesMap.add(new HashMap<String, Object>() {{
                 put("host", fromSentinelMaster.getHostString());
                 put("port", fromSentinelMaster.getPort());
-                put("type", "master");
-                put("active", "true");
+                put("主/从", "master");
+                put("存活状态", "true");
             }});
             Set<SentinelInfoHandler.SlaveInfo> fromSentinelNodesInfo = cacheManager.getFromSentinelNodesInfo();
             fromSentinelNodesInfo.forEach(f -> {
                 fromClusterNodesMap.add(new HashMap<String, Object>() {{
                     put("host", f.getIp());
                     put("port", f.getPort());
-                    put("type", "slave");
-                    put("active", f.isActive());
+                    put("主/从", "slave");
+                    put("存活状态", f.isActive());
                 }});
             });
         }
@@ -95,16 +95,16 @@ public class CacheMonitor {
             toClusterNodesMap.add(new HashMap<String, Object>() {{
                 put("host", toSentinelMaster.getHostString());
                 put("port", toSentinelMaster.getPort());
-                put("type", "master");
-                put("active", "true");
+                put("主/从", "master");
+                put("存活状态", "true");
             }});
             Set<SentinelInfoHandler.SlaveInfo> toSentinelNodesInfo = cacheManager.getToSentinelNodesInfo();
             toSentinelNodesInfo.forEach(t -> {
                 toClusterNodesMap.add(new HashMap<String, Object>() {{
                     put("host", t.getIp());
                     put("port", t.getPort());
-                    put("type", "slave");
-                    put("active", t.isActive());
+                    put("主/从", "slave");
+                    put("存活状态", t.isActive());
                 }});
             });
         }
@@ -122,9 +122,9 @@ public class CacheMonitor {
                 fromClusterNodesMap.add(new HashMap<String, Object>() {{
                     put("host", f.getIp());
                     put("port", f.getPort());
-                    put("masterId", f.getMasterId());
-                    put("type", f.isMaster() ? "master" : "slave");
-                    put("active", f.isActive());
+                    put("主节点id", f.getMasterId());
+                    put("主/从", f.isMaster() ? "master" : "slave");
+                    put("存活状态", f.isActive());
                 }});
             });
         }
@@ -137,9 +137,9 @@ public class CacheMonitor {
                 toClusterNodesMap.add(new HashMap<String, Object>() {{
                     put("host", t.getIp());
                     put("port", t.getPort());
-                    put("masterId", t.getMasterId());
-                    put("type", t.isMaster() ? "master" : "slave");
-                    put("active", t.isActive());
+                    put("主节点id", t.getMasterId());
+                    put("主/从", t.isMaster() ? "master" : "slave");
+                    put("存活状态", t.isActive());
                 }});
             });
         }
@@ -154,21 +154,22 @@ public class CacheMonitor {
                 fromRedisxNodesMap.add(new HashMap<String, Object>() {{
                     put("host", fromContext.getHost());
                     put("port", fromContext.getPort());
+                    put("槽信息", fromContext.getSlotBegin() + "-" + fromContext.getSlotEnd());
                     put("offset", nodeMessage.getOffset());
-                    put("count", fromContext.getWriteCount());
+                    put("接收总量", fromContext.getWriteCount());
                     put("tps", fromContext.getWriteTps(true));
-                    put("error", fromContext.getErrorCount() == null ? 0 : fromContext.getErrorCount());
+                    put("失败次数", fromContext.getErrorCount() == null ? 0 : fromContext.getErrorCount());
                 }});
             } else if (a instanceof ToContext) {
                 ToContext toContext = (ToContext) a;
                 toRedisxNodesMap.add(new HashMap<String, Object>() {{
                     put("host", toContext.getHost());
                     put("port", toContext.getPort());
-                    put("slot", toContext.getSlotBegin() + "-" + toContext.getSlotEnd());
-                    put("count", toContext.getWriteCount());
+                    put("槽信息", toContext.getSlotBegin() + "-" + toContext.getSlotEnd());
+                    put("写入总量", toContext.getWriteCount());
                     put("tps", toContext.getWriteTps(false));
-                    put("overstock", cacheManager.getOverstockSize(toContext));
-                    put("error", toContext.getErrorCount() == null ? 0 : toContext.getErrorCount());
+                    put("积压数据", cacheManager.getOverstockSize(toContext));
+                    put("失败次数", toContext.getErrorCount() == null ? 0 : toContext.getErrorCount());
                 }});
             }
         });
