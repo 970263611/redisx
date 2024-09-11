@@ -16,6 +16,7 @@ import io.netty.handler.timeout.IdleStateHandler;
 import org.slf4j.Logger;
 import org.slf4j.LoggerFactory;
 
+import java.net.ServerSocket;
 import java.util.concurrent.Executor;
 import java.util.concurrent.TimeUnit;
 
@@ -45,6 +46,9 @@ public class ConsoleServer {
     public void start() {
         String host = consoleContext.getHost();
         int port = consoleContext.getPort();
+        while (!isPortAvailable(port)) {
+            port++;
+        }
         try {
             ServerBootstrap serverBootstrap = new ServerBootstrap();
             serverBootstrap.group(bossGroup, workerGroup)
@@ -95,6 +99,14 @@ public class ConsoleServer {
             } catch (InterruptedException e) {
                 logger.error("Close [From] error", e);
             }
+        }
+    }
+
+    public boolean isPortAvailable(int port) {
+        try (ServerSocket serverSocket = new ServerSocket(port);) {
+            return true;
+        } catch (Exception e) {
+            return false;
         }
     }
 }

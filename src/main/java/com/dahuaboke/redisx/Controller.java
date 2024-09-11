@@ -146,18 +146,11 @@ public class Controller {
                 }
                 //控制台相关
                 if (startConsole) {
-                    if (cacheManager.toIsStarted() && cacheManager.fromIsStarted()) {
-                        if (cacheManager.getConsoleContext() == null) {
-                            ConsoleNode consoleNode = new ConsoleNode("localhost", consolePort, consoleTimeout);
-                            Context context = consoleNode.getContext();
-                            cacheManager.setConsoleContext((ConsoleContext) context);
-                            consoleNode.start();
-                        }
-                    } else {
-                        ConsoleContext consoleContext = cacheManager.getConsoleContext();
-                        if (consoleContext != null) {
-                            consoleContext.close();
-                        }
+                    if (cacheManager.getConsoleContext() == null) {
+                        ConsoleNode consoleNode = new ConsoleNode("localhost", consolePort, consoleTimeout);
+                        Context context = consoleNode.getContext();
+                        cacheManager.setConsoleContext((ConsoleContext) context);
+                        consoleNode.start();
                     }
                 }
             } catch (Exception e) {
@@ -337,6 +330,10 @@ public class Controller {
                 }
                 ct.close();
             });
+            ConsoleContext consoleContext = cacheManager.getConsoleContext();
+            if (consoleContext != null) {
+                consoleContext.close();
+            }
             logger.info("Application exit success");
             //否则日志不一定打印，因为shutdownHook顺序无法保证
             LogManager.shutdown();
