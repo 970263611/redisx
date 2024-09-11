@@ -74,7 +74,7 @@ public class SentinelInfoHandler extends RedisChannelInboundHandler {
     }
 
     private void parseMasterMessage(ChannelHandlerContext ctx, String msg) {
-        logger.info("Beginning sentinel master message parse");
+        logger.info("Beginning sentinel master message parse\n\n{}\n", msg);
         if (StringUtils.isNotEmpty(msg)) {
             String[] arr = msg.split(" ");
             String masterIp = arr[0];
@@ -94,7 +94,7 @@ public class SentinelInfoHandler extends RedisChannelInboundHandler {
     }
 
     private void parseSlaveMessage(ChannelHandlerContext ctx, String msg) {
-        logger.info("Beginning sentinel slave message parse = {}" , msg);
+        logger.info("Beginning sentinel slave message parse\n\n{}\n", msg);
         List<SlaveInfo> slaveInfos = new ArrayList<>();//这个就是解析后的从节点集合
         String[] arrs = msg.split(" ");
         Map<String, Object> map = new HashMap<>();

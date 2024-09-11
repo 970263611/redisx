@@ -214,6 +214,8 @@ public class Controller {
     }
 
     private void startAllFrom(boolean alwaysFullSync, boolean syncRdb) {
+        //防止启动过长脑裂
+        preemptMasterAndMonitor(cacheManager.getAllContexts());
         List<InetSocketAddress> fromMasterNodesInfo = getFromMasterNodesInfo();
         if (fromMasterNodesInfo == null) {
             logger.error("[From] master nodes info can not get");
@@ -224,6 +226,8 @@ public class Controller {
         } catch (InterruptedException e) {
             throw new RuntimeException(e);
         }
+        //防止启动过长脑裂
+        preemptMasterAndMonitor(cacheManager.getAllContexts());
         boolean success = true;
         for (InetSocketAddress address : fromMasterNodesInfo) {
             String host = address.getHostString();
@@ -244,6 +248,8 @@ public class Controller {
                 success = false;
                 break;
             }
+            //防止启动过长脑裂
+            preemptMasterAndMonitor(cacheManager.getAllContexts());
         }
         cacheManager.setFromIsStarted(success);
     }

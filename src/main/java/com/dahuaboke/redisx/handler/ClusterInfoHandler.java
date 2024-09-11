@@ -54,7 +54,7 @@ public class ClusterInfoHandler extends RedisChannelInboundHandler {
     }
 
     private void parseSlotMessage(ChannelHandlerContext ctx, String msg) {
-        logger.info("Beginning slot message parse");
+        logger.info("Beginning slot message parse\n\n{}\n", msg);
         if (msg != null) {
             msg = msg.replace("\r", "");
             String[] arr = msg.split("\n");
