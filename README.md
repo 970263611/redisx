@@ -14,9 +14,7 @@ From：数据来源Redis节点的统称。
 
 To：数据存入Redis节点的同城。
 
-Redisx或RX:  流复制工具的名称和简称
-
-
+Redisx:  流复制工具的名称
 
 ### 启动环境
 
@@ -42,16 +40,16 @@ Redisx或RX:  流复制工具的名称和简称
 
 #### 组件对比
 
-| 组件           | redisx         | REDIS shake          |
+| 组件           | redisx         | redis shake     |
 | -------------- |----------------|----------------------------|
 | 支持版本       | 2.8及以上         | 2.8及以上                     |
 | 高可用         | 集群部署，纵向扩展      | 单机部署                       |
 | 初始化同步方式 | 全量同步rdb，增量同步   | 全量同步rdb和aof，增量同步           |
 | 支持续传       | 支持             | 不支持                        |
 | 数据类型       | 五种基本类型 + stream | 五种基本类型 + stream + 3种module |
-| 其他功能       | 数据查询，集群节点宕机重连  | 数据筛选                       |
+| 其他功能       | 数据查询，双端集群节点宕机重连 | 数据筛选                       |
 
-### REDISX优势
+### Redisx优势
 
 #### 部署简洁
 
@@ -61,39 +59,39 @@ Redisx或RX:  流复制工具的名称和简称
 
 配置示例
 
-```
+```yaml
 redisx:
   from:
     redis:
       version: 6.0.9  #redis版本
     password: 1a.2b*  #Redis密码
-    mode: cluster     #Redis模式，单机：single 集群：cluster 哨兵:sentinel
-    address:          #from数据来源地址，如模式是进群或哨兵，配置单一节点即可
+    mode: cluster     #Redis模式，单机：single 哨兵:sentinel 集群：cluster
+    address:          #from数据来源地址，如模式是集群或哨兵，配置单一节点即可
       - 127.0.0.1:6379
   to:
     password: 1a.2b*  #redis密码
-    mode: cluster     #Redis模式，单机：single 集群：cluster 哨兵:sentinel
-    address:          #to数据来源地址，如模式是进群或哨兵，配置单一节点即可
+    mode: cluster     #Redis模式，单机：single 哨兵:sentinel 集群：cluster
+    address:          #to数据来源地址，如模式是集群或哨兵，配置单一节点即可
       - 127.0.0.1:6380
 ```
 
 #### 支持高可用
 
-REDISX可进行多节点部署，指向相同Redis To节点的REDISX服务会自动形成主备模式，当REDISX主节点发生异常时，备节点会自动完成主备切换，继续进行数据同步工作，并支持断点续传，保证数据的完整性和连续性。
+Redisx可进行多节点部署，指向相同Redis To节点的Redisx服务会自动形成主备模式，当Redisx主节点发生异常时，备节点会自动完成主备切换，继续进行数据同步工作，并支持断点续传，保证数据的完整性和连续性。
 
 #### 垂直扩展
 
-REDISX支持对同一集群的不同节点进行单独的同步工作，可以通过配置使REDISX服务于from集群的单一节点，分担数据同步产生的压力，大幅度提高同步效率。
+Redisx支持对同一集群的不同节点进行单独的同步工作，可以通过配置使Redisx服务于from集群的单一节点，分担数据同步产生的压力，大幅度提高同步效率。
 
 #### 自动修复
 
-Redis节点的状态不会影响到REDISX服务的运行。当Redis节点出现服务down机或者主节点漂移等异常现象时，REDISX可以自动判断选择正常的节点，并开始或中止数据同步工作，而无需关心Redix节点的状态会对REDISX造成影响。
+Redis节点的状态不会影响到Redisx服务的运行。当Redis节点出现服务down机或者主节点漂移等异常现象时，Redisx可以自动判断选择正常的节点，并开始或中止数据同步工作，而无需关心Redisx节点的状态会对Redisx造成影响。
 
-同时通过简单的配置，可以改变REDISX同步工作启停的条件，例如要求Redis进群节点必须完整才进行同步，从而保证数据同步的完整性；或是仅同步Redis正常节点的数据，从而使数据同步不会停滞。
+同时通过简单的配置，可以改变Redisx同步工作启停的条件，例如要求Redis进群节点必须完整才进行同步，从而保证数据同步的完整性；或是仅同步Redis正常节点的数据，从而使数据同步不会停滞。
 
-#### 服务监控(完善中)
+#### 服务监控
 
-通过REDISX页面监控功能可以实时展示REDIS以及REDISX节点的工作状态，REDISX的数据同步速度，数据堆积以及REDISX的配置信息。同时现正在逐渐完善REDISX的告警功能，从而使REDISX运行更加稳定。
+通过Redisx页面监控功能可以实时展示Redis以及Redisx节点的工作状态，Redisx的数据同步速度，数据堆积以及Redisx的配置信息。同时现正在逐渐完善Redisx的告警功能，从而使Redisx运行更加稳定。
 
 #### 定时退出功能
 
@@ -101,11 +99,11 @@ Redis节点的状态不会影响到REDISX服务的运行。当Redis节点出现�
 
 #### 其它扩展
 
-通过配置可以开启REDIS的双向的数据查询功能，通过页面可以查询From和To服务中的实时数据。
+通过配置可以开启Redis的双向的数据查询功能，通过页面可以查询From和To服务中的实时数据。
 
 ### 性能测试
 
-CPU为13600KF、内存为DDR5 64G（32G双通道）的电脑上搭建3主3从两套redis集群，发压工具（30并发）和redisx同时运行，在redisx没有特殊指定启动内存大小、没有-server启动、jdk为1.8的形况下，测试结果如下：
+CPU为13600KF、内存为DDR5 64G（32G双通道）的电脑上搭建3主3从两套redis集群，发压工具（30并发）和Redisx同时运行，在redisx没有特殊指定启动内存大小、没有-server启动、jdk为1.8的形况下，测试结果如下：
 
 ![](images/redisx5w.jpg)
 
@@ -199,7 +197,7 @@ redisx:
   #开启后，syncRdb配置强制为true
   alwaysFullSync: false
   #redisx主从切换标志
-  switchFlag: REDISX-AUTHOR:DAHUA&CHANGDONGLIANG&ZHANGHUIHAO&ZHANGSHUHAN
+  switchFlag: REDISX-AUTHOR:DAHUA&CHANGDONGLIANG&ZHANGHUIHAO&ZHANGSHUHAN&ZHANGYING&CHENYU&MAMING
   #是否同步存量数据
   syncRdb: true
   #定时退出
@@ -254,21 +252,21 @@ http://localhost:9999/console?command=get testKey&type=to
 
 配置信息
 
-```
+```yaml
 redisx:
   from:
     redis:
       version: x.x.x
     mode: cluster
     password: 1a.2b*
-#   masterName:
+    masterName:
     address:
       - xxx.xxx.xxx.xxx:port
       ...
   to:
     mode: cluster
     password: 1a.2b*
-#   masterName:
+    masterName:
     address:
       - xxx.xxx.xxx.xxx:port
       ...
@@ -292,8 +290,6 @@ redisx:
 
 3、Redisx通过强制中断(kill -9)，可能出现不大于 ‘To数量 * flushDb’数据差异
 
-
-
 #### 强一致模式
 
 适用场景
@@ -304,7 +300,7 @@ redisx:
 
 常规模式配置中，加入如下配置
 
-```
+```yaml
  redisx:
    immediate:
      enable: true
@@ -329,8 +325,6 @@ redisx:
 
 3、Redisx通过强制中断(kill -9)，可能出现不大于 ‘To数量’数据差异
 
-
-
 #### 垂直拆分模式
 
 适用场景
@@ -341,14 +335,14 @@ redisx:
 
 Redisx1：
 
-```
+```yaml
 redisx:
   from:
     redis:
       version: x.x.x
     mode: cluster
     password: 1a.2b*
-#   masterName:
+    masterName:
     address:
       - From节点1
       ...
@@ -356,7 +350,7 @@ redisx:
   to:
     mode: cluster
     password: 1a.2b*
-#   masterName:
+    masterName:
     address:
       - xxx.xxx.xxx.xxx:port
       ...
@@ -365,14 +359,14 @@ redisx:
 
 Redisx2:
 
-```
+```yaml
 redisx:
   from:
     redis:
       version: x.x.x
     mode: cluster
     password: 1a.2b*
-#   masterName:
+    masterName:
     address:
       - From节点2
       ...
@@ -380,14 +374,12 @@ redisx:
   to:
     mode: cluster
     password: 1a.2b*
-#   masterName:
+    masterName:
     address:
       - xxx.xxx.xxx.xxx:port
       ...
   switchFlag: REDISX-...每组Redisx服务必须不一致，同组主备Redisx服务须一致
 ```
-
-...
 
 功能描述
 
@@ -407,8 +399,6 @@ redisx:
 
 3、Redisx通过强制中断(kill -9)，可能出现不大于 ‘To数量’数据差异
 
-
-
 #### 定时中断模式
 
 适用场景
@@ -419,7 +409,7 @@ redisx:
 
 常规模式或强一致模式配置中，加入如下配置
 
-```
+```yaml
 redisx:
   timedExit:
     enable: true
@@ -451,7 +441,7 @@ redisx:
 
 常规模式或强一致模式配置中，加入如下配置(垂直扩展下该配置无效)
 
-```
+```yaml
 redisx:
   connectMaster: true
 ```
@@ -480,7 +470,7 @@ redisx:
 
 配置信息
 
-```
+```yaml
 redisx:
   from:
     password: ENC(...)
@@ -499,7 +489,7 @@ jasypt:
 
 配置信息
 
-```
+```yaml
 redisx:
   to:
     flushDb: true #默认false
@@ -513,7 +503,7 @@ redisx:
 
 配置信息
 
-```
+```yaml
 redisx:
   alwaysFullSync: true #默认false
 ```
@@ -526,11 +516,9 @@ redisx:
 
 配置信息
 
-```
+```yaml
 redisx:
   syncRdb: false #默认true
 ```
-
-
 
 [![LICENSE](https://img.shields.io/badge/license-Anti%20996-blue.svg)](https://github.com/996icu/996.ICU/blob/master/LICENSE)
