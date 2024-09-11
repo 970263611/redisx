@@ -20,7 +20,21 @@ Redisx或RX:  流复制工具的名称和简称
 
 ### 启动环境
 
-环境需求为Jdk1.8+，启动指令为java -jar redisx.jar
+环境需求为Jdk1.8+
+
+### 启动指令
+
+配置文件在jar内部
+
+​	java -jar redisx.jar
+
+配置文件在jar外，优先级高于jar内部配置文件
+
+​	java -jar redisx.jar /home/redisx/redisx.yml (后跟配置文件全路径)
+
+启动时命令行或环境变量传参,优先级最高
+
+​	java  -Dredisx.from.password=xxxx -Dredisx.to.password=xxxx  -jar redisx.jar 
 
 ### 建设思路
 
@@ -487,7 +501,8 @@ jasypt:
 
 ```
 redisx:
-  flushDb: true #默认false
+  to:
+    flushDb: true #默认false
 ```
 
 ##### 3、仅全量同步
