@@ -4,7 +4,7 @@ package com.dahuaboke.redisx;
 import com.dahuaboke.redisx.common.Constants;
 import com.dahuaboke.redisx.common.annotation.FieldOrm;
 import com.dahuaboke.redisx.common.enums.Mode;
-import com.dahuaboke.redisx.common.interfaces.FieldOrmCheck;
+import com.dahuaboke.redisx.common.annotation.FieldOrmCheck;
 import com.dahuaboke.redisx.common.utils.FieldOrmUtil;
 import com.dahuaboke.redisx.common.utils.StringUtils;
 import com.dahuaboke.redisx.common.utils.YamlUtil;
@@ -138,6 +138,10 @@ public class Redisx {
             }
             if (this.timedExitDuration <= 0) {
                 this.timedExitEnable = false;
+            }
+            //垂直扩展不支持清空to-rdb
+            if (this.verticalScaling) {
+                this.flushDb = false;
             }
         }
 

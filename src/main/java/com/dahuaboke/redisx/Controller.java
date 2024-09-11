@@ -294,7 +294,7 @@ public class Controller {
             List<Context> allContexts = cacheManager.getAllContexts();
             List<FromContext> fromContextList = new ArrayList<>();//保留全部from
             List<ToContext> toContextList = new ArrayList<>();//保留全部to
-            for(Context context : allContexts) {
+            for (Context context : allContexts) {
                 if (context instanceof FromContext) {
                     fromContextList.add((FromContext) context);
                 }
@@ -386,7 +386,7 @@ public class Controller {
                             right = true;
                             break;
                         }
-                        if (slotInfo.getSlotStart() == start) {
+                        if (slotInfo.isActiveMaster() && slotInfo.getSlotStart() == start) {
                             start = slotInfo.getSlotEnd() + 1;
                             right = true;
                             break;
@@ -490,7 +490,7 @@ public class Controller {
                         right = true;
                         break;
                     }
-                    if (slotInfo.getSlotStart() == start) {
+                    if (slotInfo.isActiveMaster() && slotInfo.getSlotStart() == start) {
                         start = slotInfo.getSlotEnd() + 1;
                         right = true;
                         break;

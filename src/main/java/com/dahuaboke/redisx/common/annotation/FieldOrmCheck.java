@@ -1,4 +1,4 @@
-package com.dahuaboke.redisx.common.interfaces;
+package com.dahuaboke.redisx.common.annotation;
 
 public interface FieldOrmCheck {
 

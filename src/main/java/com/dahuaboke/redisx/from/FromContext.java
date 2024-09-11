@@ -269,4 +269,12 @@ public class FromContext extends Context {
     public void setFromStarted(boolean started) {
         cacheManager.setFromIsStarted(started);
     }
+
+    public int getSlotBegin() {
+        return slotBegin;
+    }
+
+    public int getSlotEnd() {
+        return slotEnd;
+    }
 }
