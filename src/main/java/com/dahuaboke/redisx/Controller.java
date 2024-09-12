@@ -345,7 +345,7 @@ public class Controller {
                     ct.preemptMaster();
                     try {
                         //最后一次的偏移量提交
-                        Thread.sleep(500);
+                        Thread.sleep(1000);
                     } catch (InterruptedException e) {
                         logger.error(e.getMessage());
                     }
