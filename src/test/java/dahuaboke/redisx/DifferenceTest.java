@@ -113,43 +113,72 @@ public class DifferenceTest {
             fromKetSet.add(fromiterator.next());
         }
         long m = fromkeys.count() - tokeys.count() + 1;
-        int n = 0,sf=0,st=0;
+        int n = 0,sf=0,st=0,s=0;
+        int maps=0,sets=0,lists=0,zsets=0,strs=0;
+        int mapc=0,setc=0,listc=0,zsetc=0;
         Iterator<String> toiterator = tokeys.getKeys().iterator();
         while(toiterator.hasNext()){
+            s++;
+            if(s /1000 * 1000 == s){
+                System.out.println("已处理 " + s + "条");
+            }
             String tkey = toiterator.next();
             if(fromKetSet.contains(tkey)){
                 String type = tokeys.getType(tkey).toString();
                 switch (type){
                     case "MAP":
+                        maps++;
                         sf = fromClient.getMap(tkey).size();
                         st = toClient.getMap(tkey).size();
+                        if(sf != st){
+                            mapc++;
+                            System.out.println("MAP值差异=" + mapc);
+                        }
                         break;
                     case "SET":
+                        sets++;
                         sf = fromClient.getSet(tkey).size();
                         st = toClient.getSet(tkey).size();
+                        if(sf != st){
+                            setc++;
+                            System.out.println("SET值差异=" + setc);
+                        }
                         break;
                     case "LIST":
+                        lists++;
                         sf = fromClient.getList(tkey).size();
                         st = toClient.getList(tkey).size();
+                        if(sf != st){
+                            listc++;
+                            System.out.println("LIST值差异=" + listc);
+                        }
                         break;
                     case "ZSET":
+                        zsets++;
                         sf = fromClient.getScoredSortedSet(tkey).size();
                         st = toClient.getScoredSortedSet(tkey).size();
+                        if(sf != st){
+                            zsetc++;
+                            System.out.println("ZSET值差异=" + zsetc);
+                        }
                         break;
                     default:
+                        strs++;
                         sf = 0;
                         st = 0;
                 }
             }
-            if(sf != st){
-                n++;
-            }
         }
         StringBuilder sb = new StringBuilder();
-        sb.append("from总量=" + fromkeys.count());
-        sb.append(" ,to总量=" + (tokeys.count() - 1));
-        sb.append(" ,key数量差=" + m);
-        sb.append(" ,value差异量=" + n);
+        sb.append("from总量=").append(fromkeys.count());
+        sb.append(" ,to总量=").append(tokeys.count() - 1);
+        sb.append(" ,key数量差=").append(m);
+        sb.append(" ,value差异量=").append(zsetc + listc + setc + mapc);
+        sb.append(" ,MAP总量=").append(maps).append(" ,MAPvalue差异量=").append(mapc);
+        sb.append(" ,SET总量=").append(sets).append(" ,SETvalue差异量=").append(setc);
+        sb.append(" ,LIST总量=").append(lists).append(" ,LISTvalue差异量=").append(lists);
+        sb.append(" ,ZSET总量=").append(zsets).append(" ,ZSETvalue差异量=").append(zsetc);
+        sb.append(" ,STRING总量=").append(strs);
         System.out.println(sb.toString());
     }
 
