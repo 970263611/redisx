@@ -19,10 +19,7 @@ import com.dahuaboke.redisx.from.rdb.stream.Stream;
 import com.dahuaboke.redisx.from.rdb.stream.StreamListPacks2Parser;
 import com.dahuaboke.redisx.from.rdb.stream.StreamListPacks3Parser;
 import com.dahuaboke.redisx.from.rdb.stream.StreamListPacksParser;
-import com.dahuaboke.redisx.from.rdb.zset.ZSetEntry;
-import com.dahuaboke.redisx.from.rdb.zset.ZSetListPackParser;
-import com.dahuaboke.redisx.from.rdb.zset.ZSetParser;
-import com.dahuaboke.redisx.from.rdb.zset.ZSetZipListParser;
+import com.dahuaboke.redisx.from.rdb.zset.*;
 import org.slf4j.Logger;
 import org.slf4j.LoggerFactory;
 
@@ -64,7 +61,7 @@ public class ParserManager {
 
     public static final Parser<Map<byte[], byte[]>> HASH_04 = new HashParser();
 
-    public static final Parser<Set<ZSetEntry>> ZSET_2_05 = new ZSetParser();
+    public static final Parser<Set<ZSetEntry>> ZSET_2_05 = new ZSet2Parser();
 
     public static final Parser<Module> MODULE_06 = new ModuleParser();
 
@@ -103,21 +100,21 @@ public class ParserManager {
         ParserManager.parserMap.put(0x03 & 0xff, ZSET_03);
         ParserManager.parserMap.put(0x04 & 0xff, HASH_04);
         ParserManager.parserMap.put(0x05 & 0xff, ZSET_2_05);
-        ParserManager.parserMap.put(0x06 & 0xff,MODULE_06);
-        ParserManager.parserMap.put(0x07 & 0xff,MODULE_2_07);
+        ParserManager.parserMap.put(0x06 & 0xff, MODULE_06);
+        ParserManager.parserMap.put(0x07 & 0xff, MODULE_2_07);
         ParserManager.parserMap.put(0x09 & 0xff, HASH_ZIPMAP_09);
         ParserManager.parserMap.put(0x0a & 0xff, LIST_ZIPLIST_0A);
         ParserManager.parserMap.put(0x0b & 0xff, SET_INTSET_0B);
         ParserManager.parserMap.put(0x0c & 0xff, ZSET_ZIPLIST_0C);
         ParserManager.parserMap.put(0x0d & 0xff, HASH_ZIPLIST_0D);
         ParserManager.parserMap.put(0x0e & 0xff, LIST_QUICKLIST_0E);
-        ParserManager.parserMap.put(0x0f & 0xff,STREAM_LISTPACKS_0F);
+        ParserManager.parserMap.put(0x0f & 0xff, STREAM_LISTPACKS_0F);
         ParserManager.parserMap.put(0x10 & 0xff, HASH_LISTPACK_10);
         ParserManager.parserMap.put(0x11 & 0xff, ZSET_LISTPACK_11);
         ParserManager.parserMap.put(0x12 & 0xff, LIST_QUICKLIST_2_12);
-        ParserManager.parserMap.put(0x13 & 0xff,STREAM_LISTPACKS_2_13);
+        ParserManager.parserMap.put(0x13 & 0xff, STREAM_LISTPACKS_2_13);
         ParserManager.parserMap.put(0x14 & 0xff, SET_LISTPACK_14);
-        ParserManager.parserMap.put(0x15 & 0xff,STREAM_LISTPACKS_3_15);
+        ParserManager.parserMap.put(0x15 & 0xff, STREAM_LISTPACKS_3_15);
     }
 
     public static Parser getParser(int rdbType) {

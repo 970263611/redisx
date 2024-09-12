@@ -1,6 +1,6 @@
 package com.dahuaboke.redisx.from.handler;
 
-import com.dahuaboke.redisx.command.from.SyncCommand;
+import com.dahuaboke.redisx.common.command.from.SyncCommand;
 import com.dahuaboke.redisx.from.FromContext;
 import io.netty.channel.ChannelHandlerContext;
 import io.netty.channel.SimpleChannelInboundHandler;
@@ -35,10 +35,22 @@ public class SyncCommandPublisher extends SimpleChannelInboundHandler<SyncComman
             command.setSyncLength(commandLength);
             boolean success = fromContext.publish(command);
             if (success) {
+                if (fromContext.isStartConsole()) {
+                    fromContext.addWriteCount();
+                }
                 logger.debug("Success sync command [{}], length [{}]", command.getStringCommand(), commandLength);
             } else {
+                if (fromContext.isStartConsole()) {
+                    fromContext.addErrorCount();
+                }
                 logger.error("Sync command [{}] failed, length [{}]", command.getStringCommand(), commandLength);
             }
         }
+    }
+
+    @Override
+    public void channelInactive(ChannelHandlerContext ctx) throws Exception {
+        fromContext.setFromStarted(false);
+        super.channelInactive(ctx);
     }
 }

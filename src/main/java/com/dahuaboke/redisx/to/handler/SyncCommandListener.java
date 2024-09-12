@@ -1,16 +1,20 @@
 package com.dahuaboke.redisx.to.handler;
 
-import com.dahuaboke.redisx.Constant;
 import com.dahuaboke.redisx.Context;
-import com.dahuaboke.redisx.command.from.SyncCommand;
+import com.dahuaboke.redisx.common.Constants;
+import com.dahuaboke.redisx.common.command.from.SyncCommand;
 import com.dahuaboke.redisx.from.FromContext;
 import com.dahuaboke.redisx.to.ToContext;
 import io.netty.channel.Channel;
+import io.netty.channel.ChannelFuture;
 import io.netty.channel.ChannelHandlerContext;
 import io.netty.channel.ChannelInboundHandlerAdapter;
 import io.netty.handler.codec.redis.RedisMessage;
 import org.slf4j.Logger;
 import org.slf4j.LoggerFactory;
+
+import java.util.LinkedList;
+import java.util.List;
 
 /**
  * 2024/5/13 10:37
@@ -27,58 +31,113 @@ public class SyncCommandListener extends ChannelInboundHandlerAdapter {
     }
 
     @Override
-    public void handlerAdded(ChannelHandlerContext ctx) throws Exception {
+    public void channelActive(ChannelHandlerContext ctx) throws Exception {
         int flushSize = toContext.getFlushSize();
         Thread thread = new Thread(() -> {
             Channel channel = ctx.channel();
             int flushThreshold = 0;
             long timeThreshold = System.currentTimeMillis();
+            List<SyncCommand> commandListTemp = new LinkedList<>();
             while (!toContext.isClose()) {
-                if (channel.pipeline().get(Constant.SLOT_HANDLER_NAME) == null && channel.isActive()) {
-                    SyncCommand syncCommand = toContext.listen();
-                    boolean immediate = toContext.isImmediate();
-                    if (syncCommand != null) {
-                        FromContext fromContext = (FromContext) syncCommand.getContext();
-                        int length = syncCommand.getSyncLength();
-                        RedisMessage redisMessage = syncCommand.getCommand();
-                        long offset = fromContext.getOffset();
-                        if (syncCommand.isNeedAddLengthToOffset()) {
-                            offset += length;
-                            fromContext.setOffset(offset);
-                        }
-                        if (immediate) { //强一致模式
-                            for (int i = 0; i < toContext.getImmediateResendTimes(); i++) {
-                                boolean success = immediateSend(ctx, redisMessage, length, i + 1);
-                                if (success) {
-                                    break;
+                try {
+                    if (channel.isActive()) {
+                        if (toContext.toStarted()) {
+                            SyncCommand syncCommand = toContext.listen();
+                            boolean immediate = toContext.isImmediate();
+                            if (syncCommand != null) {
+                                RedisMessage redisMessage = syncCommand.getCommand();
+                                if (redisMessage != null) {
+                                    if (immediate && syncCommand.isNeedAddLengthToOffset()) { //强一致模式 && 需要记录偏移量（非rdb数据）
+                                        boolean messageWrited = false;
+                                        boolean offsetWrited = false;
+                                        int retryTimes = 0;
+                                        int immediateResendTimes = toContext.getImmediateResendTimes();
+                                        while (retryTimes < immediateResendTimes && (!messageWrited || !offsetWrited)) {
+                                            try {
+                                                retryTimes++;
+                                                if (!messageWrited) {
+                                                    ChannelFuture channelFuture = ctx.writeAndFlush(redisMessage);
+                                                    channelFuture.await();
+                                                    boolean channelFutureIsSuccess = channelFuture.isSuccess();
+                                                    if (channelFutureIsSuccess) {
+                                                        messageWrited = true;
+                                                        updateOffset(syncCommand);
+                                                        if (toContext.isStartConsole()) {
+                                                            toContext.addWriteCount();
+                                                        }
+                                                    } else {
+                                                        continue;
+                                                    }
+                                                }
+                                                if (!offsetWrited) {
+                                                    if (toContext.preemptMasterCompulsoryWithCheckId()) {
+                                                        offsetWrited = true;
+                                                        logger.trace("[immediate] write success");
+                                                    }
+                                                }
+                                            } catch (InterruptedException e) {
+                                                logger.error("Write command or offset awaiter error", e);
+                                            }
+                                        }
+                                        if (!messageWrited) {
+                                            if (toContext.isStartConsole()) {
+                                                toContext.addErrorCount();
+                                            }
+                                        }
+                                    } else {
+                                        commandListTemp.add(syncCommand);
+                                        ctx.write(redisMessage);
+                                        flushThreshold++;
+                                        if (toContext.isStartConsole()) {
+                                            toContext.addWriteCount();
+                                        }
+                                    }
+                                } else {
+                                    logger.error("RedisMessage is null {}", syncCommand.getStringCommand());
                                 }
                             }
-                        } else {
-                            ctx.write(redisMessage);
-                            flushThreshold++;
-                        }
-                        logger.trace("Write command [{}] length [{}], now offset [{}]", syncCommand.getStringCommand(), length, offset);
-                    }
-                    if (!immediate && (flushThreshold > flushSize || (System.currentTimeMillis() - timeThreshold > 100))) {
-                        if (flushThreshold > 0) {
-                            ctx.flush();
-                            logger.debug("Flush data success [{}]", flushThreshold);
-                            flushThreshold = 0;
-                            timeThreshold = System.currentTimeMillis();
+                            if (flushThreshold > flushSize || (System.currentTimeMillis() - timeThreshold > 100)) {
+                                if (flushThreshold > 0) {
+                                    ctx.flush();
+                                    updateOffset(commandListTemp);
+                                    commandListTemp.clear();
+                                    logger.debug("Flush data success [{}]", flushThreshold);
+                                    flushThreshold = 0;
+                                }
+                                timeThreshold = System.currentTimeMillis();
+                            }
                         }
                     }
+                } catch (Exception e) {
+                    logger.error("Sync command thread find error", e);
                 }
             }
         });
-        thread.setName(Constant.PROJECT_NAME + "-To-Writer-" + toContext.getHost() + ":" + toContext.getPort());
+        thread.setName(Constants.PROJECT_NAME + "-To-Writer-" + toContext.getHost() + ":" + toContext.getPort());
         thread.start();
     }
 
-    private boolean immediateSend(ChannelHandlerContext ctx, RedisMessage redisMessage, int length, int times) {
-        if (!ctx.writeAndFlush(redisMessage).isSuccess() || toContext.preemptMasterCompulsoryWithCheckId()) {
-            logger.error("Write length [{}] error times: [" + times + "]", length);
-            return false;
+    private void updateOffset(SyncCommand syncCommand) {
+        FromContext fromContext = (FromContext) syncCommand.getContext();
+        if (syncCommand.isNeedAddLengthToOffset()) {
+            fromContext.cacheOffset(syncCommand);
+            logger.trace("Write command [{}] length [{}]", syncCommand.getStringCommand(), syncCommand.getSyncLength());
         }
-        return true;
+    }
+
+    private void updateOffset(List<SyncCommand> syncCommandList) {
+        for (SyncCommand syncCommand : syncCommandList) {
+            FromContext fromContext = (FromContext) syncCommand.getContext();
+            if (syncCommand.isNeedAddLengthToOffset()) {
+                fromContext.cacheOffset(syncCommand);
+                logger.trace("Write command [{}] length [{}]", syncCommand.getStringCommand(), syncCommand.getSyncLength());
+            }
+        }
+    }
+
+    @Override
+    public void channelInactive(ChannelHandlerContext ctx) throws Exception {
+        toContext.setToStarted(false);
+        super.channelInactive(ctx);
     }
 }

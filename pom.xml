@@ -5,8 +5,8 @@
     <modelVersion>4.0.0</modelVersion>
 
     <groupId>com.dahuaboke</groupId>
-    <artifactId>redis-x</artifactId>
-    <version>1.0.0</version>
+    <artifactId>redisx</artifactId>
+    <version>2.0.0.RELEASE</version>
 
     <properties>
         <maven.compiler.source>8</maven.compiler.source>
@@ -17,6 +17,7 @@
         <log4j-slf4j2-impl.ver>2.23.1</log4j-slf4j2-impl.ver>
         <log4j-core.ver>2.23.1</log4j-core.ver>
         <snakeyaml.ver>1.29</snakeyaml.ver>
+        <jasypt.ver>1.9.3</jasypt.ver>
         <junit.ver>4.13.1</junit.ver>
         <redisson.ver>3.16.8</redisson.ver>
     </properties>
@@ -48,6 +49,16 @@
             <version>${snakeyaml.ver}</version>
         </dependency>
         <dependency>
+            <groupId>com.alibaba.fastjson2</groupId>
+            <artifactId>fastjson2</artifactId>
+            <version>2.0.52</version>
+        </dependency>
+        <dependency>
+            <groupId>org.jasypt</groupId>
+            <artifactId>jasypt</artifactId>
+            <version>${jasypt.ver}</version>
+        </dependency>
+        <dependency>
             <groupId>junit</groupId>
             <artifactId>junit</artifactId>
             <version>${junit.ver}</version>
@@ -57,12 +68,13 @@
             <groupId>org.redisson</groupId>
             <artifactId>redisson</artifactId>
             <version>${redisson.ver}</version>
+            <scope>test</scope>
         </dependency>
     </dependencies>
 
     <build>
         <!-- 打包后的名字 -->
-        <finalName>redis-x</finalName>
+        <finalName>redisx</finalName>
         <plugins>
             <!--(start) for package jar with dependencies -->
             <plugin>
@@ -78,6 +90,8 @@
                     <descriptorRefs>
                         <descriptorRef>jar-with-dependencies</descriptorRef>
                     </descriptorRefs>
+                    <appendAssemblyId>false</appendAssemblyId>
+                    <attach>false</attach>
                 </configuration>
                 <executions>
                     <execution>
@@ -86,9 +100,6 @@
                         <goals>
                             <goal>single</goal>
                         </goals>
-                        <configuration>
-                            <finalName>${project.name}</finalName>
-                        </configuration>
                     </execution>
                 </executions>
             </plugin>

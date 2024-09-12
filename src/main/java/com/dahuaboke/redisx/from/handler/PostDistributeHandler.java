@@ -1,7 +1,7 @@
 package com.dahuaboke.redisx.from.handler;
 
-import com.dahuaboke.redisx.Constant;
-import com.dahuaboke.redisx.command.from.SyncCommand;
+import com.dahuaboke.redisx.common.Constants;
+import com.dahuaboke.redisx.common.command.from.SyncCommand;
 import io.netty.channel.Channel;
 import io.netty.channel.ChannelHandlerContext;
 import io.netty.channel.SimpleChannelInboundHandler;
@@ -20,8 +20,8 @@ public class PostDistributeHandler extends SimpleChannelInboundHandler<SyncComma
     @Override
     public void channelRead0(ChannelHandlerContext ctx, SyncCommand msg) throws Exception {
         Channel channel = ctx.channel();
-        if (channel.isActive() && channel.pipeline().get(Constant.INIT_SYNC_HANDLER_NAME) != null) {
-            ctx.channel().attr(Constant.SYNC_REPLY).set(msg.getStringCommand());
+        if (channel.isActive() && channel.pipeline().get(Constants.INIT_SYNC_HANDLER_NAME) != null) {
+            ctx.channel().attr(Constants.SYNC_REPLY).set(msg.getStringCommand());
         } else {
             ctx.fireChannelRead(msg);
         }

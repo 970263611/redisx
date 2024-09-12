@@ -1,6 +1,9 @@
 package com.dahuaboke.redisx.console;
 
 import com.dahuaboke.redisx.Context;
+import com.dahuaboke.redisx.common.cache.CacheManager;
+import com.dahuaboke.redisx.common.cache.CacheMonitor;
+import com.dahuaboke.redisx.common.enums.Mode;
 import com.dahuaboke.redisx.from.FromContext;
 import com.dahuaboke.redisx.to.ToContext;
 import org.slf4j.Logger;
@@ -8,6 +11,7 @@ import org.slf4j.LoggerFactory;
 
 import java.util.ArrayList;
 import java.util.Arrays;
+import java.util.Iterator;
 import java.util.List;
 
 /**
@@ -18,21 +22,18 @@ import java.util.List;
 public class ConsoleContext extends Context {
 
     private static final Logger logger = LoggerFactory.getLogger(ConsoleContext.class);
-    private String host;
-    private int port;
     private int timeout;
-    private boolean toIsCluster;
-    private boolean fromIsCluster;
     private List<ToContext> toContexts = new ArrayList();
     private List<FromContext> fromContexts = new ArrayList();
+    private ConsoleServer consoleServer;
+    private CacheMonitor cacheMonitor;
+    private boolean consoleSearch;
 
-    public ConsoleContext(String host, int port, int timeout, boolean toIsCluster, boolean fromIsCluster) {
-        super(fromIsCluster, toIsCluster);
-        this.host = host;
-        this.port = port;
+    public ConsoleContext(CacheManager cacheManager, CacheMonitor cacheMonitor, String host, int port, int timeout, Mode toMode, Mode fromMode, boolean consoleSearch) {
+        super(cacheManager, host, port, fromMode, toMode, true, false);
+        this.cacheMonitor = cacheMonitor;
         this.timeout = timeout;
-        this.toIsCluster = toIsCluster;
-        this.fromIsCluster = fromIsCluster;
+        this.consoleSearch = consoleSearch;
     }
 
     public void setToContext(ToContext toContext) {
@@ -43,14 +44,6 @@ public class ConsoleContext extends Context {
         fromContexts.add(fromContext);
     }
 
-    public String getHost() {
-        return host;
-    }
-
-    public int getPort() {
-        return port;
-    }
-
     public String sendCommand(String command, String type) {
         List<String> list = Arrays.asList(command.split(" "));
         if (list.size() < 2 || list.get(0).equalsIgnoreCase("keys")) {
@@ -58,14 +51,14 @@ public class ConsoleContext extends Context {
         }
         if ("from".equalsIgnoreCase(type)) {
             for (FromContext fromContext : fromContexts) {
-                if (fromContext.isAdapt(fromIsCluster, list.get(1))) {
+                if (fromContext.isAdapt(fromMode, list.get(1))) {
                     return fromContext.sendCommand(command, timeout);
                 }
             }
             return null;
         } else if ("to".equalsIgnoreCase(type)) {
             for (ToContext toContext : toContexts) {
-                if (toContext.isAdapt(toIsCluster, list.get(1))) {
+                if (toContext.isAdapt(toMode, list.get(1))) {
                     return toContext.sendCommand(command, timeout);
                 }
             }
@@ -73,5 +66,40 @@ public class ConsoleContext extends Context {
         } else {
             throw new IllegalArgumentException("Type is error, should be [from] or [to]");
         }
+    }
+
+    public void close() {
+        if(consoleServer != null){
+            consoleServer.destroy();
+        }
+        Iterator<FromContext> iterator = fromContexts.iterator();
+        while (iterator.hasNext()) {
+            FromContext fromContext = iterator.next();
+            iterator.remove();
+            fromContext.close();
+        }
+        Iterator<ToContext> iterator1 = toContexts.iterator();
+        while (iterator1.hasNext()) {
+            ToContext toContext = iterator1.next();
+            iterator1.remove();
+            toContext.close();
+        }
+        cacheManager.remove(this);
+    }
+
+    public void setConsoleServer(ConsoleServer consoleServer) {
+        this.consoleServer = consoleServer;
+    }
+
+    public CacheMonitor getCacheMonitor() {
+        return cacheMonitor;
+    }
+
+    public boolean isConsoleSearch() {
+        return consoleSearch;
+    }
+
+    public int getTimeout() {
+        return timeout;
     }
 }

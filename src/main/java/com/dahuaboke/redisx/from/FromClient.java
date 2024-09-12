@@ -1,11 +1,9 @@
 package com.dahuaboke.redisx.from;
 
-import com.dahuaboke.redisx.Constant;
+import com.dahuaboke.redisx.common.Constants;
+import com.dahuaboke.redisx.common.enums.Mode;
 import com.dahuaboke.redisx.from.handler.*;
-import com.dahuaboke.redisx.handler.AuthHandler;
-import com.dahuaboke.redisx.handler.CommandEncoder;
-import com.dahuaboke.redisx.handler.DirtyDataHandler;
-import com.dahuaboke.redisx.handler.SlotInfoHandler;
+import com.dahuaboke.redisx.handler.*;
 import io.netty.bootstrap.Bootstrap;
 import io.netty.channel.*;
 import io.netty.channel.nio.NioEventLoopGroup;
@@ -14,7 +12,6 @@ import io.netty.handler.codec.redis.RedisArrayAggregator;
 import io.netty.handler.codec.redis.RedisBulkStringAggregator;
 import io.netty.handler.codec.redis.RedisDecoder;
 import io.netty.handler.codec.redis.RedisEncoder;
-import io.netty.util.ResourceLeakDetector;
 import org.slf4j.Logger;
 import org.slf4j.LoggerFactory;
 
@@ -54,44 +51,50 @@ public class FromClient {
                     @Override
                     protected void initChannel(Channel channel) throws Exception {
                         ChannelPipeline pipeline = channel.pipeline();
-                        boolean console = fromContext.isConsole();
-                        pipeline.addLast(new RedisEncoder());
-                        pipeline.addLast(new CommandEncoder());
                         boolean hasPassword = false;
                         String password = fromContext.getPassword();
                         if (password != null && !password.isEmpty()) {
                             hasPassword = true;
                         }
+                        pipeline.addLast(new RedisEncoder());
+                        pipeline.addLast(new CommandEncoder());
+                        pipeline.addLast(new PrintHandler());
                         if (hasPassword) {
-                            pipeline.addLast(Constant.AUTH_HANDLER_NAME, new AuthHandler(password, fromContext.isFromIsCluster()));
+                            pipeline.addLast(Constants.AUTH_HANDLER_NAME, new AuthHandler(password));
                         }
-                        if (!console) {
-                            pipeline.addLast(Constant.INIT_SYNC_HANDLER_NAME, new SyncInitializationHandler(fromContext));
+                        if (!fromContext.startByConsole() && !fromContext.isNodesInfoContext()) {
+                            pipeline.addLast(Constants.INIT_SYNC_HANDLER_NAME, new SyncInitializationHandler(fromContext));
                             pipeline.addLast(new PreDistributeHandler(fromContext));
-                            pipeline.addLast(Constant.OFFSET_DECODER_NAME, new OffsetCommandDecoder(fromContext));
+                            pipeline.addLast(Constants.OFFSET_DECODER_NAME, new OffsetCommandDecoder(fromContext));
                             pipeline.addLast(new RdbByteStreamDecoder(fromContext));
                         }
                         pipeline.addLast(new RedisDecoder(true));
                         pipeline.addLast(new RedisBulkStringAggregator());
                         pipeline.addLast(new RedisArrayAggregator());
-                        if (fromContext.isFromIsCluster()) {
-                            pipeline.addLast(Constant.SLOT_HANDLER_NAME, new SlotInfoHandler(fromContext, hasPassword));
+                        if (fromContext.isNodesInfoContext()) {
+                            if (Mode.CLUSTER == fromContext.getFromMode()) {
+                                pipeline.addLast(Constants.CLUSTER_HANDLER_NAME, new ClusterInfoHandler(fromContext, hasPassword));
+                            }
+                            if (Mode.SENTINEL == fromContext.getFromMode()) {
+                                pipeline.addLast(Constants.SENTINEL_HANDLER_NAME, new SentinelInfoHandler(fromContext, fromContext.getFromMasterName(), fromContext.isGetMasterNodeInfo()));
+                            }
+                        } else {
+                            pipeline.addLast(new MessagePostProcessor(fromContext));
+                            pipeline.addLast(new PostDistributeHandler());
+                            pipeline.addLast(new SyncCommandPublisher(fromContext));
+                            pipeline.addLast(new DirtyDataHandler());
                         }
-                        pipeline.addLast(new MessagePostProcessor(fromContext));
-                        pipeline.addLast(new PostDistributeHandler());
-                        pipeline.addLast(new SyncCommandPublisher(fromContext));
-                        pipeline.addLast(new DirtyDataHandler());
                     }
                 });
-        ResourceLeakDetector.setLevel(ResourceLeakDetector.Level.ADVANCED);
         ChannelFuture sync = bootstrap.connect(masterHost, masterPort).addListener((ChannelFutureListener) future -> {
             if (future.isSuccess()) {
                 logger.info("[From] started at [{}:{}]", masterHost, masterPort);
+                flag.countDown();
             }
             if (future.cause() != null) {
                 logger.info("[From] start error", future.cause());
+                group.shutdownGracefully();
             }
-            flag.countDown();
         });
         channel = sync.channel();
         fromContext.setFromChannel(channel);
@@ -107,20 +110,20 @@ public class FromClient {
      * 销毁方法
      */
     public void destroy() {
-        if (channel != null && channel.isActive()) {
-            fromContext.setClose(true);
-            channel.close();
+        fromContext.setClose(true);
+        if (channel != null) {
             try {
-                channel.closeFuture().addListener((ChannelFutureListener) channelFuture -> {
+                channel.close().addListener((ChannelFutureListener) channelFuture -> {
                     if (channelFuture.isSuccess()) {
                         group.shutdownGracefully();
-                        logger.warn("Close [from] [{}:{}]", fromContext.getHost(), fromContext.getPort());
+                        logger.info("Close [From] [{}:{}]", fromContext.getHost(), fromContext.getPort());
                     } else {
-                        logger.error("Close [from] error", channelFuture.cause());
+                        logger.error("Close [From] error", channelFuture.cause());
                     }
                 }).sync();
-            } catch (InterruptedException e) {
-                logger.error("Close [from] error", e);
+            } catch (Exception e) {
+                group.shutdownGracefully();
+                logger.error("Close [From] error", e);
             }
         }
     }

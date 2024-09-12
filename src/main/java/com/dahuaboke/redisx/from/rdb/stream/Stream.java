@@ -1,7 +1,6 @@
 package com.dahuaboke.redisx.from.rdb.stream;
 
 import java.io.Serializable;
-import java.nio.charset.StandardCharsets;
 import java.util.*;
 
 /**

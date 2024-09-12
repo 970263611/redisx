@@ -5,7 +5,7 @@ import io.netty.buffer.ByteBuf;
 import java.util.LinkedList;
 import java.util.List;
 
-import static com.dahuaboke.redisx.Constant.*;
+import static com.dahuaboke.redisx.common.Constants.*;
 
 /**
  * @Desc: zipList解析器

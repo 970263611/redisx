@@ -3,7 +3,7 @@ package com.dahuaboke.redisx.from.rdb.stream;
 import com.dahuaboke.redisx.from.rdb.base.Parser;
 import io.netty.buffer.ByteBuf;
 
-import static com.dahuaboke.redisx.Constant.RDB_TYPE_STREAM_LISTPACKS_3;
+import static com.dahuaboke.redisx.common.Constants.RDB_TYPE_STREAM_LISTPACKS_3;
 
 /**
  * @Desc: Redis >= 7.x版本

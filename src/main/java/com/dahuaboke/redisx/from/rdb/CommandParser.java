@@ -50,18 +50,18 @@ public class CommandParser {
         FUNCTION;
     }
 
-    public List<List<String>> parser(RdbHeader rdbHeader) {
-        List<List<String>> result = new LinkedList();
+    public List<List<byte[]>> parser(RdbHeader rdbHeader) {
+        List<List<byte[]>> result = new LinkedList();
         if (rdbHeader.getFunction() != null && rdbHeader.getFunction().size() > 0) {
             function(result, rdbHeader.getFunction());
         }
         return result;
     }
 
-    public List<List<String>> parser(RdbData rdbData) {
-        List<List<String>> result = new LinkedList();
+    public List<List<byte[]>> parser(RdbData rdbData) {
+        List<List<byte[]>> result = new LinkedList();
         Type type = typeMap.get(rdbData.getRdbType());
-        if (type!=null) {
+        if (type != null) {
             switch (type) {
                 case STRING:
                     string(result, rdbData.getKey(), (byte[]) rdbData.getValue());
@@ -91,13 +91,13 @@ public class CommandParser {
             long lastTime = expireTime - System.currentTimeMillis();
             ExpiredType expiredType = rdbData.getExpiredType();
             if (ExpiredType.NONE != expiredType) {
-                List<String> sb = new LinkedList<>();
-                sb.add("expire");
-                sb.add(new String(rdbData.getKey()));
+                List<byte[]> sb = new LinkedList<>();
+                sb.add("expire".getBytes());
+                sb.add(rdbData.getKey());
                 if (ExpiredType.SECOND == expiredType) {
-                    sb.add(String.valueOf(lastTime));
+                    sb.add(String.valueOf(lastTime).getBytes());
                 } else if (ExpiredType.MS == expiredType) {
-                    sb.add(String.valueOf(lastTime / 1000));
+                    sb.add(String.valueOf(lastTime / 1000).getBytes());
                 } else {
                     throw new IllegalArgumentException("Rdb type error");
                 }
@@ -107,80 +107,79 @@ public class CommandParser {
         return result;
     }
 
-    private void string(List<List<String>> list, byte[] key, byte[] value) {
-        List<String> sb = new LinkedList<String>() {{
-            add("SET");
-            add(new String(key));
-            add(new String(value));
+    private void string(List<List<byte[]>> list, byte[] key, byte[] value) {
+        List<byte[]> sb = new LinkedList<byte[]>() {{
+            add("SET".getBytes());
+            add(key);
+            add(value);
         }};
         list.add(sb);
     }
 
-    private void list(List<List<String>> list, byte[] key, List<byte[]> value) {
-        List<String> sb = new LinkedList<String>() {{
-            add("LPUSH");
-            add(new String(key));
+    private void list(List<List<byte[]>> list, byte[] key, List<byte[]> value) {
+        List<byte[]> sb = new LinkedList<byte[]>() {{
+            add("LPUSH".getBytes());
+            add(key);
         }};
         for (byte[] bytes : value) {
-            sb.add(new String(bytes));
+            sb.add(bytes);
         }
         list.add(sb);
     }
 
-    private void set(List<List<String>> list, byte[] key, Set<byte[]> value) {
-        List<String> sb = new LinkedList<String>() {{
-            add("SADD");
-            add(new String(key));
+    private void set(List<List<byte[]>> list, byte[] key, Set<byte[]> value) {
+        List<byte[]> sb = new LinkedList<byte[]>() {{
+            add("SADD".getBytes());
+            add(key);
         }};
         for (byte[] bytes : value) {
-            sb.add(new String(bytes));
+            sb.add(bytes);
         }
         list.add(sb);
     }
 
-    private void zet(List<List<String>> list, byte[] key, Set<ZSetEntry> value) {
-        List<String> sb = new LinkedList<String>() {{
-            add("ZADD");
-            add(new String(key));
+    private void zet(List<List<byte[]>> list, byte[] key, Set<ZSetEntry> value) {
+        List<byte[]> sb = new LinkedList<byte[]>() {{
+            add("ZADD".getBytes());
+            add(key);
         }};
         for (ZSetEntry zSetEntry : value) {
             String score = String.valueOf(zSetEntry.getScore());
             byte[] element = zSetEntry.getElement();
-            sb.add(score);
-            sb.add(new String(element));
+            sb.add(score.getBytes());
+            sb.add(element);
         }
         list.add(sb);
     }
 
-    private void hash(List<List<String>> list, byte[] key, Map<byte[], byte[]> value) {
-        List<String> sb = new LinkedList<String>() {{
-            add("HSET");
-            add(new String(key));
+    private void hash(List<List<byte[]>> list, byte[] key, Map<byte[], byte[]> value) {
+        List<byte[]> sb = new LinkedList<byte[]>() {{
+            add("HSET".getBytes());
+            add(key);
         }};
         for (Map.Entry<byte[], byte[]> kAbdV : value.entrySet()) {
             byte[] key1 = kAbdV.getKey();
             byte[] value1 = kAbdV.getValue();
-            sb.add(new String(key1));
-            sb.add(new String(value1));
+            sb.add(key1);
+            sb.add(value1);
         }
         list.add(sb);
     }
 
-    private void stream(List<List<String>> list, byte[] key, Stream value) {
-        String streamName = new String(key);
+    private void stream(List<List<byte[]>> list, byte[] key, Stream value) {
         if (!value.getEntries().isEmpty()) {
             for (Map.Entry<Stream.ID, Stream.Entry> kandv : value.getEntries().entrySet()) {
                 if (kandv.getValue().isDeleted()) {
                     continue;
                 }
-                List<String> sb = new LinkedList<String>() {{
-                    add("XADD");
-                    add(streamName);
-                    add(kandv.getKey().getMs() + "-" + kandv.getKey().getSeq());
+                List<byte[]> sb = new LinkedList<byte[]>() {{
+                    add("XADD".getBytes());
+                    add(key);
+                    add((kandv.getKey().getMs() + "-" + kandv.getKey().getSeq()).getBytes());
                 }};
                 for (Map.Entry<byte[], byte[]> entry : kandv.getValue().getFields().entrySet()) {
-                    sb.add(new String(entry.getKey()));
-                    sb.add(new String(entry.getValue()));
+                    sb.add(entry.getKey());
+                    sb.add(entry.getValue());
                 }
                 list.add(sb);
             }
@@ -188,24 +187,24 @@ public class CommandParser {
         if (!value.getGroups().isEmpty()) {
             for (int i = 0; i < value.getGroups().size(); i++) {
                 Stream.Group group = value.getGroups().get(i);
-                List<String> sb = new LinkedList<String>() {{
-                    add("XGROUP");
-                    add("CREATE");
-                    add(streamName);
-                    add(new String(group.getName()));
-                    add(group.getLastId().getMs() + "-" + group.getLastId().getSeq());
-                    add("ENTRIESREAD");
-                    add(String.valueOf(group.getEntriesRead()));
+                List<byte[]> sb = new LinkedList<byte[]>() {{
+                    add("XGROUP".getBytes());
+                    add("CREATE".getBytes());
+                    add(key);
+                    add(group.getName());
+                    add((group.getLastId().getMs() + "-" + group.getLastId().getSeq()).getBytes());
+                    add("ENTRIESREAD".getBytes());
+                    add(String.valueOf(group.getEntriesRead()).getBytes());
                 }};
                 list.add(sb);
                 if (group.getConsumers() != null && group.getConsumers().size() > 0) {
                     for (int m = 0; m < group.getConsumers().size(); m++) {
                         sb.clear();
-                        sb.add("XGROUP");
-                        sb.add("CREATECONSUMER");
-                        sb.add(streamName);
-                        sb.add(new String(group.getName()));
-                        sb.add(new String(group.getConsumers().get(m).getName()));
+                        sb.add("XGROUP".getBytes());
+                        sb.add("CREATECONSUMER".getBytes());
+                        sb.add(key);
+                        sb.add(group.getName());
+                        sb.add(group.getConsumers().get(m).getName());
                         list.add(sb);
                     }
                 }
@@ -213,17 +212,17 @@ public class CommandParser {
         }
     }
 
-    private void moudule(List<List<String>> list, byte[] key, Object data) {
+    private void moudule(List<List<byte[]>> list, byte[] key, Object data) {
 
     }
 
-    private void function(List<List<String>> list, List<byte[]> value) {
+    private void function(List<List<byte[]>> list, List<byte[]> value) {
         if (value != null && value.size() > 0) {
             value.forEach(v -> {
-                List<String> sb = new LinkedList<String>() {{
-                    add("FUNCTION");
-                    add("LOAD");
-                    add(new String(v));
+                List<byte[]> sb = new LinkedList<byte[]>() {{
+                    add("FUNCTION".getBytes());
+                    add("LOAD".getBytes());
+                    add(v);
                 }};
                 list.add(sb);
             });

@@ -11,20 +11,20 @@ import static com.dahuaboke.redisx.from.rdb.RdbConstants.*;
  */
 public class SkipRdbParser {
 
-    
+
     public void rdbLoadTime(ByteBuf byteBuf) {
         byteBuf.readInt();
     }
-    
+
     public void rdbLoadMillisecondTime(ByteBuf byteBuf) {
         byteBuf.readLong();
     }
 
-    public LengthParser.Len rdbLoadLen(ByteBuf byteBuf)  {
+    public LengthParser.Len rdbLoadLen(ByteBuf byteBuf) {
         return ParserManager.LENGTH.parse(byteBuf);
     }
 
-    public void rdbLoadIntegerObject(ByteBuf byteBuf,int enctype) {
+    public void rdbLoadIntegerObject(ByteBuf byteBuf, int enctype) {
         switch (enctype) {
             case RDB_ENC_INT8:
                 byteBuf.readByte();
@@ -39,12 +39,12 @@ public class SkipRdbParser {
                 break;
         }
     }
-    
+
     public void rdbLoadLzfStringObject(ByteBuf byteBuf) {
         long clen = rdbLoadLen(byteBuf).len;
         rdbLoadLen(byteBuf);
     }
-    
+
     public void rdbGenericLoadStringObject(ByteBuf byteBuf) {
         LengthParser.Len lenObj = rdbLoadLen(byteBuf);
         long len = (int) lenObj.len;
@@ -54,7 +54,7 @@ public class SkipRdbParser {
                 case RDB_ENC_INT8:
                 case RDB_ENC_INT16:
                 case RDB_ENC_INT32:
-                    rdbLoadIntegerObject(byteBuf,(int) len);
+                    rdbLoadIntegerObject(byteBuf, (int) len);
                     return;
                 case RDB_ENC_LZF:
                     rdbLoadLzfStringObject(byteBuf);
@@ -64,24 +64,24 @@ public class SkipRdbParser {
             }
         }
     }
-    
+
     public void rdbLoadPlainStringObject(ByteBuf byteBuf) {
         rdbGenericLoadStringObject(byteBuf);
     }
-    
+
     public void rdbLoadEncodedStringObject(ByteBuf byteBuf) {
         rdbGenericLoadStringObject(byteBuf);
     }
 
-    
+
     public void rdbLoadBinaryDoubleValue(ByteBuf byteBuf) {
         byteBuf.readLong();
     }
-    
+
     public float rdbLoadBinaryFloatValue(ByteBuf byteBuf) {
         return byteBuf.readFloat();
     }
-    
+
     public void rdbLoadCheckModuleValue(ByteBuf byteBuf) {
         int opcode;
         while ((opcode = (int) rdbLoadLen(byteBuf).len) != RDB_MODULE_OPCODE_EOF) {

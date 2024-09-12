@@ -17,12 +17,12 @@ public class DirtyDataHandler extends ChannelInboundHandlerAdapter {
     @Override
     public void channelRead(ChannelHandlerContext ctx, Object msg) throws Exception {
         logger.error("Find dirty data,unknown handler it [{}]", msg);
-        return;
+        ctx.fireChannelRead(msg);
     }
 
     @Override
     public void exceptionCaught(ChannelHandlerContext ctx, Throwable cause)
             throws Exception {
-        logger.error("exceptionCaught : ",cause);
+        logger.error("exceptionCaught : ", cause);
     }
 }
