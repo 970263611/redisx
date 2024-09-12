@@ -1,5 +1,6 @@
 package com.dahuaboke.redisx.utils;
 
+import com.dahuaboke.redisx.common.utils.JasyptUtil;
 import org.junit.Test;
 
 public class JasyptUtilTest {

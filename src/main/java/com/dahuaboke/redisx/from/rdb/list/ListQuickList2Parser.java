@@ -8,8 +8,8 @@ import io.netty.buffer.Unpooled;
 import java.util.LinkedList;
 import java.util.List;
 
-import static com.dahuaboke.redisx.Constant.QUICKLIST_NODE_CONTAINER_PACKED;
-import static com.dahuaboke.redisx.Constant.QUICKLIST_NODE_CONTAINER_PLAIN;
+import static com.dahuaboke.redisx.common.Constants.QUICKLIST_NODE_CONTAINER_PACKED;
+import static com.dahuaboke.redisx.common.Constants.QUICKLIST_NODE_CONTAINER_PLAIN;
 
 /**
  * @Desc: quickList2 = list + listPack

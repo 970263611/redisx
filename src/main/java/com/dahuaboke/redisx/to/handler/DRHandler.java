@@ -1,14 +1,14 @@
 package com.dahuaboke.redisx.to.handler;
 
-import com.dahuaboke.redisx.Constant;
 import com.dahuaboke.redisx.Context;
+import com.dahuaboke.redisx.common.Constants;
+import com.dahuaboke.redisx.common.LimitedList;
+import com.dahuaboke.redisx.common.enums.FlushState;
 import com.dahuaboke.redisx.handler.RedisChannelInboundHandler;
 import com.dahuaboke.redisx.to.ToContext;
 import io.netty.channel.ChannelHandlerContext;
 import org.slf4j.Logger;
 import org.slf4j.LoggerFactory;
-
-import java.util.LinkedList;
 
 /**
  * 2024/6/12 17:10
@@ -31,20 +31,25 @@ public class DRHandler extends RedisChannelInboundHandler {
 
     @Override
     public void channelRead2(ChannelHandlerContext ctx, String reply) throws Exception {
-        if (ctx.pipeline().get(Constant.SLOT_HANDLER_NAME) == null &&
-                reply.startsWith(Constant.PROJECT_NAME)) {
+        if (reply.startsWith(Constants.PROJECT_NAME)) {
             String[] split = reply.split("\\|");
             if (split.length != 4) {
                 toContext.preemptMasterCompulsory();
             } else {
-                if (!Constant.PROJECT_NAME.equals(split[0])) {
+                if (!Constants.PROJECT_NAME.equals(split[0])) {
                     toContext.preemptMasterCompulsory();
                 } else {
                     if (toContext.getId().equals(split[1])) { //主节点是自己
+                        //校验清空to数据
+                        if (FlushState.PREPARE == toContext.getFlushState()) {
+                            toContext.setFlushState(FlushState.BEGINNING);
+                        } else {
+                            toContext.preemptMasterCompulsory();
+                        }
                         toContext.isMaster(true);
-                        toContext.preemptMasterCompulsory();
                     } else { //主节点非自己
                         toContext.isMaster(false);
+                        toContext.setFlushState(FlushState.END);
                         toContext.clearAllNodeMessages();
                         String nodeMessagesStr = split[2];
                         if (!"".equals(nodeMessagesStr)) {
@@ -72,42 +77,15 @@ public class DRHandler extends RedisChannelInboundHandler {
                 }
             }
         } else {
-            if (reply.startsWith(Constant.ERROR_REPLY_PREFIX)) {
+            if (reply.startsWith(Constants.ERROR_REPLY_PREFIX)) {
                 logger.error("Receive redis error reply [{}]", reply);
-            }
-            if (toContext.isConsole()) {
-                toContext.callBack(reply);
-            }
-        }
-    }
-
-    private class LimitedList<L> extends LinkedList<L> {
-        private final int limitSize;
-
-        public LimitedList(int limitSize) {
-            this.limitSize = limitSize;
-        }
-
-        @Override
-        public boolean add(L l) {
-            super.add(l);
-            while (size() > limitSize) {
-                remove();
-            }
-            return true;
-        }
-
-        public boolean checkNeedUpgradeMaster() {
-            L previous = get(0);
-            for (int i = 1; i < size(); i++) {
-                L v = get(i);
-                if (!v.equals(previous)) {
-                    return false;
-                } else {
-                    previous = v;
+                if (toContext.isStartConsole()) {
+                    toContext.addErrorCount();
                 }
             }
-            return true;
+            if (toContext.startByConsole()) {
+                toContext.callBack(reply);
+            }
         }
     }
 }

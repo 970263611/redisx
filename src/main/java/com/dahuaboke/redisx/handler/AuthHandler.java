@@ -1,8 +1,7 @@
 package com.dahuaboke.redisx.handler;
 
-import com.dahuaboke.redisx.Constant;
+import com.dahuaboke.redisx.common.Constants;
 import io.netty.buffer.ByteBuf;
-import io.netty.buffer.ByteBufAllocator;
 import io.netty.channel.Channel;
 import io.netty.channel.ChannelHandlerContext;
 import io.netty.channel.ChannelInboundHandlerAdapter;
@@ -20,12 +19,9 @@ public class AuthHandler extends ChannelInboundHandlerAdapter {
 
     private static final Logger logger = LoggerFactory.getLogger(AuthHandler.class);
     private String password;
-    private boolean isCluster;
-    private boolean passwordCheck = false;
 
-    public AuthHandler(String password, boolean isCluster) {
+    public AuthHandler(String password) {
         this.password = password;
-        this.isCluster = isCluster;
     }
 
     @Override
@@ -33,31 +29,23 @@ public class AuthHandler extends ChannelInboundHandlerAdapter {
         Channel channel = ctx.channel();
         if (channel.isActive()) {
             //不需要去pipeline的底部，所以直接ctx.write
-            ctx.writeAndFlush(Constant.CONFIG_AUTH_PREFIX + password);
+            ctx.writeAndFlush(Constants.CONFIG_AUTH_PREFIX + password);
         }
-        ctx.fireChannelActive();
     }
 
     @Override
     public void channelRead(ChannelHandlerContext ctx, Object obj) throws Exception {
         ByteBuf reply = (ByteBuf) obj;
-        ByteBuf slot = ByteBufAllocator.DEFAULT.buffer();
-        if (!passwordCheck) {
-            if (!Constant.OK_COMMAND.equalsIgnoreCase(reply.slice(1, 2).toString(StandardCharsets.UTF_8))) {
+        try {
+            if (!Constants.OK_COMMAND.equalsIgnoreCase(reply.slice(1, 2).toString(StandardCharsets.UTF_8))) {
                 logger.error("Password error");
                 System.exit(0);
             } else {
-                passwordCheck = true;
-                if (isCluster) {
-                    slot.writeBytes(new byte[]{'+', 'S', 'L', 'O', 'T', 'S', 'E', 'N', 'D', '\r', '\n'});
-                    ctx.fireChannelRead(slot);
-                } else {
-                    ctx.pipeline().remove(this);
-                }
+                ctx.pipeline().remove(this);
+                ctx.fireChannelActive();
             }
-        } else {
-            ctx.pipeline().remove(this);
-            ctx.fireChannelRead(obj);
+        } finally {
+            reply.release();
         }
     }
 }
