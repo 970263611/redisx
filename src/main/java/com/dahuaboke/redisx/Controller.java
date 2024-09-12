@@ -25,7 +25,6 @@ import org.slf4j.LoggerFactory;
 import java.net.InetSocketAddress;
 import java.util.ArrayList;
 import java.util.Date;
-import java.util.Iterator;
 import java.util.List;
 import java.util.concurrent.*;
 
@@ -286,10 +285,9 @@ public class Controller {
             logger.info("Shutdown hook thread is starting");
             controllerPool.shutdown();
             logger.info("Update offset thread shutdown");
-            List<Context> allContexts = cacheManager.getAllContexts();
             List<FromContext> fromContextList = new ArrayList<>();//保留全部from
             List<ToContext> toContextList = new ArrayList<>();//保留全部to
-            for (Context context : allContexts) {
+            for (Context context : cacheManager.getAllContexts()) {
                 if (context instanceof FromContext) {
                     fromContextList.add((FromContext) context);
                 }
@@ -302,33 +300,55 @@ public class Controller {
             //跑完所有积压数据
             while (true) {
                 boolean allowClose = true;
-                Iterator<Context> iterator = allContexts.iterator();
-                while (iterator.hasNext()) {
-                    Context cont = iterator.next();
-                    if (cont instanceof ToContext) {
-                        ToContext toContext = (ToContext) cont;
-                        if (!toContext.isClose()) {
-                            if (!cacheManager.checkHasNeedWriteCommand(toContext)) {
-                                iterator.remove();
-                            }
-                            allowClose = false;
-                            break;
-                        }
+                for(int i = 0; i < toContextList.size();i++){
+                    Context toContext = toContextList.get(i);
+                    if (!toContext.isClose() && cacheManager.checkHasNeedWriteCommand(toContext)) {
+                        allowClose = false;
+                        break;
                     }
                 }
                 if (allowClose) {
                     break;
                 }
             }
+            try {
+                Thread.sleep(3000);
+            } catch (InterruptedException e) {
+                throw new RuntimeException(e);
+            }
             //最后核算一次偏移量
-            fromContextList.forEach(ct -> {
-                ct.offsetAddUp();
-            });
+            int waitTimes = 3;
+            while(waitTimes > 0){
+                boolean allowClose = true;
+                for(FromContext fromContext : fromContextList){
+                    int count = fromContext.offsetAddUp();
+                    if(count != 0){
+                        allowClose = false;
+                        try {
+                            Thread.sleep(500);
+                        } catch (InterruptedException e) {
+                            logger.error(e.getMessage());
+                        } finally {
+                            waitTimes--;
+                        }
+                        break;
+                    }
+                }
+                if(allowClose){
+                    break;
+                }
+            }
             //关闭所有的to
             toContextList.forEach(ct -> {
                 if (ct.isAdapt(toMode, switchFlag)) {
                     //如果本身是主节点则同时写入偏移量
                     ct.preemptMaster();
+                    try {
+                        //最后一次的偏移量提交
+                        Thread.sleep(500);
+                    } catch (InterruptedException e) {
+                        logger.error(e.getMessage());
+                    }
                 }
                 ct.close();
             });
