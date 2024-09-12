@@ -1,26 +1,24 @@
 package com.dahuaboke.redisx.to.handler;
 
-import com.dahuaboke.redisx.common.Constants;
 import com.dahuaboke.redisx.to.ToContext;
 import io.netty.channel.ChannelHandlerContext;
 import io.netty.channel.ChannelInboundHandlerAdapter;
 
 /**
  * author: dahua
- * date: 2024/8/16 13:57
+ * date: 2024/9/11 18:21
  */
-public class FlushHandler extends ChannelInboundHandlerAdapter {
+public class FlushDbHandler extends ChannelInboundHandlerAdapter {
 
     private ToContext toContext;
 
-    public FlushHandler(ToContext toContext) {
+    public FlushDbHandler(ToContext toContext) {
         this.toContext = toContext;
     }
 
     @Override
     public void channelActive(ChannelHandlerContext ctx) throws Exception {
-        ctx.writeAndFlush(Constants.FLUSH_DB_COMMAND);
-        toContext.setFlushDbSuccess();
-        super.channelActive(ctx);
+        toContext.flushMyself();
+        ctx.fireChannelActive();
     }
 }

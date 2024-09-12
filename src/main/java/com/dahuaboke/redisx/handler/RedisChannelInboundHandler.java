@@ -1,7 +1,7 @@
 package com.dahuaboke.redisx.handler;
 
-import com.dahuaboke.redisx.common.Constants;
 import com.dahuaboke.redisx.Context;
+import com.dahuaboke.redisx.common.Constants;
 import com.dahuaboke.redisx.common.command.from.SyncCommand;
 import io.netty.buffer.ByteBuf;
 import io.netty.channel.ChannelHandlerContext;
@@ -31,6 +31,7 @@ public abstract class RedisChannelInboundHandler extends SimpleChannelInboundHan
     @Override
     protected void channelRead0(ChannelHandlerContext ctx, RedisMessage msg) throws Exception {
         SyncCommand syncCommand = new SyncCommand(context, true);
+        syncCommand.setRedisMessage(msg);
         parseRedisMessage(msg, syncCommand);
         channelRead1(ctx, syncCommand);
     }
@@ -67,6 +68,10 @@ public abstract class RedisChannelInboundHandler extends SimpleChannelInboundHan
             for (RedisMessage child : ((ArrayRedisMessage) msg).children()) {
                 parseRedisMessage(child, syncCommand);
             }
+        } else if (msg instanceof InlineCommandRedisMessage) {
+            String content = ((InlineCommandRedisMessage) msg).content();
+            syncCommand.appendCommand(content);
+            syncCommand.appendLength(1 + String.valueOf(content.length()).length() + 2 + content.getBytes().length + 2);
         } else {
             throw new CodecException("Unknown message type: " + msg);
         }

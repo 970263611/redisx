@@ -4,7 +4,7 @@ package com.dahuaboke.redisx;
 import com.dahuaboke.redisx.common.Constants;
 import com.dahuaboke.redisx.common.annotation.FieldOrm;
 import com.dahuaboke.redisx.common.enums.Mode;
-import com.dahuaboke.redisx.common.interfaces.FieldOrmCheck;
+import com.dahuaboke.redisx.common.annotation.FieldOrmCheck;
 import com.dahuaboke.redisx.common.utils.FieldOrmUtil;
 import com.dahuaboke.redisx.common.utils.StringUtils;
 import com.dahuaboke.redisx.common.utils.YamlUtil;
@@ -23,7 +23,7 @@ public class Redisx {
 
     public static void main(String[] args) {
         Config config = new Config();
-        FieldOrmUtil.MapToBean(YamlUtil.parseYamlParam(args), config);
+        FieldOrmUtil.MapToBean(YamlUtil.parseYamlParam(args == null || args.length == 0 ? null : args[0]), config);
         Configurator.setRootLevel(Level.getLevel(config.getLogLevelGlobal()));
         Controller controller = new Controller(config);
         controller.start();
@@ -31,7 +31,7 @@ public class Redisx {
 
     public static class Config implements FieldOrmCheck {
 
-        @FieldOrm(value = "redisx.from.mode", defaultValue = "cluster", setType = String.class)
+        @FieldOrm(value = "redisx.from.mode", required = true, setType = String.class)
         private Mode fromMode;
 
         @FieldOrm(value = "redisx.from.masterName")
@@ -40,10 +40,13 @@ public class Redisx {
         @FieldOrm(value = "redisx.from.address", required = true)
         private List<InetSocketAddress> fromAddresses;
 
+        @FieldOrm(value = "redisx.from.username")
+        private String fromUsername;
+
         @FieldOrm(value = "redisx.from.password")
         private String fromPassword;
 
-        @FieldOrm(value = "redisx.to.mode", defaultValue = "cluster", setType = String.class)
+        @FieldOrm(value = "redisx.to.mode", required = true, setType = String.class)
         private Mode toMode;
 
         @FieldOrm(value = "redisx.to.masterName")
@@ -52,16 +55,22 @@ public class Redisx {
         @FieldOrm(value = "redisx.to.address", required = true)
         private List<InetSocketAddress> toAddresses;
 
+        @FieldOrm(value = "redisx.to.username")
+        private String toUsername;
+
         @FieldOrm(value = "redisx.to.password")
         private String toPassword;
 
         @FieldOrm(value = "redisx.to.flushSize", defaultValue = "50")
         private int toFlushSize;
 
-        @FieldOrm(value = "redisx.console.enable", defaultValue = "false")
+        @FieldOrm(value = "redisx.console.enable", defaultValue = "true")
         private boolean consoleEnable;
 
-        @FieldOrm(value = "redisx.console.timeout", defaultValue = "18080")
+        @FieldOrm(value = "redisx.console.search", defaultValue = "false")
+        private boolean consoleSearch;
+
+        @FieldOrm(value = "redisx.console.port", defaultValue = "15967")
         private int consolePort;
 
         @FieldOrm(value = "redisx.console.timeout", defaultValue = "5000")
@@ -73,7 +82,7 @@ public class Redisx {
         @FieldOrm(value = "redisx.alwaysFullSync", defaultValue = "false")
         private boolean alwaysFullSync;
 
-        @FieldOrm(value = "redisx.immediate.resendTimes", defaultValue = "0")
+        @FieldOrm(value = "redisx.immediate.resendTimes", defaultValue = "1")
         private int immediateResendTimes;
 
         @FieldOrm(value = "redisx.from.redis.version", required = true)
@@ -91,14 +100,20 @@ public class Redisx {
         @FieldOrm(value = "redisx.to.flushDb", defaultValue = "false")
         private boolean flushDb;
 
-        @FieldOrm(value = "redisx.to.syncWithCheckSlot", defaultValue = "false")
-        private boolean syncWithCheckSlot;
-
         @FieldOrm(value = "redisx.from.verticalScaling", defaultValue = "false")
         private boolean verticalScaling;
 
-        @FieldOrm(value = "redisx.from.connectMaster", defaultValue = "true")
+        @FieldOrm(value = "redisx.from.connectMaster", defaultValue = "false")
         private boolean connectMaster;
+
+        @FieldOrm(value = "redisx.timedExit.enable", defaultValue = "false")
+        private boolean timedExitEnable;
+
+        @FieldOrm(value = "redisx.timedExit.force", defaultValue = "false")
+        private boolean timedExitForce;
+
+        @FieldOrm(value = "redisx.timedExit.duration", defaultValue = "-1")
+        private int timedExitDuration;
 
         @Override
         public void check() {
@@ -111,6 +126,22 @@ public class Redisx {
             //强制全量同步必须同步rdb文件
             if (this.isAlwaysFullSync()) {
                 this.setSyncRdb(true);
+            }
+            if (StringUtils.isNotEmpty(this.fromPassword) && StringUtils.isNotEmpty(this.fromUsername)) {
+                this.fromPassword = this.fromUsername + " " + this.fromPassword;
+            }
+            if (StringUtils.isNotEmpty(this.toPassword) && StringUtils.isNotEmpty(this.toUsername)) {
+                this.toPassword = this.toUsername + " " + this.toPassword;
+            }
+            if (this.immediateResendTimes < 1) {
+                this.immediateResendTimes = 1;
+            }
+            if (this.timedExitDuration <= 0) {
+                this.timedExitEnable = false;
+            }
+            //垂直扩展不支持清空to-rdb
+            if (this.verticalScaling) {
+                this.flushDb = false;
             }
         }
 
@@ -254,14 +285,6 @@ public class Redisx {
             this.flushDb = flushDb;
         }
 
-        public boolean isSyncWithCheckSlot() {
-            return syncWithCheckSlot;
-        }
-
-        public void setSyncWithCheckSlot(boolean syncWithCheckSlot) {
-            this.syncWithCheckSlot = syncWithCheckSlot;
-        }
-
         public Mode getFromMode() {
             return fromMode;
         }
@@ -310,6 +333,36 @@ public class Redisx {
             this.connectMaster = connectMaster;
         }
 
+        public boolean isConsoleSearch() {
+            return consoleSearch;
+        }
 
+        public void setConsoleSearch(boolean consoleSearch) {
+            this.consoleSearch = consoleSearch;
+        }
+
+        public boolean isTimedExitEnable() {
+            return timedExitEnable;
+        }
+
+        public void setTimedExitEnable(boolean timedExitEnable) {
+            this.timedExitEnable = timedExitEnable;
+        }
+
+        public int getTimedExitDuration() {
+            return timedExitDuration;
+        }
+
+        public void setTimedExitDuration(int timedExitDuration) {
+            this.timedExitDuration = timedExitDuration;
+        }
+
+        public boolean isTimedExitForce() {
+            return timedExitForce;
+        }
+
+        public void setTimedExitForce(boolean timedExitForce) {
+            this.timedExitForce = timedExitForce;
+        }
     }
 }

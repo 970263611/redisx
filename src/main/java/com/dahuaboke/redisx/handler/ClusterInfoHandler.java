@@ -1,7 +1,7 @@
 package com.dahuaboke.redisx.handler;
 
-import com.dahuaboke.redisx.common.Constants;
 import com.dahuaboke.redisx.Context;
+import com.dahuaboke.redisx.common.Constants;
 import com.dahuaboke.redisx.from.FromContext;
 import com.dahuaboke.redisx.to.ToContext;
 import io.netty.channel.Channel;
@@ -54,7 +54,7 @@ public class ClusterInfoHandler extends RedisChannelInboundHandler {
     }
 
     private void parseSlotMessage(ChannelHandlerContext ctx, String msg) {
-        logger.info("Beginning slot message parse");
+        logger.info("Beginning slot message parse\n\n{}\n", msg);
         if (msg != null) {
             msg = msg.replace("\r", "");
             String[] arr = msg.split("\n");
@@ -171,11 +171,15 @@ public class ClusterInfoHandler extends RedisChannelInboundHandler {
         }
 
         public boolean isActiveMaster() {
-            return "master".equals(flags) && isActive();
+            return isMaster() && isActive();
         }
 
         public boolean isActive() {
             return "connected".equals(linkState);
+        }
+
+        public boolean isMaster() {
+            return "master".equals(flags);
         }
     }
 }

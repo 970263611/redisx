@@ -36,12 +36,16 @@ public class AuthHandler extends ChannelInboundHandlerAdapter {
     @Override
     public void channelRead(ChannelHandlerContext ctx, Object obj) throws Exception {
         ByteBuf reply = (ByteBuf) obj;
-        if (!Constants.OK_COMMAND.equalsIgnoreCase(reply.slice(1, 2).toString(StandardCharsets.UTF_8))) {
-            logger.error("Password error");
-            System.exit(0);
-        } else {
-            ctx.pipeline().remove(this);
-            ctx.fireChannelActive();
+        try {
+            if (!Constants.OK_COMMAND.equalsIgnoreCase(reply.slice(1, 2).toString(StandardCharsets.UTF_8))) {
+                logger.error("Password error");
+                System.exit(0);
+            } else {
+                ctx.pipeline().remove(this);
+                ctx.fireChannelActive();
+            }
+        } finally {
+            reply.release();
         }
     }
 }

@@ -2,7 +2,6 @@ package com.dahuaboke.redisx.from.handler;
 
 import com.dahuaboke.redisx.common.Constants;
 import com.dahuaboke.redisx.common.cache.CacheManager;
-import com.dahuaboke.redisx.common.enums.Mode;
 import com.dahuaboke.redisx.from.FromContext;
 import io.netty.channel.Channel;
 import io.netty.channel.ChannelHandlerContext;
@@ -32,7 +31,6 @@ public class SyncInitializationHandler extends ChannelInboundHandlerAdapter {
         INIT,
         SENT_PING,
         SENT_PORT,
-        SENT_ADDRESS,
         SENT_CAPA,
         SENT_PSYNC;
     }
@@ -58,25 +56,14 @@ public class SyncInitializationHandler extends ChannelInboundHandlerAdapter {
                                 } else {
                                     state = SENT_CAPA;
                                 }
-                                channel.writeAndFlush(Constants.CONFIG_PORT_COMMAND_PREFIX + fromContext.getLocalPort());
-                                logger.debug("Sent replconf listening-port command [{}]", fromContext.getLocalPort());
+                                channel.writeAndFlush(Constants.CONFIG_PORT_COMMAND_PREFIX);
+                                logger.info("Sent replconf listening-port command [{}]", Constants.CONFIG_PORT_COMMAND_PREFIX);
                             }
                             if (Constants.OK_COMMAND.equalsIgnoreCase(reply) && state == SENT_PORT) {
                                 clearReply(ctx);
-                                state = SENT_ADDRESS;
-                                if(Mode.SENTINEL == fromContext.getFromMode()){
-                                    channel.writeAndFlush(Constants.CONFIG_HOST_COMMAND_PREFIX + Constants.REGISTER_HOST);
-                                }else{
-                                    channel.writeAndFlush(Constants.CONFIG_HOST_COMMAND_PREFIX + fromContext.getLocalHost());
-                                }
-                                logger.debug("Sent replconf address command [{}]", fromContext.getLocalHost());
-                                continue;
-                            }
-                            if (Constants.OK_COMMAND.equalsIgnoreCase(reply) && state == SENT_ADDRESS) {
-                                clearReply(ctx);
                                 state = SENT_CAPA;
                                 channel.writeAndFlush(Constants.CONFIG_CAPA_COMMAND);
-                                logger.debug("Sent replconf capa eof command");
+                                logger.info("Sent replconf capa eof command");
                                 continue;
                             }
                             if (Constants.OK_COMMAND.equalsIgnoreCase(reply) && state == SENT_CAPA) {
@@ -100,19 +87,19 @@ public class SyncInitializationHandler extends ChannelInboundHandlerAdapter {
                                     command = Constants.CONFIG_SYNC_COMMAND;
                                 }
                                 channel.writeAndFlush(command);
-                                logger.debug("Sent " + command + " command");
+                                logger.info("Sentpsync " + command + " command");
                             }
                             if (state == SENT_PSYNC) {
                                 ChannelPipeline pipeline = channel.pipeline();
                                 pipeline.remove(this);
-                                logger.debug("Sent all sync command");
+                                logger.info("Sent all sync command");
                                 break;
                             }
                         } else {
                             if (state == null) {
                                 state = INIT;
                                 channel.writeAndFlush(Constants.PING_COMMAND);
-                                logger.debug("Sent ping command");
+                                logger.info("Sent ping command");
                             }
                         }
                     }

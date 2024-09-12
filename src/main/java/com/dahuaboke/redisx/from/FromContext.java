@@ -1,6 +1,7 @@
 package com.dahuaboke.redisx.from;
 
 import com.dahuaboke.redisx.Context;
+import com.dahuaboke.redisx.common.ConcurrentLinkedMap;
 import com.dahuaboke.redisx.common.Constants;
 import com.dahuaboke.redisx.common.cache.CacheManager;
 import com.dahuaboke.redisx.common.command.from.SyncCommand;
@@ -37,10 +38,11 @@ public class FromContext extends Context {
     private CountDownLatch nodesInfoFlag;
     private String fromMasterName;
     private boolean connectFromMaster;
+    private ConcurrentLinkedMap<SyncCommand, Integer> offsetCache = new ConcurrentLinkedMap<>();
 
-    public FromContext(CacheManager cacheManager, String host, int port, boolean consoleStart, Mode fromMode, Mode toMode, boolean alwaysFullSync, boolean syncRdb, boolean isNodesInfoContext, String fromMasterName, boolean connectFromMaster) {
-        super(cacheManager, host, port, fromMode, toMode, consoleStart);
-        if (consoleStart) {
+    public FromContext(CacheManager cacheManager, String host, int port, boolean startConsole, boolean startByConsole, Mode fromMode, Mode toMode, boolean alwaysFullSync, boolean syncRdb, boolean isNodesInfoContext, String fromMasterName, boolean connectFromMaster, boolean isGetMasterNodeInfo) {
+        super(cacheManager, host, port, fromMode, toMode, startConsole, startByConsole);
+        if (startByConsole) {
             replyQueue = new LinkedBlockingDeque();
         }
         this.alwaysFullSync = alwaysFullSync;
@@ -59,6 +61,7 @@ public class FromContext extends Context {
                 throw new IllegalStateException("Slot info error");
             }
         }
+        this.isGetMasterNodeInfo = isGetMasterNodeInfo;
     }
 
     public String getId() {
@@ -66,8 +69,11 @@ public class FromContext extends Context {
     }
 
     public boolean publish(SyncCommand command) {
-        if (!consoleStart) {
+        if (!startByConsole) {
             command.buildCommand();
+            if (command.isNeedAddLengthToOffset()) {
+                offsetCache.putIndex(command);
+            }
             return cacheManager.publish(command);
         } else {
             if (replyQueue == null) {
@@ -97,7 +103,7 @@ public class FromContext extends Context {
     }
 
     @Override
-    public boolean isAdapt(Mode mode, String command) {
+    public boolean isAdapt(Mode mode, byte[] command) {
         if (Mode.CLUSTER == mode && command != null) {
             int hash = calculateHash(command) % Constants.COUNT_SLOT_NUMS;
             return hash >= slotBegin && hash <= slotEnd;
@@ -144,20 +150,38 @@ public class FromContext extends Context {
 
     public void ackOffset() {
         if (fromChannel != null && fromChannel.isActive() && fromChannel.pipeline().get(Constants.INIT_SYNC_HANDLER_NAME) == null) {
-            Long offsetSession = fromChannel.attr(Constants.OFFSET).get();
+            offsetAddUp();
             CacheManager.NodeMessage nodeMessage = getNodeMessage();
-            if (offsetSession != null && offsetSession > -1L) {
-                if (nodeMessage == null) {
-                    setOffset(offsetSession);
-                }
-                fromChannel.attr(Constants.OFFSET).set(-1L);
-            }
             if (nodeMessage != null) {
                 long offset = getOffset() + unSyncCommandLength;
                 fromChannel.writeAndFlush(Constants.ACK_COMMAND_PREFIX + offset);
                 logger.trace("Ack offset [{}]", offset);
             }
         }
+    }
+
+    public synchronized void offsetAddUp() {
+        SyncCommand command;
+        while (offsetCache != null && (command = offsetCache.getFirstKey()) != null) {
+            Integer value = offsetCache.get(command);
+            if (value != null) {
+                long offset = getOffset();
+                setOffset(offset + value);
+                offsetCache.removeKey(command);
+            } else {
+                break;
+            }
+        }
+    }
+
+    public void cacheOffset(SyncCommand syncCommand) {
+        if (!isClose) {
+            offsetCache.putValue(syncCommand, syncCommand.getSyncLength());
+        }
+    }
+
+    public boolean checkCacheOffsetIsEmpty() {
+        return offsetCache == null || offsetCache.size() == 0;
     }
 
     public boolean isRdbAckOffset() {
@@ -218,6 +242,10 @@ public class FromContext extends Context {
         }
     }
 
+    public void reSetNodesInfoFlag() {
+        nodesInfoFlag = new CountDownLatch(1);
+    }
+
     public boolean isNodesInfoContext() {
         return isNodesInfoContext;
     }
@@ -236,5 +264,17 @@ public class FromContext extends Context {
 
     public void addSentinelSlaveInfo(SentinelInfoHandler.SlaveInfo fromSentinelNodeInfo) {
         cacheManager.addFromSentinelNodesInfo(fromSentinelNodeInfo);
+    }
+
+    public void setFromStarted(boolean started) {
+        cacheManager.setFromIsStarted(started);
+    }
+
+    public int getSlotBegin() {
+        return slotBegin;
+    }
+
+    public int getSlotEnd() {
+        return slotEnd;
     }
 }

@@ -1,9 +1,11 @@
 package com.dahuaboke.redisx.common.cache;
 
 import com.dahuaboke.redisx.Context;
+import com.dahuaboke.redisx.common.LimitedList;
 import com.dahuaboke.redisx.common.command.from.SyncCommand;
-import com.dahuaboke.redisx.console.ConsoleContext;
+import com.dahuaboke.redisx.common.enums.FlushState;
 import com.dahuaboke.redisx.common.enums.Mode;
+import com.dahuaboke.redisx.console.ConsoleContext;
 import com.dahuaboke.redisx.from.FromContext;
 import com.dahuaboke.redisx.handler.ClusterInfoHandler;
 import com.dahuaboke.redisx.handler.SentinelInfoHandler;
@@ -42,17 +44,23 @@ public final class CacheManager {
     private Set<ClusterInfoHandler.SlotInfo> fromClusterNodesInfo = new HashSet<>();
     private Set<ClusterInfoHandler.SlotInfo> toClusterNodesInfo = new HashSet<>();
     private Set<SentinelInfoHandler.SlaveInfo> fromSentinelNodesInfo = new HashSet<>();
+    private Set<SentinelInfoHandler.SlaveInfo> toSentinelNodesInfo = new HashSet<>();
     private ConsoleContext consoleContext;
-    private Map<String, Boolean> flushDb = new HashMap();
+    private FlushState flushState = FlushState.END;
     private InetSocketAddress fromSentinelMaster;
     private InetSocketAddress toSentinelMaster;
+    private Map<String, LimitedList<Long>> fromWriteCount = new HashMap<>();
+    private Map<String, LimitedList<Long>> toWriteCount = new HashMap<>();
+    private Map<String, Long> errorCount = new HashMap<>();
+    private boolean alwaysFullSync;
 
-    public CacheManager(String redisVersion, Mode fromMode, String fromPassword, Mode toMode, String toPassword) {
+    public CacheManager(String redisVersion, Mode fromMode, String fromPassword, Mode toMode, String toPassword, boolean alwaysFullSync) {
         this.redisVersion = redisVersion;
         this.fromMode = fromMode;
         this.fromPassword = fromPassword;
         this.toMode = toMode;
         this.toPassword = toPassword;
+        this.alwaysFullSync = alwaysFullSync;
     }
 
     /**
@@ -92,22 +100,28 @@ public final class CacheManager {
         contexts.remove(context);
         if (context instanceof ToContext) {
             cache.remove(context);
+        } else if (context instanceof ConsoleContext) {
+            consoleContext = null;
         }
     }
 
     public boolean checkHasNeedWriteCommand(Context context) {
-        return cache.get(context).size() > 0;
+        return getOverstockSize(context) > 0;
+    }
+
+    public int getOverstockSize(Context context) {
+        return cache.get(context).size();
     }
 
     public boolean publish(SyncCommand command) {
-        String key = command.getKey();
+        byte[] key = command.getKey();
         for (Map.Entry<Context, BlockingQueue<SyncCommand>> entry : cache.entrySet()) {
             Context k = entry.getKey();
             BlockingQueue<SyncCommand> v = entry.getValue();
             if (k.isAdapt(toMode, key)) {
                 boolean offer = v.offer(command);
                 int size = v.size();
-                if (size > 10000) {
+                if (size > 10000 && size / 1000 * 1000 == size) {
                     logger.warn("Cache has command size [{}]", size);
                 }
                 if (!offer) {
@@ -194,6 +208,7 @@ public final class CacheManager {
                 fromContext.close();
             }
         }
+        setFromIsStarted(false);
     }
 
     public void closeAllTo() {
@@ -232,6 +247,14 @@ public final class CacheManager {
 
     public void addFromSentinelNodesInfo(SentinelInfoHandler.SlaveInfo fromSentinelNodeInfo) {
         this.fromSentinelNodesInfo.add(fromSentinelNodeInfo);
+    }
+
+    public Set<SentinelInfoHandler.SlaveInfo> getToSentinelNodesInfo() {
+        return toSentinelNodesInfo;
+    }
+
+    public void addToSentinelNodesInfo(SentinelInfoHandler.SlaveInfo toSentinelNodeInfo) {
+        this.toSentinelNodesInfo.add(toSentinelNodeInfo);
     }
 
     public SentinelInfoHandler.SlaveInfo getFromSentinelNodeInfoByIpAndPort(String ip, int port) {
@@ -276,13 +299,12 @@ public final class CacheManager {
         this.consoleContext = consoleContext;
     }
 
-    public boolean isFlushDb(String host, int port) {
-        Boolean b = flushDb.get(host + port);
-        return b == null ? false : b;
+    public FlushState getFlushState() {
+        return flushState;
     }
 
-    public void setFlushDb(String host, int port, boolean flushDb) {
-        this.flushDb.put(host + port, flushDb);
+    public void setFlushState(FlushState flushState) {
+        this.flushState = flushState;
     }
 
     public InetSocketAddress getFromSentinelMaster() {
@@ -299,6 +321,60 @@ public final class CacheManager {
 
     public void setToSentinelMaster(InetSocketAddress toSentinelMaster) {
         this.toSentinelMaster = toSentinelMaster;
+    }
+
+    public Map<String, LimitedList<Long>> getFromWriteCount() {
+        return fromWriteCount;
+    }
+
+    public LimitedList<Long> getFromWriteCount(String host, int port) {
+        return fromWriteCount.get(host + ":" + port);
+    }
+
+    public void addFromWriteCount(String host, int port, Long fromCount) {
+        String key = host + ":" + port;
+        if (this.fromWriteCount.containsKey(key)) {
+            fromWriteCount.get(key).add(fromCount);
+        } else {
+            fromWriteCount.put(key, new LimitedList<>(60));
+        }
+    }
+
+    public Map<String, LimitedList<Long>> getToWriteCount() {
+        return toWriteCount;
+    }
+
+    public LimitedList<Long> getToWriteCount(String host, int port) {
+        return toWriteCount.get(host + ":" + port);
+    }
+
+    public void addToWriteCount(String host, int port, Long toCount) {
+        String key = host + ":" + port;
+        if (this.toWriteCount.containsKey(key)) {
+            toWriteCount.get(key).add(toCount);
+        } else {
+            toWriteCount.put(key, new LimitedList<>(60));
+        }
+    }
+
+    public Long getErrorCount(String host, int port) {
+        return errorCount.get(host + port);
+    }
+
+    public void setErrorCount(String host, int port, Long err) {
+        this.errorCount.put(host + port, err);
+    }
+
+    public Mode getFromMode() {
+        return fromMode;
+    }
+
+    public Mode getToMode() {
+        return toMode;
+    }
+
+    public boolean isAlwaysFullSync() {
+        return alwaysFullSync;
     }
 
     public static class NodeMessage {

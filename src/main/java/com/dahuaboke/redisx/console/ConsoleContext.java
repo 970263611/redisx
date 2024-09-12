@@ -2,6 +2,7 @@ package com.dahuaboke.redisx.console;
 
 import com.dahuaboke.redisx.Context;
 import com.dahuaboke.redisx.common.cache.CacheManager;
+import com.dahuaboke.redisx.common.cache.CacheMonitor;
 import com.dahuaboke.redisx.common.enums.Mode;
 import com.dahuaboke.redisx.from.FromContext;
 import com.dahuaboke.redisx.to.ToContext;
@@ -25,10 +26,14 @@ public class ConsoleContext extends Context {
     private List<ToContext> toContexts = new ArrayList();
     private List<FromContext> fromContexts = new ArrayList();
     private ConsoleServer consoleServer;
+    private CacheMonitor cacheMonitor;
+    private boolean consoleSearch;
 
-    public ConsoleContext(CacheManager cacheManager, String host, int port, int timeout, Mode toMode, Mode fromMode) {
-        super(cacheManager, host, port, fromMode, toMode, true);
+    public ConsoleContext(CacheManager cacheManager, CacheMonitor cacheMonitor, String host, int port, int timeout, Mode toMode, Mode fromMode, boolean consoleSearch) {
+        super(cacheManager, host, port, fromMode, toMode, true, false);
+        this.cacheMonitor = cacheMonitor;
         this.timeout = timeout;
+        this.consoleSearch = consoleSearch;
     }
 
     public void setToContext(ToContext toContext) {
@@ -64,7 +69,9 @@ public class ConsoleContext extends Context {
     }
 
     public void close() {
-        consoleServer.destroy();
+        if(consoleServer != null){
+            consoleServer.destroy();
+        }
         Iterator<FromContext> iterator = fromContexts.iterator();
         while (iterator.hasNext()) {
             FromContext fromContext = iterator.next();
@@ -77,9 +84,22 @@ public class ConsoleContext extends Context {
             iterator1.remove();
             toContext.close();
         }
+        cacheManager.remove(this);
     }
 
     public void setConsoleServer(ConsoleServer consoleServer) {
         this.consoleServer = consoleServer;
+    }
+
+    public CacheMonitor getCacheMonitor() {
+        return cacheMonitor;
+    }
+
+    public boolean isConsoleSearch() {
+        return consoleSearch;
+    }
+
+    public int getTimeout() {
+        return timeout;
     }
 }

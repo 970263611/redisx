@@ -21,37 +21,41 @@ public class SearchHandler extends SimpleChannelInboundHandler<SearchCommand> {
 
     @Override
     protected void channelRead0(ChannelHandlerContext ctx, SearchCommand searchCommand) throws Exception {
-        String command = null;
-        String type = null;
         String reply = null;
-        String params[] = searchCommand.getParams();
-        if (params.length == 2) {
-            String[] commandAndType = params[1].split("&");
-            if (commandAndType.length == 2) {
-                String[] commandKAndV = commandAndType[0].split("=");
-                if (commandKAndV.length == 2 && Constants.CONSOLE_COMMAND.equalsIgnoreCase(commandKAndV[0])) {
-                    command = commandKAndV[1];
-                }
-                String[] typeKAndV = commandAndType[1].split("=");
-                if (typeKAndV.length == 2 && Constants.CONSOLE_TYPE.equalsIgnoreCase(typeKAndV[0])) {
-                    type = typeKAndV[1];
-                }
-            }
-        }
-        if (command != null && type != null) {
-            reply = consoleContext.sendCommand(command, type);
-        }
-        if (reply == null) {
-            reply = "Send command error or request param error, uri should be [/console?command=xxx&type=left/right]";
+        if (!consoleContext.isConsoleSearch()) {
+            reply = "Config [redisx.console.search] is false";
         } else {
-            StringBuilder sb = new StringBuilder();
-            for (String s : reply.split(" ")) {
-                if (sb.length() != 0) {
-                    sb.append("\r\n");
+            String command = null;
+            String type = null;
+            String params[] = searchCommand.getParams();
+            if (params.length == 2) {
+                String[] commandAndType = params[1].split("&");
+                if (commandAndType.length == 2) {
+                    String[] commandKAndV = commandAndType[0].split("=");
+                    if (commandKAndV.length == 2 && Constants.CONSOLE_COMMAND.equalsIgnoreCase(commandKAndV[0])) {
+                        command = commandKAndV[1];
+                    }
+                    String[] typeKAndV = commandAndType[1].split("=");
+                    if (typeKAndV.length == 2 && Constants.CONSOLE_TYPE.equalsIgnoreCase(typeKAndV[0])) {
+                        type = typeKAndV[1];
+                    }
                 }
-                sb.append(s);
             }
-            reply = new String(sb);
+            if (command != null && type != null) {
+                reply = consoleContext.sendCommand(command, type);
+            }
+            if (reply == null) {
+                reply = "Send command error or request param error, uri should be [/console?command=xxx&type=left/right]";
+            } else {
+                StringBuilder sb = new StringBuilder();
+                for (String s : reply.split(" ")) {
+                    if (sb.length() != 0) {
+                        sb.append("\r\n");
+                    }
+                    sb.append(s);
+                }
+                reply = new String(sb);
+            }
         }
         ctx.fireChannelRead(new ReplyCommand(reply));
     }

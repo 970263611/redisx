@@ -34,9 +34,7 @@ public class OffsetCommandDecoder extends SimpleChannelInboundHandler<OffsetComm
             logger.error("MasterId is null");
         }
         long offset = msg.getOffset();
-        if (offset != 0) {
-            channel.attr(Constants.OFFSET).set(offset);
-        }
+        fromContext.setOffset(offset);
         logger.debug("Set masterId [{}] offset [{}]", masterId, offset);
         ctx.pipeline().addAfter(Constants.OFFSET_DECODER_NAME, Constants.OFFSET_HANDLER_NAME, new AckOffsetHandler(fromContext));
         ByteBuf in = msg.getIn();

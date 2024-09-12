@@ -2,6 +2,8 @@ package com.dahuaboke.redisx;
 
 import com.dahuaboke.redisx.common.Constants;
 import com.dahuaboke.redisx.common.cache.CacheManager;
+import com.dahuaboke.redisx.common.cache.CacheMonitor;
+import com.dahuaboke.redisx.common.enums.FlushState;
 import com.dahuaboke.redisx.common.enums.Mode;
 import com.dahuaboke.redisx.common.thread.RedisxThreadFactory;
 import com.dahuaboke.redisx.console.ConsoleContext;
@@ -22,6 +24,7 @@ import org.slf4j.LoggerFactory;
 
 import java.net.InetSocketAddress;
 import java.util.ArrayList;
+import java.util.Date;
 import java.util.Iterator;
 import java.util.List;
 import java.util.concurrent.*;
@@ -38,6 +41,7 @@ public class Controller {
     private Mode fromMode;
     private Mode toMode;
     private CacheManager cacheManager;
+    private CacheMonitor cacheMonitor;
     private boolean immediate;
     private int immediateResendTimes;
     private String switchFlag;
@@ -52,9 +56,13 @@ public class Controller {
     private boolean syncRdb;
     private int toFlushSize;
     private boolean flushDb;
-    private boolean syncWithCheckSlot;
     private boolean verticalScaling;
     private boolean connectFromMaster;
+    private boolean consoleSearch;
+    private boolean timedExitEnable;
+    private boolean timedExitForce;
+    private int timedExitDuration;
+    private long programCloseTime;
 
     public Controller(Redisx.Config config) {
         this.fromNodeAddresses = config.getFromAddresses();
@@ -73,31 +81,45 @@ public class Controller {
         this.syncRdb = config.isSyncRdb();
         this.toFlushSize = config.getToFlushSize();
         this.flushDb = config.isFlushDb();
-        this.syncWithCheckSlot = config.isSyncWithCheckSlot();
         this.verticalScaling = config.isVerticalScaling();
         this.connectFromMaster = config.isConnectMaster();
-        cacheManager = new CacheManager(config.getRedisVersion(), fromMode, config.getFromPassword(), toMode, config.getToPassword());
+        this.cacheManager = new CacheManager(config.getRedisVersion(), fromMode, config.getFromPassword(), toMode, config.getToPassword(), config.isAlwaysFullSync());
+        if (flushDb) {
+            this.cacheManager.setFlushState(FlushState.PREPARE);
+        }
+        if (startConsole) {
+            this.cacheMonitor = new CacheMonitor(cacheManager);
+            this.cacheMonitor.setConfig(config);
+        }
+        this.consoleSearch = config.isConsoleSearch();
+        this.timedExitEnable = config.isTimedExitEnable();
+        this.timedExitForce = config.isTimedExitForce();
+        this.timedExitDuration = config.getTimedExitDuration();
+        this.programCloseTime = System.currentTimeMillis() + this.timedExitDuration * 1000;
     }
 
     public void start() {
         logger.info("Application global id is {}", cacheManager.getId());
+        if (timedExitEnable) {
+            logger.warn("Application config [redisx.timedExit.enable] is {}, " + "[redisx.timedExit.force] is {} , " + "[redisx.timedExit.duration] is {}s ", timedExitEnable, timedExitForce, timedExitDuration);
+        }
+        //关闭netty内存监测，不准
+        System.setProperty("io.netty.leakDetection.level", "disabled");
         //注册shutdownhook
         registerShutdownKook();
         //需要确保上一次执行结束再执行下一次任务
         controllerPool.scheduleAtFixedRate(() -> {
             try {
+                //判断是否需要退出程序
+                checkTimedExit();
                 boolean isMaster = cacheManager.isMaster();
                 boolean fromIsStarted = cacheManager.fromIsStarted();
                 List<Context> allContexts = cacheManager.getAllContexts();
                 if (cacheManager.toIsStarted()) {
-                    for (Context cont : allContexts) {
-                        if (cont instanceof ToContext) {
-                            ToContext toContext = (ToContext) cont;
-                            if (toContext.isAdapt(toMode, switchFlag)) {
-                                //如果本身是主节点则同时写入偏移量
-                                toContext.preemptMaster();
-                            }
-                        }
+                    if (FlushState.BEGINNING == cacheManager.getFlushState()) {
+                        flushAllTo(allContexts);
+                    } else {
+                        preemptMasterAndMonitor(allContexts);
                     }
                 } else {
                     //识别to集群中存在节点宕机则全部关闭to
@@ -105,47 +127,48 @@ public class Controller {
                     cacheManager.closeAllTo();
                 }
                 if (isMaster && !fromIsStarted) { //抢占到主节点，from未启动
-                    logger.info("Upgrade master and starting from clients");
+                    logger.info("Starting from clients");
+                    cacheManager.closeAllFrom();
                     startAllFrom(alwaysFullSync, syncRdb);
-                    cacheManager.setFromIsStarted(true);
                 } else if (isMaster && fromIsStarted) { //抢占到主节点，from已经启动
                     //do nothing
                     logger.trace("State: master");
                 } else if (!isMaster && fromIsStarted) { //未抢占到主节点，from已经启动
-                    logger.info("Downgrade slave and closing from clients");
+                    logger.info("Closing from clients");
                     cacheManager.closeAllFrom();
-                    cacheManager.setFromIsStarted(false);
                 } else if (!isMaster && !fromIsStarted) { //未抢占到主节点，from未启动
                     if (!cacheManager.toIsStarted()) {
-                        startAllTo(toFlushSize, flushDb, syncWithCheckSlot);
+                        startAllTo(toFlushSize, flushDb);
                     }
                 } else {
                     //bug do nothing
                     logger.warn("Unknown application state");
                 }
+                //控制台相关
+                if (startConsole) {
+                    if (cacheManager.getConsoleContext() == null) {
+                        ConsoleNode consoleNode = new ConsoleNode("localhost", consolePort, consoleTimeout);
+                        Context context = consoleNode.getContext();
+                        cacheManager.setConsoleContext((ConsoleContext) context);
+                        consoleNode.start();
+                    }
+                }
             } catch (Exception e) {
                 logger.error("Controller schedule error {}", e);
             }
         }, 5000, 1000000, TimeUnit.MICROSECONDS); //用微秒减少主从抢占脑裂问题，纳秒个人感觉太夸张了
-        //控制台相关
-        if (startConsole && cacheManager.toIsStarted() && cacheManager.fromIsStarted()) {
-            if (cacheManager.getConsoleContext() == null) {
-                ConsoleNode consoleNode = new ConsoleNode("localhost", consolePort, consoleTimeout);
-                Context context = consoleNode.getContext();
-                cacheManager.setConsoleContext((ConsoleContext) context);
-                consoleNode.start();
-            }
-        } else {
-            ConsoleContext consoleContext = cacheManager.getConsoleContext();
-            if (consoleContext != null) {
-                consoleContext.close();
-            }
-        }
     }
 
     public Executor getExecutor(String name) {
         RedisxThreadFactory defaultThreadFactory = new RedisxThreadFactory(Constants.PROJECT_NAME + "-" + name);
         return new ThreadPerTaskExecutor(defaultThreadFactory);
+    }
+
+    private void checkTimedExit() {
+        if (timedExitEnable && System.currentTimeMillis() > programCloseTime) {
+            logger.info("Timed exit for application : {}", new Date(programCloseTime));
+            System.exit(0);
+        }
     }
 
     private void closeLog4jShutdownHook() {
@@ -156,25 +179,79 @@ public class Controller {
         }
     }
 
+    private void flushAllTo(List<Context> allContexts) {
+        cacheManager.setFlushState(FlushState.END);
+        for (Context cont : allContexts) {
+            if (cont instanceof ToContext) {
+                ToContext toContext = (ToContext) cont;
+                toContext.flushMyself();
+            }
+        }
+    }
+
+    private void preemptMasterAndMonitor(List<Context> allContexts) {
+        for (Context cont : allContexts) {
+            if (cont instanceof FromContext) {
+                FromContext fromContext = (FromContext) cont;
+                if (startConsole) {
+                    fromContext.putWriteCount(true);
+                }
+            } else if (cont instanceof ToContext) {
+                ToContext toContext = (ToContext) cont;
+                if (toContext.isAdapt(toMode, switchFlag)) {
+                    //如果本身是主节点则同时写入偏移量
+                    toContext.preemptMaster();
+                }
+                if (startConsole) {
+                    toContext.putWriteCount(false);
+                }
+            }
+        }
+    }
+
     private void startAllFrom(boolean alwaysFullSync, boolean syncRdb) {
+        //防止启动过长脑裂
+        preemptMasterAndMonitor(cacheManager.getAllContexts());
         List<InetSocketAddress> fromMasterNodesInfo = getFromMasterNodesInfo();
         if (fromMasterNodesInfo == null) {
             logger.error("[From] master nodes info can not get");
             return;
         }
-        fromMasterNodesInfo.forEach(address -> {
+        try {
+            Thread.sleep(2000);
+        } catch (InterruptedException e) {
+            throw new RuntimeException(e);
+        }
+        //防止启动过长脑裂
+        preemptMasterAndMonitor(cacheManager.getAllContexts());
+        boolean success = true;
+        for (InetSocketAddress address : fromMasterNodesInfo) {
             String host = address.getHostString();
             int port = address.getPort();
-            FromNode fromNode = new FromNode("Sync", cacheManager, host, port, false, alwaysFullSync, syncRdb, false);
+            FromNode fromNode = new FromNode("Sync", cacheManager, host, port, startConsole, false, alwaysFullSync, syncRdb, false, false);
             fromNode.start();
+            Context context = fromNode.getContext();
+            cacheManager.register(fromNode.getContext());
             if (fromNode.isStarted(5000)) {
-                cacheManager.register(fromNode.getContext());
+                if (context == null) {
+                    logger.error("[{}:{}] context is null", host, port);
+                }
+            } else {
+                logger.error("[{}:{}] node start failed, close all [to] node", host, port);
+                if (context != null) {
+                    context.setClose(true);
+                }
+                success = false;
+                break;
             }
-        });
+            //防止启动过长脑裂
+            preemptMasterAndMonitor(cacheManager.getAllContexts());
+        }
+        cacheManager.setFromIsStarted(success);
     }
 
-    private void startAllTo(int toFlushSize, boolean flushDb, boolean syncWithCheckSlot) {
-        List<InetSocketAddress> toMasterNodesInfo = getToMasterNodesInfo(syncWithCheckSlot);
+    private void startAllTo(int toFlushSize, boolean flushDb) {
+        List<InetSocketAddress> toMasterNodesInfo = getToMasterNodesInfo();
         if (toMasterNodesInfo == null) {
             logger.error("[To] master nodes info can not get");
             return;
@@ -183,16 +260,20 @@ public class Controller {
         for (InetSocketAddress address : toMasterNodesInfo) {
             String host = address.getHostString();
             int port = address.getPort();
-            ToNode toNode = new ToNode("Sync", cacheManager, host, port, toMode, false, immediate, immediateResendTimes, switchFlag, toFlushSize, false, flushDb);
+            ToNode toNode = new ToNode("Sync", cacheManager, host, port, toMode, startConsole, false, immediate, immediateResendTimes, switchFlag, toFlushSize, false, flushDb, false);
             toNode.start();
+            Context context = toNode.getContext();
+            cacheManager.register(context);
             if (toNode.isStarted(5000)) {
-                Context context = toNode.getContext();
                 if (context == null) {
                     logger.error("[{}:{}] context is null", host, port);
                 }
-                cacheManager.register(context);
             } else {
                 logger.error("[{}:{}] node start failed, close all [to] node", host, port);
+                if (context != null) {
+                    logger.error("[{}:{}] context is null", host, port);
+                    context.setClose(true);
+                }
                 success = false;
                 break;
             }
@@ -205,8 +286,20 @@ public class Controller {
             logger.info("Shutdown hook thread is starting");
             controllerPool.shutdown();
             logger.info("Update offset thread shutdown");
-            cacheManager.closeAllFrom();
             List<Context> allContexts = cacheManager.getAllContexts();
+            List<FromContext> fromContextList = new ArrayList<>();//保留全部from
+            List<ToContext> toContextList = new ArrayList<>();//保留全部to
+            for (Context context : allContexts) {
+                if (context instanceof FromContext) {
+                    fromContextList.add((FromContext) context);
+                }
+                if (context instanceof ToContext) {
+                    toContextList.add((ToContext) context);
+                }
+            }
+            //关闭全部from,阻绝新数据
+            cacheManager.closeAllFrom();
+            //跑完所有积压数据
             while (true) {
                 boolean allowClose = true;
                 Iterator<Context> iterator = allContexts.iterator();
@@ -214,10 +307,9 @@ public class Controller {
                     Context cont = iterator.next();
                     if (cont instanceof ToContext) {
                         ToContext toContext = (ToContext) cont;
-                        if (!toContext.isClose) {
+                        if (!toContext.isClose()) {
                             if (!cacheManager.checkHasNeedWriteCommand(toContext)) {
                                 iterator.remove();
-                                toContext.close();
                             }
                             allowClose = false;
                             break;
@@ -228,12 +320,29 @@ public class Controller {
                     break;
                 }
             }
+            //最后核算一次偏移量
+            fromContextList.forEach(ct -> {
+                ct.offsetAddUp();
+            });
+            //关闭所有的to
+            toContextList.forEach(ct -> {
+                if (ct.isAdapt(toMode, switchFlag)) {
+                    //如果本身是主节点则同时写入偏移量
+                    ct.preemptMaster();
+                }
+                ct.close();
+            });
+            ConsoleContext consoleContext = cacheManager.getConsoleContext();
+            if (consoleContext != null) {
+                consoleContext.close();
+            }
             logger.info("Application exit success");
             //否则日志不一定打印，因为shutdownHook顺序无法保证
             LogManager.shutdown();
         });
         shutdownHookThread.setName(Constants.PROJECT_NAME + "-ShutdownHook");
-        if (!immediate) {
+        //非强一致和未开启定时关闭和未开启强制关闭参数时注册hool
+        if (!immediate && !(timedExitEnable && timedExitForce)) {
             closeLog4jShutdownHook();
             Runtime.getRuntime().addShutdownHook(shutdownHookThread);
         }
@@ -243,28 +352,11 @@ public class Controller {
         if (Mode.CLUSTER == fromMode) {
             cacheManager.clearFromNodesInfo();
         }
-        if (Mode.CLUSTER == fromMode || Mode.SENTINEL == fromMode) {
-            for (InetSocketAddress address : fromNodeAddresses) {
-                String host = address.getHostString();
-                int port = address.getPort();
-                FromNode fromNode = new FromNode("GetFromNodesInfo", cacheManager, host, port, false, false, false, true);
-                fromNode.start();
-                if (fromNode.isStarted(5000)) {
-                    FromContext context = (FromContext) fromNode.getContext();
-                    try {
-                        if (context == null) {
-                            logger.error("[{}:{}] context is null", host, port);
-                        }
-                        if (context.nodesInfoGetSuccess(5000)) {
-                            break;
-                        }
-                    } finally {
-                        context.close();
-                    }
-                } else {
-                    logger.error("[{}:{}] nodes info get failed", host, port);
-                }
-            }
+        if (Mode.CLUSTER == fromMode) {
+            rangeFromNodeAddresses(false);
+        } else if (Mode.SENTINEL == fromMode) {
+            rangeFromNodeAddresses(true);
+            rangeFromNodeAddresses(false);
         }
         if (Mode.CLUSTER == fromMode) {
             if (cacheManager.getFromClusterNodesInfo().isEmpty()) {
@@ -281,6 +373,26 @@ public class Controller {
                         if (connectFromMaster) {
                             addresses.add(new InetSocketAddress(slotInfo.getIp(), slotInfo.getPort()));
                         }
+                    }
+                }
+                int start = 0;
+                boolean checkComplete = false;
+                while (!checkComplete) {
+                    boolean right = false;
+                    for (ClusterInfoHandler.SlotInfo slotInfo : masterSlotInfoList) {
+                        if (start == (16383 + 1)) {
+                            checkComplete = true;
+                            right = true;
+                            break;
+                        }
+                        if (slotInfo.isActiveMaster() && slotInfo.getSlotStart() == start) {
+                            start = slotInfo.getSlotEnd() + 1;
+                            right = true;
+                            break;
+                        }
+                    }
+                    if (!right) {
+                        return null;
                     }
                 }
                 if (!connectFromMaster) {
@@ -343,32 +455,15 @@ public class Controller {
         return fromNodeAddresses;
     }
 
-    public List<InetSocketAddress> getToMasterNodesInfo(boolean syncWithCheckSlot) {
+    public List<InetSocketAddress> getToMasterNodesInfo() {
         if (Mode.CLUSTER == toMode) {
             cacheManager.clearToNodesInfo();
         }
-        if (Mode.CLUSTER == toMode || Mode.SENTINEL == toMode) {
-            for (InetSocketAddress address : toNodeAddresses) {
-                String host = address.getHostString();
-                int port = address.getPort();
-                ToNode toNode = new ToNode("GetToNodesInfo", cacheManager, host, port, toMode, false, false, 0, switchFlag, 0, true, false);
-                toNode.start();
-                if (toNode.isStarted(5000)) {
-                    ToContext context = (ToContext) toNode.getContext();
-                    try {
-                        if (context == null) {
-                            logger.error("[{}:{}] context is null", host, port);
-                        }
-                        if (context.nodesInfoGetSuccess(5000)) {
-                            break;
-                        }
-                    } finally {
-                        context.close();
-                    }
-                } else {
-                    logger.error("[{}:{}] nodes info get failed", host, port);
-                }
-            }
+        if (Mode.CLUSTER == toMode) {
+            rangeToNodeAddresses(false);
+        } else if (Mode.SENTINEL == toMode) {
+            rangeToNodeAddresses(true);
+            rangeToNodeAddresses(false);
         }
         if (Mode.CLUSTER == toMode) {
             if (cacheManager.getToClusterNodesInfo().isEmpty()) {
@@ -384,26 +479,24 @@ public class Controller {
                     addresses.add(new InetSocketAddress(slotInfo.getIp(), slotInfo.getPort()));
                 }
             }
-            if (syncWithCheckSlot) {
-                int start = 0;
-                boolean checkComplete = false;
-                while (!checkComplete) {
-                    boolean right = false;
-                    for (ClusterInfoHandler.SlotInfo slotInfo : masterSlotInfoList) {
-                        if (start == (16383 + 1)) {
-                            checkComplete = true;
-                            right = true;
-                            break;
-                        }
-                        if (slotInfo.getSlotStart() == start) {
-                            start = slotInfo.getSlotEnd() + 1;
-                            right = true;
-                            break;
-                        }
+            int start = 0;
+            boolean checkComplete = false;
+            while (!checkComplete) {
+                boolean right = false;
+                for (ClusterInfoHandler.SlotInfo slotInfo : masterSlotInfoList) {
+                    if (start == (16383 + 1)) {
+                        checkComplete = true;
+                        right = true;
+                        break;
                     }
-                    if (!right) {
-                        return null;
+                    if (slotInfo.isActiveMaster() && slotInfo.getSlotStart() == start) {
+                        start = slotInfo.getSlotEnd() + 1;
+                        right = true;
+                        break;
                     }
+                }
+                if (!right) {
+                    return null;
                 }
             }
             return addresses;
@@ -417,6 +510,60 @@ public class Controller {
             return addresses;
         }
         return toNodeAddresses;
+    }
+
+    private void rangeFromNodeAddresses(boolean isGetMasterNodeInfo) {
+        for (InetSocketAddress address : fromNodeAddresses) {
+            String host = address.getHostString();
+            int port = address.getPort();
+            FromNode fromNode = new FromNode("GetFromNodesInfo", cacheManager, host, port, startConsole, false, false, false, true, isGetMasterNodeInfo);
+            fromNode.start();
+            if (fromNode.isStarted(5000)) {
+                FromContext context = (FromContext) fromNode.getContext();
+                try {
+                    if (context == null) {
+                        logger.error("[{}:{}] context is null", host, port);
+                    }
+                    if (context.nodesInfoGetSuccess(5000)) {
+                        if (isGetMasterNodeInfo) {
+                            context.reSetNodesInfoFlag();
+                        }
+                        break;
+                    }
+                } finally {
+                    context.close();
+                }
+            } else {
+                logger.error("[{}:{}] nodes info get failed", host, port);
+            }
+        }
+    }
+
+    private void rangeToNodeAddresses(boolean isGetMasterNodeInfo) {
+        for (InetSocketAddress address : toNodeAddresses) {
+            String host = address.getHostString();
+            int port = address.getPort();
+            ToNode toNode = new ToNode("GetToNodesInfo", cacheManager, host, port, toMode, startConsole, false, false, 0, switchFlag, 0, true, false, isGetMasterNodeInfo);
+            toNode.start();
+            if (toNode.isStarted(5000)) {
+                ToContext context = (ToContext) toNode.getContext();
+                try {
+                    if (context == null) {
+                        logger.error("[{}:{}] context is null", host, port);
+                    }
+                    if (context.nodesInfoGetSuccess(5000)) {
+                        if (isGetMasterNodeInfo) {
+                            context.reSetNodesInfoFlag();
+                        }
+                        break;
+                    }
+                } finally {
+                    context.close();
+                }
+            } else {
+                logger.error("[{}:{}] nodes info get failed", host, port);
+            }
+        }
     }
 
     /**
@@ -447,19 +594,21 @@ public class Controller {
         private int port;
         private ToContext toContext;
 
-        public ToNode(String threadNamePrefix, CacheManager cacheManager, String host, int port, Mode toMode, boolean consoleStart, boolean immediate, int immediateResendTimes, String switchFlag, int flushSize, boolean isNodesInfoContext, boolean flushDb) {
+        public ToNode(String threadNamePrefix, CacheManager cacheManager, String host, int port, Mode toMode, boolean startConsole, boolean startByConsole, boolean immediate, int immediateResendTimes, String switchFlag, int flushSize, boolean isNodesInfoContext, boolean flushDb, boolean isGetMasterNodeInfo) {
             this.name = Constants.PROJECT_NAME + "-" + threadNamePrefix + "-ToNode-" + host + "-" + port;
             this.setName(name);
             this.cacheManager = cacheManager;
             this.host = host;
             this.port = port;
             //放在构造方法而不是run，因为兼容console模式，需要收集context，否则可能收集到null
-            this.toContext = new ToContext(cacheManager, host, port, fromMode, toMode, consoleStart, immediate, immediateResendTimes, switchFlag, flushSize, isNodesInfoContext, flushDb, toMasterName);
+            this.toContext = new ToContext(cacheManager, host, port, fromMode, toMode, startConsole, startByConsole, immediate, immediateResendTimes, switchFlag, flushSize, isNodesInfoContext, flushDb, toMasterName, isGetMasterNodeInfo);
         }
 
         @Override
         public void run() {
-            cacheManager.registerTo(this.toContext);
+            if (!toContext.startByConsole) {
+                cacheManager.registerTo(this.toContext);
+            }
             ToClient toClient = new ToClient(this.toContext, getExecutor("ToEventLoop-" + host + ":" + port));
             this.toContext.setClient(toClient);
             toClient.start(flag);
@@ -481,13 +630,13 @@ public class Controller {
         private int port;
         private FromContext fromContext;
 
-        public FromNode(String threadNamePrefix, CacheManager cacheManager, String host, int port, boolean consoleStart, boolean alwaysFullSync, boolean syncRdb, boolean isNodesInfoContext) {
+        public FromNode(String threadNamePrefix, CacheManager cacheManager, String host, int port, boolean startConsole, boolean startByConsole, boolean alwaysFullSync, boolean syncRdb, boolean isNodesInfoContext, boolean isGetMasterNodeInfo) {
             this.name = Constants.PROJECT_NAME + "-" + threadNamePrefix + "-FromNode - " + host + " - " + port;
             this.setName(name);
             this.host = host;
             this.port = port;
             //放在构造方法而不是run，因为兼容console模式，需要收集console，否则可能收集到null
-            this.fromContext = new FromContext(cacheManager, host, port, consoleStart, fromMode, toMode, alwaysFullSync, syncRdb, isNodesInfoContext, fromMasterName, connectFromMaster);
+            this.fromContext = new FromContext(cacheManager, host, port, startConsole, startByConsole, fromMode, toMode, alwaysFullSync, syncRdb, isNodesInfoContext, fromMasterName, connectFromMaster, isGetMasterNodeInfo);
         }
 
         @Override
@@ -519,25 +668,27 @@ public class Controller {
             this.host = host;
             this.port = port;
             this.timeout = timeout;
-            consoleContext = new ConsoleContext(cacheManager, this.host, this.port, this.timeout, toMode, fromMode);
+            consoleContext = new ConsoleContext(cacheManager, cacheMonitor, this.host, this.port, this.timeout, toMode, fromMode, consoleSearch);
         }
 
         @Override
         public void run() {
-            toNodeAddresses.forEach(address -> {
-                String host = address.getHostString();
-                int port = address.getPort();
-                ToNode toNode = new ToNode("Console", cacheManager, host, port, toMode, true, immediate, 0, switchFlag, 0, false, false);
-                consoleContext.setToContext((ToContext) toNode.getContext());
-                toNode.start();
-            });
-            fromNodeAddresses.forEach(address -> {
-                String host = address.getHostString();
-                int port = address.getPort();
-                FromNode fromNode = new FromNode("Console", cacheManager, host, port, true, false, false, false);
-                consoleContext.setFromContext((FromContext) fromNode.getContext());
-                fromNode.start();
-            });
+            if (consoleSearch) {
+                getFromMasterNodesInfo().forEach(address -> {
+                    String host = address.getHostString();
+                    int port = address.getPort();
+                    FromNode fromNode = new FromNode("Console", cacheManager, host, port, startConsole, true, false, false, false, false);
+                    consoleContext.setFromContext((FromContext) fromNode.getContext());
+                    fromNode.start();
+                });
+                getToMasterNodesInfo().forEach(address -> {
+                    String host = address.getHostString();
+                    int port = address.getPort();
+                    ToNode toNode = new ToNode("Console", cacheManager, host, port, toMode, startConsole, true, immediate, 0, switchFlag, 0, false, false, false);
+                    consoleContext.setToContext((ToContext) toNode.getContext());
+                    toNode.start();
+                });
+            }
             ConsoleServer consoleServer = new ConsoleServer(consoleContext, getExecutor("Console-Boss"), getExecutor("Console-Worker"));
             consoleServer.start();
             consoleContext.setConsoleServer(consoleServer);

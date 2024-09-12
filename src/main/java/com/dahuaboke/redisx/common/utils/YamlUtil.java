@@ -1,7 +1,7 @@
 package com.dahuaboke.redisx.common.utils;
 
-import com.dahuaboke.redisx.common.Constants;
 import com.dahuaboke.redisx.Redisx;
+import com.dahuaboke.redisx.common.Constants;
 import org.slf4j.Logger;
 import org.slf4j.LoggerFactory;
 import org.yaml.snakeyaml.Yaml;
@@ -10,6 +10,7 @@ import java.io.FileInputStream;
 import java.io.FileNotFoundException;
 import java.util.HashMap;
 import java.util.Map;
+import java.util.Properties;
 
 /**
  * 2024/6/20 15:12
@@ -26,24 +27,16 @@ public class YamlUtil {
      * @param args
      * @return
      */
-    public static Map<String, Object> parseYamlParam(String[] args) {
+    public static Map<String, Object> parseYamlParam(String configPath) {
         try {
-            Map<String, String> argsMap = new HashMap<>();
-            if (args != null && args.length > 0) {
-                for (int a = 0; a < args.length; a++) {
-                    if (a == 0) {
-                        argsMap.put(Constants.CONFIG_PATH, args[a]);
-                    } else {
-                        String[] arrs = args[a].split("=");
-                        if (arrs.length != 2 || StringUtils.isEmpty(arrs[0]) || StringUtils.isEmpty(arrs[1])) {
-                            throw new IllegalArgumentException("The command line parameter is incorrect : " + args[a]);
-                        }
-                        argsMap.put(arrs[0], arrs[1]);
-                    }
+            Map<String, Object> paramMap = parseConfig(configPath);
+            Properties properties = System.getProperties();
+            for (String str : properties.stringPropertyNames()) {
+                String val = properties.getProperty(str);
+                if (StringUtils.isNotEmpty(str) && StringUtils.isNotEmpty(val)) {
+                    paramMap.put(str, val);
                 }
             }
-            Map<String, Object> paramMap = parseConfig(argsMap.get(Constants.CONFIG_PATH));
-            paramMap.putAll(argsMap);
             decryptMap(paramMap);
             return paramMap;
         } catch (Exception e) {
@@ -66,7 +59,6 @@ public class YamlUtil {
             }
         }
         Map<String, Object> config = new HashMap();
-        decryptMap(config);
         parseConfig(null, map, config);
         return config;
     }
@@ -98,11 +90,17 @@ public class YamlUtil {
         if (password == null || password.length() == 0) {
             return;
         }
+        if (StringUtils.isEmpty(algorithm)) {
+            algorithm = Constants.JASYPT_ALGORITHM;
+        }
+        if (StringUtils.isEmpty(ivGeneratorClassName)) {
+            ivGeneratorClassName = Constants.JASYPT_IVGENERATORCLASSNAME;
+        }
         JasyptUtil jasyptUtil = StringUtils.isNotEmpty(algorithm) ? new JasyptUtil(password, algorithm, ivGeneratorClassName) : new JasyptUtil(password);
         for (Map.Entry<String, Object> entry : map.entrySet()) {
             if (entry.getValue() instanceof String) {
                 String s = (String) entry.getValue();
-                if (s.startsWith("ENC(") && s.startsWith(")")) {
+                if (s.startsWith("ENC(") && s.endsWith(")")) {
                     s = s.substring(4, s.length() - 1);
                     map.put(entry.getKey(), jasyptUtil.decrypt(s));
                 }

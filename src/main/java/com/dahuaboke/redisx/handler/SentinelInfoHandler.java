@@ -1,12 +1,12 @@
 package com.dahuaboke.redisx.handler;
 
-import com.dahuaboke.redisx.common.Constants;
 import com.dahuaboke.redisx.Context;
+import com.dahuaboke.redisx.common.Constants;
 import com.dahuaboke.redisx.common.annotation.FieldOrm;
-import com.dahuaboke.redisx.from.FromContext;
-import com.dahuaboke.redisx.to.ToContext;
 import com.dahuaboke.redisx.common.utils.FieldOrmUtil;
 import com.dahuaboke.redisx.common.utils.StringUtils;
+import com.dahuaboke.redisx.from.FromContext;
+import com.dahuaboke.redisx.to.ToContext;
 import io.netty.channel.Channel;
 import io.netty.channel.ChannelHandlerContext;
 import org.slf4j.Logger;
@@ -27,24 +27,32 @@ public class SentinelInfoHandler extends RedisChannelInboundHandler {
     private static final Logger logger = LoggerFactory.getLogger(CommandEncoder.class);
     private Context context;
     private String masterName;
+    private boolean isSendMasterCommand;
 
-    public SentinelInfoHandler(Context context, String masterName) {
+    public SentinelInfoHandler(Context context, String masterName, boolean isSendMasterCommand) {
         super(context);
         this.context = context;
         this.masterName = masterName;
+        this.isSendMasterCommand = isSendMasterCommand;
     }
 
     @Override
     public void channelActive(ChannelHandlerContext ctx) throws Exception {
-        //sendMasterCommand(ctx);
-        sendSlaveCommand(ctx);
+        if (isSendMasterCommand) {
+            sendMasterCommand(ctx);
+        } else {
+            sendSlaveCommand(ctx);
+        }
         ctx.fireChannelActive();
     }
 
     @Override
     public void channelRead2(ChannelHandlerContext ctx, String msg) throws Exception {
-        //parseMasterMessage(ctx, msg);
-        parseSlaveMessage(ctx, msg);
+        if (isSendMasterCommand) {
+            parseMasterMessage(ctx, msg);
+        } else {
+            parseSlaveMessage(ctx, msg);
+        }
     }
 
     private void sendMasterCommand(ChannelHandlerContext ctx) {
@@ -66,7 +74,7 @@ public class SentinelInfoHandler extends RedisChannelInboundHandler {
     }
 
     private void parseMasterMessage(ChannelHandlerContext ctx, String msg) {
-        logger.info("Beginning sentinel master message parse");
+        logger.info("Beginning sentinel master message parse\n\n{}\n", msg);
         if (StringUtils.isNotEmpty(msg)) {
             String[] arr = msg.split(" ");
             String masterIp = arr[0];
@@ -86,7 +94,7 @@ public class SentinelInfoHandler extends RedisChannelInboundHandler {
     }
 
     private void parseSlaveMessage(ChannelHandlerContext ctx, String msg) {
-        logger.info("Beginning sentinel slave message parse");
+        logger.info("Beginning sentinel slave message parse\n\n{}\n", msg);
         List<SlaveInfo> slaveInfos = new ArrayList<>();//这个就是解析后的从节点集合
         String[] arrs = msg.split(" ");
         Map<String, Object> map = new HashMap<>();
@@ -119,10 +127,7 @@ public class SentinelInfoHandler extends RedisChannelInboundHandler {
         } else if (context instanceof ToContext) {
             ToContext toContext = (ToContext) context;
             for (SlaveInfo slaveInfo : slaveInfos) {
-                if (slaveInfo.isActive()) {
-                    toContext.setSentinelMasterInfo(slaveInfo.getMasterHost(), slaveInfo.getMasterPort());
-                    break;
-                }
+                toContext.addSentinelSlaveInfo(slaveInfo);
             }
             toContext.setToNodesInfoGetSuccess();
         }

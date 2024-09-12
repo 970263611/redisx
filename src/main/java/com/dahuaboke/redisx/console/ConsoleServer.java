@@ -12,10 +12,13 @@ import io.netty.channel.nio.NioEventLoopGroup;
 import io.netty.channel.socket.nio.NioServerSocketChannel;
 import io.netty.handler.codec.http.HttpObjectAggregator;
 import io.netty.handler.codec.http.HttpServerCodec;
+import io.netty.handler.timeout.IdleStateHandler;
 import org.slf4j.Logger;
 import org.slf4j.LoggerFactory;
 
+import java.net.ServerSocket;
 import java.util.concurrent.Executor;
+import java.util.concurrent.TimeUnit;
 
 /**
  * 2024/5/15 9:49
@@ -43,6 +46,9 @@ public class ConsoleServer {
     public void start() {
         String host = consoleContext.getHost();
         int port = consoleContext.getPort();
+        while (!isPortAvailable(port)) {
+            port++;
+        }
         try {
             ServerBootstrap serverBootstrap = new ServerBootstrap();
             serverBootstrap.group(bossGroup, workerGroup)
@@ -51,9 +57,10 @@ public class ConsoleServer {
                         @Override
                         protected void initChannel(Channel channel) throws Exception {
                             ChannelPipeline pipeline = channel.pipeline();
+                            pipeline.addLast(new PrintHandler());
+                            pipeline.addLast(new IdleStateHandler(0, 0, consoleContext.getTimeout(), TimeUnit.MILLISECONDS));
                             pipeline.addLast(new HttpServerCodec());
                             pipeline.addLast(new HttpObjectAggregator(512 * 1024));
-                            pipeline.addLast(new PrintHandler());
                             pipeline.addLast(new ConsoleHandler());
                             pipeline.addLast(new SearchHandler(consoleContext));
                             pipeline.addLast(new MonitorHandler(consoleContext));
@@ -67,15 +74,8 @@ public class ConsoleServer {
                 channel = serverBootstrap.bind(port).sync().channel();
             }
             logger.info("Publish console server at [{}:{}]", host, port);
-            channel.closeFuture().addListener((ChannelFutureListener) future -> {
-                consoleContext.setClose(true);
-            }).sync();
         } catch (Exception e) {
             logger.error("Publish at {{}:{}] exception", host, port, e);
-        } finally {
-            bossGroup.shutdownGracefully();
-            workerGroup.shutdownGracefully();
-            destroy();
         }
     }
 
@@ -84,11 +84,29 @@ public class ConsoleServer {
      */
     public void destroy() {
         consoleContext.setClose(true);
-        if (channel != null) {
-            String host = consoleContext.getHost();
-            int port = consoleContext.getPort();
+        if (channel != null && channel.isActive()) {
             channel.close();
-            logger.info("Close console [{}:{}]", host, port);
+            try {
+                channel.closeFuture().addListener((ChannelFutureListener) channelFuture -> {
+                    if (channelFuture.isSuccess()) {
+                        bossGroup.shutdownGracefully();
+                        workerGroup.shutdownGracefully();
+                        logger.info("Close [From] [{}:{}]", consoleContext.getHost(), consoleContext.getPort());
+                    } else {
+                        logger.error("Close [From] error", channelFuture.cause());
+                    }
+                }).sync();
+            } catch (InterruptedException e) {
+                logger.error("Close [From] error", e);
+            }
+        }
+    }
+
+    public boolean isPortAvailable(int port) {
+        try (ServerSocket serverSocket = new ServerSocket(port);) {
+            return true;
+        } catch (Exception e) {
+            return false;
         }
     }
 }

@@ -4,8 +4,10 @@ import com.dahuaboke.redisx.Context;
 import com.dahuaboke.redisx.common.Constants;
 import com.dahuaboke.redisx.common.cache.CacheManager;
 import com.dahuaboke.redisx.common.command.from.SyncCommand;
+import com.dahuaboke.redisx.common.enums.FlushState;
 import com.dahuaboke.redisx.common.enums.Mode;
 import com.dahuaboke.redisx.handler.ClusterInfoHandler;
+import com.dahuaboke.redisx.handler.SentinelInfoHandler;
 import org.slf4j.Logger;
 import org.slf4j.LoggerFactory;
 
@@ -27,6 +29,7 @@ public class ToContext extends Context {
     private static final Logger logger = LoggerFactory.getLogger(ToContext.class);
     private static final String lua1 = "local v = redis.call('GET',KEYS[1]);\n" + "    if v then\n" + "        return v;\n" + "    else\n" + "        local result = redis.call('SET',KEYS[1],ARGV[1]);\n" + "        return result;\n" + "    end";
     private static final String lua2 = "local v = redis.call('GET',KEYS[1]);\n" + "if string.match(v,ARGV[1]) then\n redis.call('SET',KEYS[1],ARGV[2]);\nend";
+    private static final String luaFlush = "redis.call('flushall');\n" + lua1;
     private int slotBegin;
     private int slotEnd;
     private ToClient toClient;
@@ -39,9 +42,9 @@ public class ToContext extends Context {
     private boolean flushDb;
     private String toMasterName;
 
-    public ToContext(CacheManager cacheManager, String host, int port, Mode fromMode, Mode toMode, boolean consoleStart, boolean immediate, int immediateResendTimes, String switchFlag, int flushSize, boolean isNodesInfoContext, boolean flushDb, String toMasterName) {
-        super(cacheManager, host, port, fromMode, toMode, consoleStart);
-        if (consoleStart) {
+    public ToContext(CacheManager cacheManager, String host, int port, Mode fromMode, Mode toMode, boolean startConsole, boolean startByConsole, boolean immediate, int immediateResendTimes, String switchFlag, int flushSize, boolean isNodesInfoContext, boolean flushDb, String toMasterName, boolean isGetMasterNodeInfo) {
+        super(cacheManager, host, port, fromMode, toMode, startConsole, startByConsole);
+        if (startByConsole) {
             replyQueue = new LinkedBlockingDeque();
         }
         this.immediate = immediate;
@@ -62,6 +65,7 @@ public class ToContext extends Context {
                 throw new IllegalStateException("Slot info error");
             }
         }
+        this.isGetMasterNodeInfo = isGetMasterNodeInfo;
     }
 
     public String getId() {
@@ -73,7 +77,7 @@ public class ToContext extends Context {
     }
 
     public boolean callBack(String reply) {
-        if (consoleStart) {
+        if (startByConsole) {
             if (replyQueue == null) {
                 throw new IllegalStateException("By console mode replyQueue need init");
             } else {
@@ -89,7 +93,7 @@ public class ToContext extends Context {
     }
 
     @Override
-    public boolean isAdapt(Mode mode, String command) {
+    public boolean isAdapt(Mode mode, byte[] command) {
         if (Mode.CLUSTER == mode && command != null) {
             int hash = calculateHash(command) % Constants.COUNT_SLOT_NUMS;
             return hash >= slotBegin && hash <= slotEnd;
@@ -101,19 +105,23 @@ public class ToContext extends Context {
 
     @Override
     public String sendCommand(Object command, int timeout) {
-        return sendCommand(command, timeout, false, null);
+        return sendCommand(command, timeout, false, null, false);
     }
 
     public String sendCommand(Object command, int timeout, String key) {
-        return sendCommand(command, timeout, false, key);
+        return sendCommand(command, timeout, false, key, false);
     }
 
     public String sendCommand(Object command, int timeout, boolean unCheck) {
-        return sendCommand(command, timeout, unCheck, null);
+        return sendCommand(command, timeout, unCheck, null, unCheck);
     }
 
-    public String sendCommand(Object command, int timeout, boolean unCheck, String key) {
-        if (consoleStart) {
+    public String sendCommand(Object command, int timeout, boolean unCheck, boolean needIsSuccess) {
+        return sendCommand(command, timeout, unCheck, null, needIsSuccess);
+    }
+
+    public String sendCommand(Object command, int timeout, boolean unCheck, String key, boolean needIsSuccess) {
+        if (startByConsole) {
             if (replyQueue == null) {
                 throw new IllegalStateException("By console mode replyQueue need init");
             } else {
@@ -127,7 +135,7 @@ public class ToContext extends Context {
             }
         } else {
             if (unCheck) {
-                return String.valueOf(toClient.sendCommand(command, true));
+                return String.valueOf(toClient.sendCommand(command, needIsSuccess));
             } else {
                 List<Context> allContexts = cacheManager.getAllContexts();
                 for (Context context : allContexts) {
@@ -139,8 +147,8 @@ public class ToContext extends Context {
                         } else {
                             flag = (String) command;
                         }
-                        if (toContext.isAdapt(toMode, flag)) {
-                            return toContext.sendCommand(command, 1000, true, null);
+                        if (toContext.isAdapt(toMode, flag.getBytes())) {
+                            return toContext.sendCommand(command, 1000, true, null, true);
                         }
                     }
                 }
@@ -195,6 +203,17 @@ public class ToContext extends Context {
             add(preemptMasterCommand());
         }};
         this.sendCommand(commands, 1000, true);
+    }
+
+    public void preemptMasterAndFlushAll() {
+        List<String> commands = new ArrayList() {{
+            add("EVAL");
+            add(luaFlush);
+            add("1");
+            add(switchFlag);
+            add(preemptMasterCommand());
+        }};
+        this.sendCommand(commands, 1000, true, false);
     }
 
     public void preemptMasterCompulsory() {
@@ -273,20 +292,16 @@ public class ToContext extends Context {
         }
     }
 
+    public void reSetNodesInfoFlag() {
+        nodesInfoFlag = new CountDownLatch(1);
+    }
+
     public boolean isNodesInfoContext() {
         return isNodesInfoContext;
     }
 
     public boolean isFlushDb() {
         return flushDb;
-    }
-
-    public boolean isFlushDbSuccess() {
-        return cacheManager.isFlushDb(host, port);
-    }
-
-    public void setFlushDbSuccess() {
-        cacheManager.setFlushDb(host, port, true);
     }
 
     public String getToMasterName() {
@@ -297,21 +312,40 @@ public class ToContext extends Context {
         cacheManager.setToSentinelMaster(new InetSocketAddress(host, port));
     }
 
+    public void addSentinelSlaveInfo(SentinelInfoHandler.SlaveInfo toSentinelNodeInfo) {
+        cacheManager.addToSentinelNodesInfo(toSentinelNodeInfo);
+    }
+
+    public FlushState getFlushState() {
+        return cacheManager.getFlushState();
+    }
+
+    public void setFlushState(FlushState flushState) {
+        cacheManager.setFlushState(flushState);
+    }
+
+    public int getSlotBegin() {
+        return slotBegin;
+    }
+
+    public int getSlotEnd() {
+        return slotEnd;
+    }
+
+    public boolean fromIsAlwaysFullSync() {
+        return cacheManager.isAlwaysFullSync();
+    }
+
+    public void flushMyself() {
+        if (isAdapt(toMode, switchFlag)) {
+            preemptMasterAndFlushAll();
+        } else {
+            sendCommand(Constants.FLUSH_ALL_COMMAND, 1000, true, false);
+        }
+    }
+
     @Override
     public String toString() {
-        return "ToContext{" +
-                "host='" + host + '\'' +
-                ", port=" + port +
-                ", slotBegin=" + slotBegin +
-                ", slotEnd=" + slotEnd +
-                ", immediate=" + immediate +
-                ", immediateResendTimes=" + immediateResendTimes +
-                ", switchFlag='" + switchFlag + '\'' +
-                ", flushSize=" + flushSize +
-                ", isClose=" + isClose +
-                ", consoleStart=" + consoleStart +
-                ", toMode=" + toMode +
-                ", fromMode=" + fromMode +
-                '}';
+        return "ToContext{" + "host='" + host + '\'' + ", port=" + port + ", slotBegin=" + slotBegin + ", slotEnd=" + slotEnd + ", immediate=" + immediate + ", immediateResendTimes=" + immediateResendTimes + ", switchFlag='" + switchFlag + '\'' + ", flushSize=" + flushSize + ", isClose=" + isClose + ", startByConsole=" + startByConsole + ", toMode=" + toMode + ", fromMode=" + fromMode + '}';
     }
 }

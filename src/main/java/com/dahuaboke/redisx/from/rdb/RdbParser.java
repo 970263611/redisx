@@ -3,7 +3,6 @@ package com.dahuaboke.redisx.from.rdb;
 import com.dahuaboke.redisx.from.rdb.base.Parser;
 import io.netty.buffer.ByteBuf;
 import io.netty.buffer.ByteBufUtil;
-import io.netty.buffer.Unpooled;
 import org.slf4j.Logger;
 import org.slf4j.LoggerFactory;
 
@@ -24,15 +23,18 @@ public class RdbParser {
 
     public RdbParser(ByteBuf byteBuf) {
         //---  为了方便观察Rdb内容状况，打印前后各9位 跟业务无关---
-        ByteBuf start9 = Unpooled.buffer();
-        ByteBuf end9 = Unpooled.buffer();
+        ByteBuf start9 = null;
+        ByteBuf end9 = null;
         if (byteBuf.writerIndex() >= 9) {
             start9 = byteBuf.slice(0, 9);
             end9 = byteBuf.slice(byteBuf.writerIndex() - 9, 9);
         }
-        logger.info("Rdb prase start,rdbBuf length is = " + byteBuf.readableBytes()
-                + ",\r\n the start 9 byte is \r\n" + ByteBufUtil.prettyHexDump(start9)
-                + "',\r\n the end 9 byte is \r\n" + ByteBufUtil.prettyHexDump(end9));
+        if (start9 != null && end9 != null) {
+            logger.info("Rdb prase start,rdbBuf length is = " + byteBuf.readableBytes()
+                    + ",\r\n the start 9 byte is \r\n" + ByteBufUtil.prettyHexDump(start9)
+                    + "',\r\n the end 9 byte is \r\n" + ByteBufUtil.prettyHexDump(end9));
+        }
+
         //---  为了方便观察Rdb内容状况，打印前后各9位 跟业务无关---
         this.rdbInfo = new RdbInfo();
         if (!RdbConstants.START.equals(byteBuf.readBytes(5).toString(Charset.defaultCharset()))) {
@@ -60,7 +62,7 @@ public class RdbParser {
                 case RdbConstants.RDB_OPCODE_AUX:
                     String key = new String(ParserManager.STRING_00.parse(byteBuf));
                     String value = new String(ParserManager.STRING_00.parse(byteBuf));
-                    auxParse(key,value);
+                    auxParse(key, value);
                     return;
                 case RdbConstants.RDB_OPCODE_MODULE_AUX:
                     ParserManager.SKIP.rdbLoadLen(byteBuf);
@@ -117,7 +119,7 @@ public class RdbParser {
         }
     }
 
-    private void auxParse(String key,String value) {
+    private void auxParse(String key, String value) {
         switch (key) {
             case "redis-ver":
                 rdbHeader().setRedisVer(value);

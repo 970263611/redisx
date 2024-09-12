@@ -1,48 +1,46 @@
 redisx:
   from:
     redis:
-      version: 6.0.9
-    #password: 2B*1a.
-    #single sentinel cluster
-    mode: sentinel
-    #哨兵模式必填
-    masterName: myMaster
+      version: x.x.x
+    mode: cluster
+#    username:
+#    password:
+#    masterName:
     address:
-      - 172.31.84.163:16001
-      - 172.31.84.163:16002
-      - 172.31.84.163:16003
-    verticalScaling: true
-    connectMaster: true
+      - xxx.xxx.xxx.xxx:port
+#    verticalScaling: false
+#    connectMaster: true
   to:
-    #password: 1a.2B*
-    #single sentinel cluster
-    mode: sentinel
-    #哨兵模式必填
-    masterName: myMaster
+    mode: cluster
+#    username:
+#    password:
+#    masterName:
     address:
-      - 172.31.84.163:16101
-      - 172.31.84.163:16102
-      - 172.31.84.163:16103
-    flushDb: true
-    flushSize: 20
-    syncWithCheckSlot: false
-  console:
-    enable: true
-    port: 9999
-    timeout: 5000
-  immediate:
-    enable: false
-    resendTimes: 3
-  alwaysFullSync: false
-  switchFlag: REDISX-AUTHOR:DAHUA&CHANGDONGLIANG&ZHANGHUIHAO&ZHANGSHUHAN
-  syncRdb: true
+      - xxx.xxx.xxx.xxx:port
+#    flushDb: false
+#    flushSize: 50
+#  console:
+#    enable: true
+#    search: false
+#    port: 15967
+#    timeout: 5000
+#  immediate:
+#    enable: false
+#    resendTimes: 1
+#  alwaysFullSync: false
+#  switchFlag: REDISX-AUTHOR:DAHUA&CHANGDONGLIANG&ZHANGHUIHAO&ZHANGSHUHAN&ZHANGYING&CHENYU&MAMING
+#  syncRdb: true
+#  timedExit:
+#    enable: false
+#    force: false
+#    duration: -1
 
-jasypt:
-  encryptor:
-    password: KU1aBcAit9x
-    algorithm: PBEWithMD5AndDES
-    ivGeneratorClassName: org.jasypt.iv.NoIvGenerator
-
-logging:
-  level:
-    global: info
+#jasypt:
+#  encryptor:
+#    password:
+#    algorithm: PBEWithMD5AndDES
+#    ivGeneratorClassName: org.jasypt.iv.NoIvGenerator
+#
+#logging:
+#  level:
+#    global: info

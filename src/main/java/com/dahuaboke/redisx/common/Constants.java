@@ -1,7 +1,5 @@
 package com.dahuaboke.redisx.common;
 
-import io.netty.buffer.ByteBuf;
-import io.netty.buffer.Unpooled;
 import io.netty.handler.codec.http.HttpVersion;
 import io.netty.util.AttributeKey;
 
@@ -12,7 +10,7 @@ import io.netty.util.AttributeKey;
  */
 public class Constants {
 
-    public static final String SWITCH_FLAG = "REDISX-AUTHOR:DAHUA&CHANGDONGLIANG&ZHANGHUIHAO&ZHANGSHUHAN";
+    public static final String SWITCH_FLAG = "REDISX-AUTHOR:DAHUA&CHANGDONGLIANG&ZHANGHUIHAO&ZHANGSHUHAN&ZHANGYING&CHENYU&MAMING";
 
     public static final String CONFIG_PATH = "config.path";
 
@@ -27,8 +25,6 @@ public class Constants {
     public static final String CONTINUE = "+CONTINUE";
 
     public static final String FULLRESYNC = "+FULLRESYNC";
-
-    public static final AttributeKey<Long> OFFSET = AttributeKey.valueOf("offset");
 
     public static final AttributeKey<String> SYNC_REPLY = AttributeKey.valueOf("syncReply");
 
@@ -52,7 +48,7 @@ public class Constants {
 
     public static final String CONFIG_AUTH_PREFIX = "AUTH ";
 
-    public static final String CONFIG_PORT_COMMAND_PREFIX = "REPLCONF listening-port ";
+    public static final String CONFIG_PORT_COMMAND_PREFIX = "REPLCONF listening-port 0";
 
     public static final String CONFIG_HOST_COMMAND_PREFIX = "REPLCONF ip-address ";
 
@@ -79,6 +75,7 @@ public class Constants {
     public static final String GET_SLOT_COMMAND = "CLUSTER NODES";
 
     public static final String FLUSH_DB_COMMAND = "flushdb";
+    public static final String FLUSH_ALL_COMMAND = "flushall";
 
     public static final String SENTINEL_GET_MASTER = "SENTINEL GET-MASTER-ADDR-BY-NAME ";
 
@@ -103,6 +100,10 @@ public class Constants {
     public static final String EXEC = "EXEC";
 
     public static final String REGISTER_HOST = "dahuaboke.com";
+
+    public static final String JASYPT_ALGORITHM = "PBEWithMD5AndDES";
+
+    public static final String JASYPT_IVGENERATORCLASSNAME = "org.jasypt.iv.NoIvGenerator";
 
 
     //RDB
@@ -222,8 +223,10 @@ public class Constants {
     public static final byte HASHTAG = '#'; // since redis 7.0 TS timestamp
     public static final byte LINE_BREAK = '\n';
 
+    public static final byte[] RESP_TERMINATOR = new byte[]{0x0d, 0x0a};
+
     //redis数据分割符号 \r \n
-    public static final ByteBuf SEPARAPOR = Unpooled.copiedBuffer(new byte[]{0x0d, 0x0a});
+    //public static final ByteBuf SEPARAPOR = Unpooled.copiedBuffer(RESP_TERMINATOR);
 
     public static final String STR_SPACE = " ";
 

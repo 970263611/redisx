@@ -1,7 +1,7 @@
 package com.dahuaboke.redisx.common.utils;
 
 import com.dahuaboke.redisx.common.annotation.FieldOrm;
-import com.dahuaboke.redisx.common.interfaces.FieldOrmCheck;
+import com.dahuaboke.redisx.common.annotation.FieldOrmCheck;
 
 import java.lang.reflect.Field;
 import java.lang.reflect.InvocationTargetException;
@@ -36,7 +36,7 @@ public class FieldOrmUtil {
                 continue;
             }
             Class<?> setType = field.getType();
-            if (fieldOrm.setType() != void.class){
+            if (fieldOrm.setType() != void.class) {
                 setType = fieldOrm.setType();
             }
             if (val.getClass() != setType) {
@@ -56,11 +56,12 @@ public class FieldOrmUtil {
                 throw new IllegalArgumentException("Config map failed, set value error : " + field.getName());
             }
         }
-        if(FieldOrmCheck.class.isAssignableFrom(clazz)){
+        if (FieldOrmCheck.class.isAssignableFrom(clazz)) {
             Method method = null;
             try {
                 method = clazz.getMethod("check");
-            } catch (NoSuchMethodException e) {}
+            } catch (NoSuchMethodException e) {
+            }
             if (method != null) {
                 try {
                     method.invoke(bean);
