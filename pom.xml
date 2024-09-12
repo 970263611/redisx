@@ -62,7 +62,7 @@
 
     <build>
         <!-- 打包后的名字 -->
-        <finalName>redis-x</finalName>
+        <finalName>redisx</finalName>
         <plugins>
             <!--(start) for package jar with dependencies -->
             <plugin>
@@ -78,6 +78,8 @@
                     <descriptorRefs>
                         <descriptorRef>jar-with-dependencies</descriptorRef>
                     </descriptorRefs>
+                    <appendAssemblyId>false</appendAssemblyId>
+                    <attach>false</attach>
                 </configuration>
                 <executions>
                     <execution>
@@ -86,9 +88,6 @@
                         <goals>
                             <goal>single</goal>
                         </goals>
-                        <configuration>
-                            <finalName>${project.name}</finalName>
-                        </configuration>
                     </execution>
                 </executions>
             </plugin>
