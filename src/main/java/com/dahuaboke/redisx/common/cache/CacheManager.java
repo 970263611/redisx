@@ -5,6 +5,7 @@ import com.dahuaboke.redisx.common.LimitedList;
 import com.dahuaboke.redisx.common.command.from.SyncCommand;
 import com.dahuaboke.redisx.common.enums.FlushState;
 import com.dahuaboke.redisx.common.enums.Mode;
+import com.dahuaboke.redisx.common.enums.ShutdownState;
 import com.dahuaboke.redisx.console.ConsoleContext;
 import com.dahuaboke.redisx.from.FromContext;
 import com.dahuaboke.redisx.handler.ClusterInfoHandler;
@@ -53,6 +54,7 @@ public final class CacheManager {
     private Map<String, LimitedList<Long>> toWriteCount = new HashMap<>();
     private Map<String, Long> errorCount = new HashMap<>();
     private boolean alwaysFullSync;
+    private ShutdownState shutdownState;
 
     public CacheManager(String redisVersion, Mode fromMode, String fromPassword, Mode toMode, String toPassword, boolean alwaysFullSync) {
         this.redisVersion = redisVersion;
@@ -375,6 +377,14 @@ public final class CacheManager {
 
     public boolean isAlwaysFullSync() {
         return alwaysFullSync;
+    }
+
+    public ShutdownState getShutdownState() {
+        return shutdownState;
+    }
+
+    public void setShutdownState(ShutdownState shutdownState) {
+        this.shutdownState = shutdownState;
     }
 
     public static class NodeMessage {

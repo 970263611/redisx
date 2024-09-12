@@ -6,6 +6,7 @@ import com.dahuaboke.redisx.common.cache.CacheManager;
 import com.dahuaboke.redisx.common.command.from.SyncCommand;
 import com.dahuaboke.redisx.common.enums.FlushState;
 import com.dahuaboke.redisx.common.enums.Mode;
+import com.dahuaboke.redisx.common.enums.ShutdownState;
 import com.dahuaboke.redisx.handler.ClusterInfoHandler;
 import com.dahuaboke.redisx.handler.SentinelInfoHandler;
 import org.slf4j.Logger;
@@ -194,7 +195,7 @@ public class ToContext extends Context {
         cacheManager.clearAllNodeMessages();
     }
 
-    public void preemptMaster() {
+    public synchronized void preemptMaster() {
         List<String> commands = new ArrayList() {{
             add("EVAL");
             add(lua1);
@@ -342,6 +343,14 @@ public class ToContext extends Context {
         } else {
             sendCommand(Constants.FLUSH_ALL_COMMAND, 1000, true, false);
         }
+    }
+
+    public ShutdownState getShutdownState() {
+        return cacheManager.getShutdownState();
+    }
+
+    public void setShutdownState(ShutdownState shutdownState) {
+        cacheManager.setShutdownState(shutdownState);
     }
 
     @Override

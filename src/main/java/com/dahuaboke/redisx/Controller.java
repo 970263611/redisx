@@ -5,6 +5,7 @@ import com.dahuaboke.redisx.common.cache.CacheManager;
 import com.dahuaboke.redisx.common.cache.CacheMonitor;
 import com.dahuaboke.redisx.common.enums.FlushState;
 import com.dahuaboke.redisx.common.enums.Mode;
+import com.dahuaboke.redisx.common.enums.ShutdownState;
 import com.dahuaboke.redisx.common.thread.RedisxThreadFactory;
 import com.dahuaboke.redisx.console.ConsoleContext;
 import com.dahuaboke.redisx.console.ConsoleServer;
@@ -109,47 +110,51 @@ public class Controller {
         //需要确保上一次执行结束再执行下一次任务
         controllerPool.scheduleAtFixedRate(() -> {
             try {
-                //判断是否需要退出程序
-                checkTimedExit();
-                boolean isMaster = cacheManager.isMaster();
-                boolean fromIsStarted = cacheManager.fromIsStarted();
                 List<Context> allContexts = cacheManager.getAllContexts();
-                if (cacheManager.toIsStarted()) {
-                    if (FlushState.BEGINNING == cacheManager.getFlushState()) {
-                        flushAllTo(allContexts);
+                if (cacheManager.getShutdownState() != null) {
+                    preemptMasterAndMonitor(allContexts);
+                } else {
+                    //判断是否需要退出程序
+                    checkTimedExit();
+                    boolean isMaster = cacheManager.isMaster();
+                    boolean fromIsStarted = cacheManager.fromIsStarted();
+                    if (cacheManager.toIsStarted()) {
+                        if (FlushState.BEGINNING == cacheManager.getFlushState()) {
+                            flushAllTo(allContexts);
+                        } else {
+                            preemptMasterAndMonitor(allContexts);
+                        }
                     } else {
-                        preemptMasterAndMonitor(allContexts);
+                        //识别to集群中存在节点宕机则全部关闭to
+                        isMaster = false;
+                        cacheManager.closeAllTo();
                     }
-                } else {
-                    //识别to集群中存在节点宕机则全部关闭to
-                    isMaster = false;
-                    cacheManager.closeAllTo();
-                }
-                if (isMaster && !fromIsStarted) { //抢占到主节点，from未启动
-                    logger.info("Starting from clients");
-                    cacheManager.closeAllFrom();
-                    startAllFrom(alwaysFullSync, syncRdb);
-                } else if (isMaster && fromIsStarted) { //抢占到主节点，from已经启动
-                    //do nothing
-                    logger.trace("State: master");
-                } else if (!isMaster && fromIsStarted) { //未抢占到主节点，from已经启动
-                    logger.info("Closing from clients");
-                    cacheManager.closeAllFrom();
-                } else if (!isMaster && !fromIsStarted) { //未抢占到主节点，from未启动
-                    if (!cacheManager.toIsStarted()) {
-                        startAllTo(toFlushSize, flushDb);
+                    if (isMaster && !fromIsStarted) { //抢占到主节点，from未启动
+                        logger.info("Starting from clients");
+                        cacheManager.closeAllFrom();
+                        startAllFrom(alwaysFullSync, syncRdb);
+                    } else if (isMaster && fromIsStarted) { //抢占到主节点，from已经启动
+                        //do nothing
+                        logger.trace("State: master");
+                    } else if (!isMaster && fromIsStarted) { //未抢占到主节点，from已经启动
+                        logger.info("Closing from clients");
+                        cacheManager.closeAllFrom();
+                    } else if (!isMaster && !fromIsStarted) { //未抢占到主节点，from未启动
+                        if (!cacheManager.toIsStarted()) {
+                            startAllTo(toFlushSize, flushDb);
+                        }
+                    } else {
+                        //bug do nothing
+                        logger.warn("Unknown application state");
                     }
-                } else {
-                    //bug do nothing
-                    logger.warn("Unknown application state");
-                }
-                //控制台相关
-                if (startConsole) {
-                    if (cacheManager.getConsoleContext() == null) {
-                        ConsoleNode consoleNode = new ConsoleNode("localhost", consolePort, consoleTimeout);
-                        Context context = consoleNode.getContext();
-                        cacheManager.setConsoleContext((ConsoleContext) context);
-                        consoleNode.start();
+                    //控制台相关
+                    if (startConsole) {
+                        if (cacheManager.getConsoleContext() == null) {
+                            ConsoleNode consoleNode = new ConsoleNode("localhost", consolePort, consoleTimeout);
+                            Context context = consoleNode.getContext();
+                            cacheManager.setConsoleContext((ConsoleContext) context);
+                            consoleNode.start();
+                        }
                     }
                 }
             } catch (Exception e) {
@@ -283,7 +288,7 @@ public class Controller {
     private void registerShutdownKook() {
         Thread shutdownHookThread = new Thread(() -> {
             logger.info("Shutdown hook thread is starting");
-            controllerPool.shutdown();
+            cacheManager.setShutdownState(ShutdownState.BEGINNING);
             logger.info("Update offset thread shutdown");
             List<FromContext> fromContextList = new ArrayList<>();//保留全部from
             List<ToContext> toContextList = new ArrayList<>();//保留全部to
@@ -300,7 +305,7 @@ public class Controller {
             //跑完所有积压数据
             while (true) {
                 boolean allowClose = true;
-                for(int i = 0; i < toContextList.size();i++){
+                for (int i = 0; i < toContextList.size(); i++) {
                     Context toContext = toContextList.get(i);
                     if (!toContext.isClose() && cacheManager.checkHasNeedWriteCommand(toContext)) {
                         allowClose = false;
@@ -311,47 +316,36 @@ public class Controller {
                     break;
                 }
             }
-            try {
-                Thread.sleep(3000);
-            } catch (InterruptedException e) {
-                throw new RuntimeException(e);
-            }
+            controllerPool.shutdownNow();
+            cacheManager.setShutdownState(ShutdownState.WAIT_WRITE_OFFSET);
+            long startTime = System.currentTimeMillis();
             //最后核算一次偏移量
-            int waitTimes = 3;
-            while(waitTimes > 0){
-                boolean allowClose = true;
-                for(FromContext fromContext : fromContextList){
-                    int count = fromContext.offsetAddUp();
-                    if(count != 0){
-                        allowClose = false;
-                        try {
-                            Thread.sleep(500);
-                        } catch (InterruptedException e) {
-                            logger.error(e.getMessage());
-                        } finally {
-                            waitTimes--;
-                        }
-                        break;
-                    }
-                }
-                if(allowClose){
-                    break;
-                }
-            }
-            //关闭所有的to
-            toContextList.forEach(ct -> {
-                if (ct.isAdapt(toMode, switchFlag)) {
-                    //如果本身是主节点则同时写入偏移量
-                    ct.preemptMaster();
+            for (FromContext fromContext : fromContextList) {
+                while (fromContext.offsetAddUp() != 0 && (System.currentTimeMillis() - startTime < 5000)) {
                     try {
-                        //最后一次的偏移量提交
-                        Thread.sleep(1000);
+                        Thread.sleep(50);
                     } catch (InterruptedException e) {
                         logger.error(e.getMessage());
                     }
                 }
+            }
+            cacheManager.setShutdownState(ShutdownState.WAIT_COMMIT_OFFSET);
+            startTime = System.currentTimeMillis();
+            //关闭所有的to
+            for (ToContext ct : toContextList) {
+                if (ct.isAdapt(toMode, switchFlag)) {
+                    //如果本身是主节点则同时写入偏移量
+                    ct.preemptMaster();
+                    while (ShutdownState.ENDED != cacheManager.getShutdownState() && (System.currentTimeMillis() - startTime < 5000)) {
+                        try {
+                            Thread.sleep(50);
+                        } catch (InterruptedException e) {
+                            logger.error(e.getMessage());
+                        }
+                    }
+                }
                 ct.close();
-            });
+            }
             ConsoleContext consoleContext = cacheManager.getConsoleContext();
             if (consoleContext != null) {
                 consoleContext.close();
@@ -359,6 +353,7 @@ public class Controller {
             logger.info("Application exit success");
             //否则日志不一定打印，因为shutdownHook顺序无法保证
             LogManager.shutdown();
+
         });
         shutdownHookThread.setName(Constants.PROJECT_NAME + "-ShutdownHook");
         //非强一致和未开启定时关闭和未开启强制关闭参数时注册hool

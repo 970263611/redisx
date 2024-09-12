@@ -4,6 +4,7 @@ import com.dahuaboke.redisx.Context;
 import com.dahuaboke.redisx.common.Constants;
 import com.dahuaboke.redisx.common.LimitedList;
 import com.dahuaboke.redisx.common.enums.FlushState;
+import com.dahuaboke.redisx.common.enums.ShutdownState;
 import com.dahuaboke.redisx.handler.RedisChannelInboundHandler;
 import com.dahuaboke.redisx.to.ToContext;
 import io.netty.channel.ChannelHandlerContext;
@@ -45,6 +46,9 @@ public class DRHandler extends RedisChannelInboundHandler {
                             toContext.setFlushState(FlushState.BEGINNING);
                         } else {
                             toContext.preemptMasterCompulsory();
+                            if(ShutdownState.WAIT_COMMIT_OFFSET == toContext.getShutdownState()){
+                                toContext.setShutdownState(ShutdownState.ENDED);
+                            }
                         }
                         toContext.isMaster(true);
                     } else { //主节点非自己
