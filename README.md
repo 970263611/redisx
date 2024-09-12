@@ -276,9 +276,9 @@ redisx:
 
 1、From端任意节点故障或Redisx正常关闭(kill)，无数据差异
 
-2、单次To端主节点故障，可能出现不大于To数量与redisx.to.flushDb之积的数据差异
+2、单次To端主节点故障，可能出现不大于To数量与redisx.to.flushSize之积的数据差异
 
-3、Redisx通过强制中断(kill -9)，可能出现不大于To端主节点个数与flushDb之积的数据差异
+3、Redisx通过强制中断(kill -9)，可能出现不大于To端主节点个数与redisx.to.flushSize之积的数据差异
 
 ##### 数据量较小，但对一致性要求较高
 
