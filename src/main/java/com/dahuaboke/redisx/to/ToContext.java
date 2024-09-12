@@ -195,7 +195,7 @@ public class ToContext extends Context {
         cacheManager.clearAllNodeMessages();
     }
 
-    public void preemptMaster() {
+    public synchronized void preemptMaster() {
         List<String> commands = new ArrayList() {{
             add("EVAL");
             add(lua1);

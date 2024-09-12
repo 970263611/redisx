@@ -316,52 +316,44 @@ public class Controller {
                     break;
                 }
             }
-            try {
-                boolean b = controllerPool.awaitTermination(9000L, TimeUnit.MILLISECONDS);
-                if (b) {
-                    cacheManager.setShutdownState(ShutdownState.WAIT_WRITE_OFFSET);
-                    long startTime = System.currentTimeMillis();
-                    //最后核算一次偏移量
-                    for (FromContext fromContext : fromContextList) {
-                        while (fromContext.offsetAddUp() != 0 && (System.currentTimeMillis() - startTime < 5000)) {
-                            try {
-                                Thread.sleep(50);
-                            } catch (InterruptedException e) {
-                                logger.error(e.getMessage());
-                            }
-                        }
+            controllerPool.shutdownNow();
+            cacheManager.setShutdownState(ShutdownState.WAIT_WRITE_OFFSET);
+            long startTime = System.currentTimeMillis();
+            //最后核算一次偏移量
+            for (FromContext fromContext : fromContextList) {
+                while (fromContext.offsetAddUp() != 0 && (System.currentTimeMillis() - startTime < 5000)) {
+                    try {
+                        Thread.sleep(50);
+                    } catch (InterruptedException e) {
+                        logger.error(e.getMessage());
                     }
-                    cacheManager.setShutdownState(ShutdownState.WAIT_COMMIT_OFFSET);
-                    startTime = System.currentTimeMillis();
-                    //关闭所有的to
-                    for (ToContext ct : toContextList) {
-                        if (ct.isAdapt(toMode, switchFlag)) {
-                            //如果本身是主节点则同时写入偏移量
-                            ct.preemptMaster();
-                            while (ShutdownState.ENDED != cacheManager.getShutdownState() && (System.currentTimeMillis() - startTime < 5000)) {
-                                try {
-                                    Thread.sleep(50);
-                                } catch (InterruptedException e) {
-                                    logger.error(e.getMessage());
-                                }
-                            }
-                        }
-                        ct.close();
-                    }
-                    ConsoleContext consoleContext = cacheManager.getConsoleContext();
-                    if (consoleContext != null) {
-                        consoleContext.close();
-                    }
-                    logger.info("Application exit success");
-                    //否则日志不一定打印，因为shutdownHook顺序无法保证
-                    LogManager.shutdown();
-                } else {
-                    System.exit(0);
                 }
-            } catch (InterruptedException e) {
-                logger.error(e.getMessage());
-                System.exit(0);
             }
+            cacheManager.setShutdownState(ShutdownState.WAIT_COMMIT_OFFSET);
+            startTime = System.currentTimeMillis();
+            //关闭所有的to
+            for (ToContext ct : toContextList) {
+                if (ct.isAdapt(toMode, switchFlag)) {
+                    //如果本身是主节点则同时写入偏移量
+                    ct.preemptMaster();
+                    while (ShutdownState.ENDED != cacheManager.getShutdownState() && (System.currentTimeMillis() - startTime < 5000)) {
+                        try {
+                            Thread.sleep(50);
+                        } catch (InterruptedException e) {
+                            logger.error(e.getMessage());
+                        }
+                    }
+                }
+                ct.close();
+            }
+            ConsoleContext consoleContext = cacheManager.getConsoleContext();
+            if (consoleContext != null) {
+                consoleContext.close();
+            }
+            logger.info("Application exit success");
+            //否则日志不一定打印，因为shutdownHook顺序无法保证
+            LogManager.shutdown();
+
         });
         shutdownHookThread.setName(Constants.PROJECT_NAME + "-ShutdownHook");
         //非强一致和未开启定时关闭和未开启强制关闭参数时注册hool
