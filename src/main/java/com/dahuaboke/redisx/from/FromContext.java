@@ -160,8 +160,9 @@ public class FromContext extends Context {
         }
     }
 
-    public synchronized void offsetAddUp() {
+    public synchronized int offsetAddUp() {
         SyncCommand command;
+        int size = 0;
         while (offsetCache != null && (command = offsetCache.getFirstKey()) != null) {
             Integer value = offsetCache.get(command);
             if (value != null) {
@@ -172,12 +173,14 @@ public class FromContext extends Context {
                 break;
             }
         }
+        if(offsetCache != null){
+            size = offsetCache.size();
+        }
+        return size;
     }
 
     public void cacheOffset(SyncCommand syncCommand) {
-        if (!isClose) {
-            offsetCache.putValue(syncCommand, syncCommand.getSyncLength());
-        }
+        offsetCache.putValue(syncCommand, syncCommand.getSyncLength());
     }
 
     public boolean checkCacheOffsetIsEmpty() {
