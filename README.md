@@ -132,19 +132,19 @@ redisx:
     redis:
       #(必填项)from端redis版本，建议该版本不高于to端版本，防止因redis指令不兼容导致的同步问题
       version: 6.0.9
-      #from端redis密码。哨兵模式下数据节点和哨兵节点密码应保持一致
-      password: 1a.2b*
-      #(必填项)from端redis模式，单机：single 哨兵:sentinel 集群：cluster
-      mode: cluster
-      #(redis.from.mode为sentinel时必填)哨兵模式下主节点的mastername
-      masterName: myMaster
-      #(必填项)from端redis节点地址，可配置单个或多个节点地址
-      address:
-        - 127.0.0.1:16001
-      #是否开启垂直扩展，默认值false
-      verticalScaling: false
-      #是否强制连接主节点，默认值false
-      connectMaster: false
+    #from端redis密码。哨兵模式下数据节点和哨兵节点密码应保持一致
+    password: 1a.2b*
+    #(必填项)from端redis模式，单机：single 哨兵:sentinel 集群：cluster
+    mode: cluster
+    #(redis.from.mode为sentinel时必填)哨兵模式下主节点的mastername
+    masterName: myMaster
+    #(必填项)from端redis节点地址，可配置单个或多个节点地址
+    address:
+      - 127.0.0.1:16001
+    #是否开启垂直扩展，默认值false
+    verticalScaling: false
+    #是否强制连接主节点，默认值false
+    connectMaster: false
   to:
     #to端redis密码
     password: 2b*1a.
