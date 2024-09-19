@@ -33,6 +33,7 @@ redisx:
 #  timedExit:
 #    enable: false
 #    force: false
+#    onlyRdb: false
 #    duration: -1
 
 #jasypt:
