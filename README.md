@@ -1,22 +1,10 @@
+
+
 ## Redis stream replication tool Redisx
 
-[![996.icu](https://img.shields.io/badge/link-996.icu-red.svg)](https://996.icu)
+[![996.icu](https://img.shields.io/badge/link-996.icu-red.svg)](https://996.icu) 
 
-### Author
-
-Dahua team (see GitHub submitter for details),please pay attention to [material project](https://github.com/970263611/redisx-material) for Redis related materials.
-
-### Definition
-
-Redisx:The name of the stream replication tool.
-
-From:The collective name of Redis end nodes for data sources.
-
-To:The collective name of Redis end nodes for data storage.
-
-### The startup environment 
-
-Jdk1.8+
+English | [中文](https://github.com/970263611/redisx/blob/main/README-CN.md)
 
 ### Introduction to Redisx
 
@@ -37,6 +25,22 @@ On a computer with a CPU of 13600KF and DDR5 64G memory (32G dual channel), 3 ho
 ​                                             **Test the data transmission rate of Redisx**
 
 ![redisx5w-English](images/redisx5w-English.jpg)
+
+### Author
+
+Dahua team (see GitHub submitter for details),please pay attention to [material project](https://github.com/970263611/redisx-material) for Redis related materials.
+
+### Definition
+
+Redisx:The name of the stream replication tool.
+
+From:The collective name of Redis end nodes for data sources.
+
+To:The collective name of Redis end nodes for data storage.
+
+### The startup environment 
+
+Jdk1.8+
 
 ### Quick start
 
