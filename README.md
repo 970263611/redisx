@@ -132,7 +132,9 @@ redisx:
     redis:
       #(必填项)from端redis版本，建议该版本不高于to端版本，防止因redis指令不兼容导致的同步问题
       version: 6.0.9
-    #from端redis密码。哨兵模式下数据节点和哨兵节点密码应保持一致
+    #From端redis认证用户名
+    username: fromUser
+    #From端redis密码。哨兵模式下数据节点和哨兵节点密码应保持一致
     password: 1a.2b*
     #(必填项)from端redis模式，单机：single 哨兵:sentinel 集群：cluster
     mode: cluster
@@ -146,7 +148,9 @@ redisx:
     #是否强制连接主节点，默认值false
     connectMaster: false
   to:
-    #to端redis密码
+    #To端redis认证用户名
+    username: toUser
+    #To端redis密码
     password: 2b*1a.
     #(必填项)to端redis模式，单机：single 哨兵:sentinel 集群：cluster
     mode: cluster
@@ -188,10 +192,16 @@ redisx:
   timedExit:
     #是否开启定时退出，默认值false
     enable: false
-    #是否不执行关闭钩子函数，默认值false
+    #是否不执行关闭钩子函数
+    #在[timedExit.enable=true]时生效，默认值false
     force: false
-    #定时时长，单位：秒，小于0则定时退出功能失效，默认值-1
+    #定时时长，单位：秒，小于0则定时退出功能失效
+    #在[timedExit.enable=true]时生效，默认值-1
     duration: -1
+    #只同步rdb，当定时和此配置同时设置时，两个同时生效，当一方触发则程序退出
+    #此配置生效时[timedExit.force]配置强制为false
+    #在[timedExit.enable=true]时生效，默认值false
+    onlyRdb: false
 #配置文件支持enc加密，加密的配置需要使用'ENC(配置内容)'包裹
 jasypt:
   encryptor:

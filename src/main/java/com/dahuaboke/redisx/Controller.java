@@ -63,6 +63,7 @@ public class Controller {
     private boolean timedExitForce;
     private int timedExitDuration;
     private long programCloseTime;
+    private boolean onlyRdb;
 
     public Controller(Redisx.Config config) {
         this.fromNodeAddresses = config.getFromAddresses();
@@ -96,6 +97,7 @@ public class Controller {
         this.timedExitForce = config.isTimedExitForce();
         this.timedExitDuration = config.getTimedExitDuration();
         this.programCloseTime = System.currentTimeMillis() + this.timedExitDuration * 1000;
+        this.onlyRdb = config.isOnlyRdb();
     }
 
     public void start() {
@@ -173,6 +175,14 @@ public class Controller {
             logger.info("Timed exit for application : {}", new Date(programCloseTime));
             System.exit(0);
         }
+        if (onlyRdb) {
+            for (Context cont : cacheManager.getAllContexts()) {
+                if (cont instanceof FromContext) {
+                    return;
+                }
+            }
+            System.exit(0);
+        }
     }
 
     private void closeLog4jShutdownHook() {
@@ -232,7 +242,7 @@ public class Controller {
         for (InetSocketAddress address : fromMasterNodesInfo) {
             String host = address.getHostString();
             int port = address.getPort();
-            FromNode fromNode = new FromNode("Sync", cacheManager, host, port, startConsole, false, alwaysFullSync, syncRdb, false, false);
+            FromNode fromNode = new FromNode("Sync", cacheManager, host, port, startConsole, false, alwaysFullSync, syncRdb, false, false, onlyRdb);
             fromNode.start();
             Context context = fromNode.getContext();
             cacheManager.register(fromNode.getContext());
@@ -531,7 +541,7 @@ public class Controller {
         for (InetSocketAddress address : fromNodeAddresses) {
             String host = address.getHostString();
             int port = address.getPort();
-            FromNode fromNode = new FromNode("GetFromNodesInfo", cacheManager, host, port, startConsole, false, false, false, true, isGetMasterNodeInfo);
+            FromNode fromNode = new FromNode("GetFromNodesInfo", cacheManager, host, port, startConsole, false, false, false, true, isGetMasterNodeInfo, false);
             fromNode.start();
             if (fromNode.isStarted(5000)) {
                 FromContext context = (FromContext) fromNode.getContext();
@@ -645,13 +655,13 @@ public class Controller {
         private int port;
         private FromContext fromContext;
 
-        public FromNode(String threadNamePrefix, CacheManager cacheManager, String host, int port, boolean startConsole, boolean startByConsole, boolean alwaysFullSync, boolean syncRdb, boolean isNodesInfoContext, boolean isGetMasterNodeInfo) {
+        public FromNode(String threadNamePrefix, CacheManager cacheManager, String host, int port, boolean startConsole, boolean startByConsole, boolean alwaysFullSync, boolean syncRdb, boolean isNodesInfoContext, boolean isGetMasterNodeInfo, boolean onlyRdb) {
             this.name = Constants.PROJECT_NAME + "-" + threadNamePrefix + "-FromNode - " + host + " - " + port;
             this.setName(name);
             this.host = host;
             this.port = port;
             //放在构造方法而不是run，因为兼容console模式，需要收集console，否则可能收集到null
-            this.fromContext = new FromContext(cacheManager, host, port, startConsole, startByConsole, fromMode, toMode, alwaysFullSync, syncRdb, isNodesInfoContext, fromMasterName, connectFromMaster, isGetMasterNodeInfo);
+            this.fromContext = new FromContext(cacheManager, host, port, startConsole, startByConsole, fromMode, toMode, alwaysFullSync, syncRdb, isNodesInfoContext, fromMasterName, connectFromMaster, isGetMasterNodeInfo, onlyRdb);
         }
 
         @Override
@@ -692,7 +702,7 @@ public class Controller {
                 getFromMasterNodesInfo().forEach(address -> {
                     String host = address.getHostString();
                     int port = address.getPort();
-                    FromNode fromNode = new FromNode("Console", cacheManager, host, port, startConsole, true, false, false, false, false);
+                    FromNode fromNode = new FromNode("Console", cacheManager, host, port, startConsole, true, false, false, false, false, false);
                     consoleContext.setFromContext((FromContext) fromNode.getContext());
                     fromNode.start();
                 });

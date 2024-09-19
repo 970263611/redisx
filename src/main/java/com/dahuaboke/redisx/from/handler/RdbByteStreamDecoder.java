@@ -40,10 +40,7 @@ public class RdbByteStreamDecoder extends ChannelInboundHandlerAdapter {
     private FromContext fromContext;
 
     private enum RdbType {
-        START,
-        TYPE_EOF,
-        TYPE_LENGTH,
-        END;
+        START, TYPE_EOF, TYPE_LENGTH, END;
     }
 
     public RdbByteStreamDecoder(FromContext fromContext) {
@@ -145,7 +142,13 @@ public class RdbByteStreamDecoder extends ChannelInboundHandlerAdapter {
                 rdb.release();
             }
         } else {
-            ctx.fireChannelRead(msg);
+            if (!fromContext.isOnlyRdb()) {
+                ctx.fireChannelRead(msg);
+            } else {
+                if (msg instanceof ByteBuf) {
+                    ((ByteBuf) msg).release();
+                }
+            }
         }
     }
 
@@ -183,6 +186,9 @@ public class RdbByteStreamDecoder extends ChannelInboundHandlerAdapter {
                     }
                 }
             }
+        }
+        if (fromContext.isOnlyRdb()) {
+            fromContext.close();
         }
     }
 }

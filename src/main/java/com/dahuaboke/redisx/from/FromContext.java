@@ -39,8 +39,9 @@ public class FromContext extends Context {
     private String fromMasterName;
     private boolean connectFromMaster;
     private ConcurrentLinkedMap<SyncCommand, Integer> offsetCache = new ConcurrentLinkedMap<>();
+    private boolean onlyRdb;
 
-    public FromContext(CacheManager cacheManager, String host, int port, boolean startConsole, boolean startByConsole, Mode fromMode, Mode toMode, boolean alwaysFullSync, boolean syncRdb, boolean isNodesInfoContext, String fromMasterName, boolean connectFromMaster, boolean isGetMasterNodeInfo) {
+    public FromContext(CacheManager cacheManager, String host, int port, boolean startConsole, boolean startByConsole, Mode fromMode, Mode toMode, boolean alwaysFullSync, boolean syncRdb, boolean isNodesInfoContext, String fromMasterName, boolean connectFromMaster, boolean isGetMasterNodeInfo, boolean onlyRdb) {
         super(cacheManager, host, port, fromMode, toMode, startConsole, startByConsole);
         if (startByConsole) {
             replyQueue = new LinkedBlockingDeque();
@@ -62,6 +63,7 @@ public class FromContext extends Context {
             }
         }
         this.isGetMasterNodeInfo = isGetMasterNodeInfo;
+        this.onlyRdb = onlyRdb;
     }
 
     public String getId() {
@@ -173,7 +175,7 @@ public class FromContext extends Context {
                 break;
             }
         }
-        if(offsetCache != null){
+        if (offsetCache != null) {
             size = offsetCache.size();
         }
         return size;
@@ -279,5 +281,9 @@ public class FromContext extends Context {
 
     public int getSlotEnd() {
         return slotEnd;
+    }
+
+    public boolean isOnlyRdb() {
+        return onlyRdb;
     }
 }
