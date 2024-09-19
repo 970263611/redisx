@@ -2,8 +2,6 @@
 
 [![996.icu](https://img.shields.io/badge/link-996.icu-red.svg)](https://996.icu)
 
-[TOC]
-
 ### 作者
 
 大花团队（详见github提交者），redis相关材料请关注[material项目](https://github.com/970263611/redisx-material)
@@ -29,7 +27,7 @@ Redisx支持From端单机/哨兵/集群模式，To端单机/哨兵/集群模式�
 - 支持全量同步rdb数据，增量同步数据
 - 支持支持续传
 - 支持Redis的五种基本类型 + stream
-- 支持From、To双端数据查询，宕机重连
+- 支持、To双端数据查询，宕机重连
 - 支持定时退出一次性同步
 
 ![](images/redis-x.png)
@@ -56,17 +54,17 @@ redisx.yml快速启动配置示例
 
 ```yaml
 redisx:
-  from:
+  :
     redis:
       version: 6.0.9  #redis版本
     password: 1a.2b*  #Redis密码
     mode: cluster     #Redis模式，单机：single 哨兵:sentinel 集群：cluster
-    address:          #from数据来源地址，如模式是集群或哨兵，配置单一节点即可
+    address:          #From数据来源地址，如模式是集群或哨兵，配置单一节点即可
       - 127.0.0.1:6379
   to:
     password: 1a.2b*  #redis密码
     mode: cluster     #Redis模式，单机：single 哨兵:sentinel 集群：cluster
-    address:          #to数据来源地址，如模式是集群或哨兵，配置单一节点即可
+    address:          #To数据来源地址，如模式是集群或哨兵，配置单一节点即可
       - 127.0.0.1:6380
 ```
 
@@ -116,7 +114,7 @@ Redis节点的状态不会影响到Redisx服务的运行。当Redis节点出现�
 
 ```shell
 http://${ip}:${port}/console?command=${command}&type=from/to   
-#command为具体指令,type:为from查询from端redis数据，为to查询to端redis数据
+#command为具体指令,type:为From查询From端redis数据，为To查询To端redis数据
 如：
 http://localhost:9999/console?command=get testKey&type=from
 http://localhost:9999/console?command=get testKey&type=to
@@ -130,15 +128,15 @@ http://localhost:9999/console?command=get testKey&type=to
 redisx:
   from:
     redis:
-      #(必填项)from端redis版本，建议该版本不高于to端版本，防止因redis指令不兼容导致的同步问题
+      #(必填项)From端redis版本，建议该版本不高于To端版本，防止因redis指令不兼容导致的同步问题
       version: 6.0.9
-    #from端redis密码。哨兵模式下数据节点和哨兵节点密码应保持一致
+    #From端redis密码。哨兵模式下数据节点和哨兵节点密码应保持一致
     password: 1a.2b*
-    #(必填项)from端redis模式，单机：single 哨兵:sentinel 集群：cluster
+    #(必填项)From端redis模式，单机：single 哨兵:sentinel 集群：cluster
     mode: cluster
     #(redis.from.mode为sentinel时必填)哨兵模式下主节点的mastername
     masterName: myMaster
-    #(必填项)from端redis节点地址，可配置单个或多个节点地址
+    #(必填项)From端redis节点地址，可配置单个或多个节点地址
     address:
       - 127.0.0.1:16001
     #是否开启垂直扩展，默认值false
@@ -146,18 +144,18 @@ redisx:
     #是否强制连接主节点，默认值false
     connectMaster: false
   to:
-    #to端redis密码
+    #To端redis密码
     password: 2b*1a.
-    #(必填项)to端redis模式，单机：single 哨兵:sentinel 集群：cluster
+    #(必填项)To端redis模式，单机：single 哨兵:sentinel 集群：cluster
     mode: cluster
     #(redis.to.mode为sentinel时必填)哨兵模式下主节点的mastername
     masterName: myMaster
     #(必填项)to端redis节点地址，可配置单个或多个节点地址
     address:
       - 127.0.0.2:16101
-    #是否在启动时清空to端数据（当redisx.from.alwaysFullSync为true时，此配置每次同步时都会生效），默认值false
+    #是否在启动时清空To端数据（当redisx.from.alwaysFullSync为true时，此配置每次同步时都会生效），默认值false
     flushDb: false
-    #to端单次写入数据阈值，默认值50
+    #To端单次写入数据阈值，默认值50
     flushSize: 50
   console:
     #是否启用控制台，默认值true
