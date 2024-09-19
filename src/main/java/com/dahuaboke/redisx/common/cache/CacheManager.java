@@ -237,7 +237,24 @@ public final class CacheManager {
     public ClusterInfoHandler.SlotInfo getFromClusterNodeInfoByIpAndPort(String ip, int port) {
         for (ClusterInfoHandler.SlotInfo slotInfo : fromClusterNodesInfo) {
             if (ip.equals(slotInfo.getIp()) && port == slotInfo.getPort()) {
-                return slotInfo;
+                if (slotInfo.isActiveMaster()) {
+                    return slotInfo;
+                } else {
+                    return getFromClusterMasterNodeInfoById(slotInfo.getMasterId());
+                }
+            }
+        }
+        return null;
+    }
+
+    public ClusterInfoHandler.SlotInfo getFromClusterMasterNodeInfoById(String id) {
+        for (ClusterInfoHandler.SlotInfo slotInfo : fromClusterNodesInfo) {
+            if (slotInfo.getId().endsWith(id)) {
+                if (slotInfo.isActiveMaster()) {
+                    return slotInfo;
+                } else {
+                    return null;
+                }
             }
         }
         return null;

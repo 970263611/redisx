@@ -36,19 +36,17 @@ public class ConsoleHandler extends SimpleChannelInboundHandler<FullHttpRequest>
         if (param != null) {
             if (param.equalsIgnoreCase(Constants.CONSOLE_URI_CONSOLE_PREFIX)) {
                 InputStream inputStream = Redisx.class.getClassLoader().getResourceAsStream("monitor.html");
-                if (inputStream != null) {
-                    try (BufferedReader reader = new BufferedReader(new InputStreamReader(inputStream))) {
-                        StringBuffer sb = new StringBuffer();
-                        String line;
-                        while ((line = reader.readLine()) != null) {
-                            sb.append(line);
-                        }
-                        ByteBuf content = Unpooled.copiedBuffer(sb, CharsetUtil.UTF_8);
-                        FullHttpResponse response = new DefaultFullHttpResponse(HttpVersion.HTTP_1_1, HttpResponseStatus.OK, content);
-                        response.headers().set(HttpHeaderNames.CONTENT_TYPE, "text/html; charset=UTF-8");
-                        ctx.writeAndFlush(response);
-                    } catch (IOException e) {
+                try (BufferedReader reader = new BufferedReader(new InputStreamReader(inputStream))) {
+                    StringBuffer sb = new StringBuffer();
+                    String line;
+                    while ((line = reader.readLine()) != null) {
+                        sb.append(line + "\r\n");
                     }
+                    ByteBuf content = Unpooled.copiedBuffer(sb, CharsetUtil.UTF_8);
+                    FullHttpResponse response = new DefaultFullHttpResponse(HttpVersion.HTTP_1_1, HttpResponseStatus.OK, content);
+                    response.headers().set(HttpHeaderNames.CONTENT_TYPE, "text/html; charset=UTF-8");
+                    ctx.writeAndFlush(response);
+                } catch (IOException e) {
                 }
                 ctx.close();
             }
@@ -57,8 +55,19 @@ public class ConsoleHandler extends SimpleChannelInboundHandler<FullHttpRequest>
                 ctx.fireChannelRead(new SearchCommand(params));
             } else if (param.startsWith(Constants.CONSOLE_URI_MONITOR_PREFIX)) {
                 ctx.fireChannelRead(new MonitorCommand());
-            } else if (param.startsWith("images")) {
-                System.out.println(param);
+            } else if (param.startsWith("/images")) {
+                String fileName = param.replaceFirst("/images/", "");
+                InputStream inputStream = Redisx.class.getClassLoader().getResourceAsStream("images/" + fileName);
+                ByteBuf byteBuf = Unpooled.buffer();
+                byte[] buffer = new byte[4096];
+                int bytesRead;
+                while ((bytesRead = inputStream.read(buffer)) != -1) {
+                    byteBuf.writeBytes(buffer, 0, bytesRead);
+                }
+                FullHttpResponse response = new DefaultFullHttpResponse(HttpVersion.HTTP_1_1, HttpResponseStatus.OK, byteBuf);
+                response.headers().set(HttpHeaderNames.CONTENT_DISPOSITION, "attachment; filename=" + fileName + "; charset=UTF-8");
+                ctx.writeAndFlush(response);
+                ctx.close();
             } else {
                 ctx.fireChannelRead(new ReplyCommand("Can not adapt uri path"));
             }

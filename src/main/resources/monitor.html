@@ -224,8 +224,6 @@
 
   <script>
     let target = '';
-    console.log('hostname', window.location.hostname === 'localhost')
-    // setInterval(() => getData(), 5000);
     getData();
     function getData() {
       fetch(target + '/console/monitor')
