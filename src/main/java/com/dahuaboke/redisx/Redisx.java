@@ -139,14 +139,16 @@ public class Redisx {
             if (this.immediateResendTimes < 1) {
                 this.immediateResendTimes = 1;
             }
-            if (this.timedExitDuration <= 0) {
+            if (this.timedExitDuration <= 0 && !this.onlyRdb) {
                 this.timedExitEnable = false;
             }
-            if (!timedExitEnable) {
+            if (timedExitEnable) {
+                if (this.onlyRdb) {
+                    this.timedExitForce = false;
+                }
+            } else {
                 this.onlyRdb = false;
-            }
-            if (this.onlyRdb) {
-                this.timedExitForce = false;
+                this.timedExitDuration = -1;
             }
             //垂直扩展不支持清空to-rdb
             if (this.verticalScaling) {

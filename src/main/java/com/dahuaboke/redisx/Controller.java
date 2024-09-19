@@ -171,7 +171,7 @@ public class Controller {
     }
 
     private void checkTimedExit() {
-        if (timedExitEnable && System.currentTimeMillis() > programCloseTime) {
+        if (timedExitEnable && timedExitDuration > 0 && System.currentTimeMillis() > programCloseTime) {
             logger.info("Timed exit for application : {}", new Date(programCloseTime));
             System.exit(0);
         }
