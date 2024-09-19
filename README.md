@@ -117,7 +117,7 @@ The Redisx page monitoring function can display the real-time working status of 
 
 ##### Data query capability
 
-**Note **:Production startup is not recommended, and port access is not recommended
+Note: Production startup is not recommended, and port access is not recommended
 
 ```shell
 http://${ip}:${port}/console?command=${command}&type=from/to   

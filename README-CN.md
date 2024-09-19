@@ -108,11 +108,11 @@ Redis节点的状态不会影响到Redisx服务的运行。当Redis节点出现�
 
 通过Redisx页面监控功能可以实时展示Redis以及Redisx节点的工作状态，Redisx的数据同步速度，数据堆积以及Redisx的配置信息。同时现正在逐渐完善Redisx的告警功能。
 
-![](images/monitor.png)
+![](images/monitor-cn.jpg)
 
 ##### 数据查询能力
 
-**注**：不建议生产启动，不建议端口开放访问
+注：不建议生产启动，不建议端口开放访问
 
 ```shell
 http://${ip}:${port}/console?command=${command}&type=from/to   
