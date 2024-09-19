@@ -64,6 +64,7 @@ public class Controller {
     private int timedExitDuration;
     private long programCloseTime;
     private boolean onlyRdb;
+    private boolean onlyRdbComeIntoEffect = false;
 
     public Controller(Redisx.Config config) {
         this.fromNodeAddresses = config.getFromAddresses();
@@ -176,12 +177,17 @@ public class Controller {
             System.exit(0);
         }
         if (onlyRdb) {
+            if (cacheManager.fromIsStarted()) {
+                onlyRdbComeIntoEffect = true;
+            }
             for (Context cont : cacheManager.getAllContexts()) {
                 if (cont instanceof FromContext) {
                     return;
                 }
             }
-            System.exit(0);
+            if (onlyRdbComeIntoEffect) {
+                System.exit(0);
+            }
         }
     }
 
