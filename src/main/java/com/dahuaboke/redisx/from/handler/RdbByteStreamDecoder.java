@@ -142,12 +142,12 @@ public class RdbByteStreamDecoder extends ChannelInboundHandlerAdapter {
                 rdb.release();
             }
         } else {
-            if (!fromContext.isOnlyRdb()) {
-                ctx.fireChannelRead(msg);
-            } else {
+            if (fromContext.isOnlyRdb() && rdbType == RdbType.END) {
                 if (msg instanceof ByteBuf) {
                     ((ByteBuf) msg).release();
                 }
+            } else {
+                ctx.fireChannelRead(msg);
             }
         }
     }
