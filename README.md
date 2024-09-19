@@ -1,208 +1,205 @@
-## Redis流复制工具Redisx
+## Redis stream replication tool Redisx
 
 [![996.icu](https://img.shields.io/badge/link-996.icu-red.svg)](https://996.icu)
 
-[TOC]
+### Author
 
-### 作者
+Dahua team (see GitHub submitter for details),please pay attention to [material project](https://github.com/970263611/redisx-material) for Redis related materials.
 
-大花团队（详见github提交者），redis相关材料请关注[material项目](https://github.com/970263611/redisx-material)
+### Definition
 
-### 名词解释
+Redisx:The name of the stream replication tool.
 
-Redisx:  流复制工具的名称
+From:The collective name of Redis end nodes for data sources.
 
-From：数据来源Redis端节点的统称
+To:The collective name of Redis end nodes for data storage.
 
-To：数据存入Redis端节点的统称
+### The startup environment 
 
-### 启动环境
+Jdk1.8+
 
-环境需求为Jdk1.8+
+### Introduction to Redisx
 
-### Redisx介绍
+Redis supports the From side single machine/sentinel'cluster mode, and the To sidesingle machine sentinel cluster mode can be freely combined。
 
-Redisx支持From端单机/哨兵/集群模式，To端单机/哨兵/集群模式自由组合。
+- Supports Redis version2.8 and above
+- Support high availability cluster deployment and vertical scaling
+- Support full synchronization of RDB data and incremental synchronization of data
+- Support for continued transmission
+- Supports the five basic types of Redis + stream
+- Support From and To dual end data queries, with the ability to reconnect in case of downtime
+- Support timed exit for one-time synchronization
 
-- 支持Redis版本2.8及以上
-- 支持高可用集群部署，垂直扩展
-- 支持全量同步rdb数据，增量同步数据
-- 支持支持续传
-- 支持Redis的五种基本类型 + stream
-- 支持From、To双端数据查询，宕机重连
-- 支持定时退出一次性同步
+![redis-x-English](images/redis-x-English.png)
 
-![](images/redis-x.png)
+On a computer with a CPU of 13600KF and DDR5 64G memory (32G dual channel), 3 hosts and 3 slaves were set up in two Redis clusters. The boosting tool (30 concurrent) and Redis were run simultaneously. In the absence of a specific boot memory size, no server startup, and a JDK of 1.8 in Redis, the test results are as follows:
 
-CPU为13600KF、内存为DDR5 64G（32G双通道）的电脑上搭建3主3从两套redis集群，发压工具（30并发）和Redisx同时运行，在redisx没有特殊指定启动内存大小、没有-server启动、jdk为1.8的形况下，测试结果如下：
+​                                             **Test the data transmission rate of Redisx**
 
-![](images/redisx5w.jpg)
+![redisx5w-English](images/redisx5w-English.jpg)
 
-### 快速启动
+### Quick start
 
-- 指定配置文件方式
+- Specify the configuration file method
 
   ```shell
   java -jar redisx.jar redisx.yml
   ```
 
-- 使用默认配置文件方式
+- Use default configuration file method
 
   ```shell
   java -jar redisx.jar
   ```
 
-redisx.yml快速启动配置示例
+redisx.yml Quick Start Configuration Example
 
 ```yaml
 redisx:
   from:
     redis:
-      version: 6.0.9  #redis版本
-    password: 1a.2b*  #Redis密码
-    mode: cluster     #Redis模式，单机：single 哨兵:sentinel 集群：cluster
-    address:          #from数据来源地址，如模式是集群或哨兵，配置单一节点即可
+      version: 6.0.9  #Redis version
+    password: 1a.2b*  #Redis password
+    mode: cluster     #Redis mode,single sentinel cluster
+    address:          #From Data source address, such as cluster or sentinel mode, can be configured with a single node
       - 127.0.0.1:6379
   to:
-    password: 1a.2b*  #redis密码
-    mode: cluster     #Redis模式，单机：single 哨兵:sentinel 集群：cluster
-    address:          #to数据来源地址，如模式是集群或哨兵，配置单一节点即可
+    password: 1a.2b*  #Redis password
+    mode: cluster     #Redis mode,single sentinel cluster
+    address:          #To Data source address, such as cluster or sentinel mode, can be configured with a single node
       - 127.0.0.1:6380
 ```
 
-Redisx启动时支持环境变量方式传递参数，此方式优先级高于配置文件方式。
+Redisx At startup, it supports passing parameters in the environment variable mode, which has higher priority than the configuration file mode
 
 ```shell
 -Dredisx.from.password=1a.2b* -Dredisx.to.password=2b*1a.
 ```
 
-### 高可用
+### Availability
 
-Redisx支持多节点主备部署，当多节点同时启动在切换标志（redisx.switchFlag）配置相同时会自动形成一主多从主备模式，当主节点发生异常时，备节点会自动升主，继续进行数据同步工作，并可断点续传，保证数据的完整性和连续性。此时异常节点恢复后会自动降从。
+Redisx supports multi node primary and backup deployment.When multiple nodes start simultaneously and the switch flag (redisx. switchFlag)configuration is the same, it will automatically form a one master, multi slave primaryand backup mode. When the primary node is abnormal, the backup node willautomatically become the primary node, continue data synchronization work. and canresume transmission with breakpoints to ensure data integrity and continuity. At thispoint, the abnormal node will automatically downgrade after recovery.
 
-#### 垂直扩展
+#### Vertical Scaling
 
-在From端为Redis集群模式同时存在大量数据时，一个Redisx节点进行全量的数据同步可能会存在延迟，所以Redisx支持拆分同步，可以通过配置使Redisx服务针对性同步某一些From集群节点，通过多次启动不同的Redisx节点来覆盖同步到所有的From集群节点，大幅度提高同步效率。
+When there is a large amount of data in Redis cluster mode on the From side duringvertical expansion, there may be a delay in synchronizing the entire amount of datawith a Redis node. Therefore, Redis supports split synchronization, which can beconfigured to enable the Redis service to selectively synchronize certain From clusternodes. By starting different Redis nodes multiple times, synchronization can becovered to all From cluster nodes, greatly improving synchronization efficiency.
 
-![](images/highuse.png)
+<img src="images/highuse-English.png" alt="highuse-English" style="zoom:150%;" />
 
-#### 自我修复
+#### Self-healing
 
-Redis节点的状态不会影响到Redisx服务的运行。当Redis节点出现服务宕机或者主节点漂移等异常现象时，Redisx可以自动判断选择正常的节点，并开始/终止数据同步工作，无需关心From/To端Redis节点的状态会对Redisx造成影响。
 
-### 数据写入模式
+The status of Redis nodes will not affect the operation of Redisx services. When Redis nodes experience abnormal phenomena such as service downtime or master node drift, Redis can automatically select normal nodes and start/stop data synchronization work without worrying about the status of Redis nodes on the From/To side, which may affect Redis.
 
-##### 默认模式
+### Data writing mode
 
-默认采用一秒一次的频率提交偏移量，50条/100毫秒频率提交数据至To端集群，此模式吞吐量较高，和强一致模式互斥。
+##### Default Mode
 
-##### 强一致模式
+The default mode is to submit offset data at a frequency of once per second, with 50 data per 100milliseconds submitted to the To cluster. This mode has a high throughput and ismutually exclusive with the Strong Consistency mode.
 
-强一致模式每条数据写入To集群后都会强制同步一次偏移量，此模式稳定性较高，和默认模式互斥。
+##### Strong consistency mode
 
-##### 强制全量同步数据模式
+ After each data 1s written to the To cluster, it is forciblysynchronized with an offset. This mode has high stability and is mutually exclusivewith the default mode.
 
-强制全量同步数据模式为每次启动都会强制全量同步主/从所有数据信息，大数据量下初始会存在小延迟，但是可以保证数据幂等性，此模式不与其他模式互斥。
+##### The forced full synchronization data mode
 
-### 服务监控
+The forced full synchronization data mode forces full synchronization of all data information from the master/slave every time it is started. There may be a small initial delay in large data volumes, but data idempotency can be guaranteed. This mode is not mutually exclusive with other modes.
 
-通过Redisx页面监控功能可以实时展示Redis以及Redisx节点的工作状态，Redisx的数据同步速度，数据堆积以及Redisx的配置信息。同时现正在逐渐完善Redisx的告警功能。
+### Service Monitoring
+
+The Redisx page monitoring function can display the real-time working status of Redis and Redisx nodes, Redisx's data synchronization speed, data accumulation, and configuration information. At the same time, we are gradually improving the alarm function of Redisx.
 
 ![](images/monitor.png)
 
-##### 数据查询能力
+##### Data query capability
 
-**注**：不建议生产启动，不建议端口开放访问
+**Note **:Production startup is not recommended, and port access is not recommended
 
 ```shell
 http://${ip}:${port}/console?command=${command}&type=from/to   
-#command为具体指令,type:为from查询from端redis数据，为to查询to端redis数据
-如：
+#'command' is a specific instruction, 'type' is To query Redis data From the source, and To query Redis data From the source
+For example：
 http://localhost:9999/console?command=get testKey&type=from
 http://localhost:9999/console?command=get testKey&type=to
 ```
 
-### 配置信息
+### Configuration information
 
-#### 全量配置
+#### Full configuration
 
 ```yaml
 redisx:
   from:
     redis:
-      #(必填项)from端redis版本，建议该版本不高于to端版本，防止因redis指令不兼容导致的同步问题
+      #(Required field) From Redis version, it is recommended that this version should not be higher than the to version to prevent synchronization issues caused by Redis instruction incompatibility
       version: 6.0.9
-    #From端redis认证用户名
-    username: fromUser
-    #From端redis密码。哨兵模式下数据节点和哨兵节点密码应保持一致
+    #Redis password From the end.The passwords for data nodes and sentinel nodes should be consistent in sentinel mode.
     password: 1a.2b*
-    #(必填项)from端redis模式，单机：single 哨兵:sentinel 集群：cluster
+    #(Required field)From Redis mode, single sentinel cluster
     mode: cluster
-    #(redis.from.mode为sentinel时必填)哨兵模式下主节点的mastername
+    #(redis.from.mode is mandatory when sent as sentinel)mastername of the master node in sentinel mode
     masterName: myMaster
-    #(必填项)from端redis节点地址，可配置单个或多个节点地址
+    #(Required field)From Redis node address, configurable for single or multiple node addresses
     address:
       - 127.0.0.1:16001
-    #是否开启垂直扩展，默认值false
+    #Whether to enable vertical expansion, default value is false
     verticalScaling: false
-    #是否强制连接主节点，默认值false
+    #Whether to force connection to the main node, default value is false
     connectMaster: false
   to:
-    #To端redis认证用户名
-    username: toUser
-    #To端redis密码
+    #To end Redis password
     password: 2b*1a.
-    #(必填项)to端redis模式，单机：single 哨兵:sentinel 集群：cluster
+    #(Required field)To Redis mode, single sentinel cluster
     mode: cluster
-    #(redis.to.mode为sentinel时必填)哨兵模式下主节点的mastername
+    #(Required when redis.to.mode is sentinel) mastername of the master node in sentinel mode
     masterName: myMaster
-    #(必填项)to端redis节点地址，可配置单个或多个节点地址
+    #(Required field)To end Redis node address, configurable for single or multiple node addresses
     address:
       - 127.0.0.2:16101
-    #是否在启动时清空to端数据（当redisx.from.alwaysFullSync为true时，此配置每次同步时都会生效），默认值false
+    #Whether to clear the data on the To end at startup (this configuration will take effect every time redisx.for.alwaysFullSync is true), default value is false
     flushDb: false
-    #to端单次写入数据阈值，默认值50
+    #To end single write data threshold, default value is 50
     flushSize: 50
   console:
-    #是否启用控制台，默认值true
+    #Whether to enable console, default value is true
     enable: true
-    #是否开启控制台双向查询数据功能，默认值false
+    #Whether to enable bidirectional data query function on the console, default value is false
     search: false
-    #控制台响应超时时间（毫秒），默认值5000
+    #Console response timeout (milliseconds), default value 5000
     timeout: 5000
-    #控制台发布端口，默认值15967
+    #Console publishing port, default value 15967
     port: 15967
-  #强一致模式，该模式下，单条数据完成io才会进行偏移量更新
-  #开启后可以降低服务异常导致的数据不一致问题，但会大幅度降低同步效率
+  #Strong consistency mode, in which a single piece of data will only undergo offset updates after completing IO
+  #Enabling it can reduce data inconsistency caused by service exceptions, but it will significantly decrease synchronization efficiency
   immediate:
-    #是否开启强一致模式，默认值false
+    #Whether to enable strong consistency mode, default value is false
     enable: false
-    #强一致模式下写入失败重试次数，默认值1
+    #Write failure retry times in strong consistency mode, default value 1
     resendTimes: 1
-  #全局是否强制全量同步数据模式
-  #开启后每次重新开始同步均会进行全量同步，而不进行续传同步
-  #开启后，syncRdb配置强制为true
-  #默认值false
+  #Is the global mandatory full synchronization data mode
+  #After activation, full synchronization will be performed every time synchronization is restarted, without continuing synchronization
+  #After activation, syncRdb configuration is forced to true
+  #Default value false
   alwaysFullSync: false
-  #redisx主从切换标志
+  #Redisx master-slave switching flag
   switchFlag: REDISX-AUTHOR:DAHUA&CHANGDONGLIANG&ZHANGHUIHAO&ZHANGSHUHAN&ZHANGYING&CHENYU&MAMING
-  #是否同步存量数据，默认值true
+  #Whether to synchronize stock data, default value is true
   syncRdb: true
-  #定时退出
+  #Timed exit
   timedExit:
-    #是否开启定时退出，默认值false
+    #Whether to enable timed exit, default value is false
     enable: false
-    #是否不执行关闭钩子函数
-    #在[timedExit.enable=true]时生效，默认值false
+    #Do not execute the close hook function
+    #Effective at [timedExit. enable=true], default value is false
     force: false
-    #定时时长，单位：秒，小于0则定时退出功能失效
-    #在[timedExit.enable=true]时生效，默认值-1
+    #Timing duration, unit: seconds. If it is less than 0 and the only synchronized rdb function is not enabled, the timed exit function will be invalid
+    #Effective at [timedExit. enable=true], default value -1
     duration: -1
-    #只同步rdb，当定时和此配置同时设置时，两个同时生效，当一方触发则程序退出
-    #此配置生效时[timedExit.force]配置强制为false
-    #在[timedExit.enable=true]时生效，默认值false
+    #Only synchronize rdb. When [enable=true] and this configuration are set simultaneously, both will take effect simultaneously. When one of them triggers, the program will exit
+    #When this configuration takes effect, the [timedExit. force] configuration is forced to false
+    #Effective at [timedExit. enable=true], default value is false
     onlyRdb: false
-#配置文件支持enc加密，加密的配置需要使用'ENC(配置内容)'包裹
+#The configuration file supports enc encryption, and the encrypted configuration requires the use of 'ENC (configuration content)' package
 jasypt:
   encryptor:
     password: KU1aBcAit9x
@@ -210,15 +207,15 @@ jasypt:
     ivGeneratorClassName: org.jasypt.iv.NoIvGenerator
 logging:
   level:
-    #全局日志级别
+    #Global log level
     global: info
 ```
 
-#### 场景推荐配置
+#### Recommended scene configuration
 
-以下数据差异描述中的数据量差异指数据存在key不一致（From多To少），value不一致（List数据内容重复）问题
+The data volume difference in the following data difference description refers to the problem of inconsistent keys (more From, less To) and inconsistent values (duplicate List data content) in the data
 
-##### 数据强一致同步场景
+##### Data Strong Consistent Synchronization Scenario
 
 ```yaml
 redisx:
@@ -237,22 +234,22 @@ redisx:
     address:
       - xxx.xxx.xxx.xxx:port
       ...
-    flushDb: true #当redisx.from.alwaysFullSync为true时，此配置每次同步时都会生效
+    flushDb: true #When redisx.for.alwaysFullSync is true, this configuration will take effect every time it synchronizes
 ```
 
-功能描述
+Function Description
 
-1、数据强一致，严格要求From和To端数据完全一致
+1.Strong consistency of data, strict requirement for From and To end data to be completely consistent
 
-2、From端优先选从节点连接，无从选主
+2.Priority is given to connecting From nodes on the From end, and there is no way to select the master
 
-3、不再中断续传，每次均进行全量同步
+3.No longer interrupt the continuation, perform full synchronization every time
 
-无数据差异
+No data difference
 
-**注**：此模式会在每一次异常场景都会清空To端数据后重新同步From端数据，To端可能存在短时间数据不一致，且全量数据同步需要带宽资源。To端存在独有key则无法使用此模式，灾备切换时停止From端后也需要停止Redisx服务
+**Note **:This mode will clear the To data and resynchronize the From data in every abnormal scenario. There may be short-term data inconsistency on the To side, and full data synchronization requires bandwidth resources. If there is a unique key on the To end, this mode cannot be used, and after stopping the From end during disaster recovery switching, the Redisx service also needs to be stopped
 
-##### 大数据量数据同步场景
+##### Scenario of synchronizing large amounts of data
 
 ```yaml
 redisx:
@@ -272,25 +269,25 @@ redisx:
       ...
 ```
 
-功能描述
+Function Description
 
-1、高效同步，批量提交，单个To节点每50条数据或间隔最大100毫秒进行一次数据提交和偏移量刷新
+1.Efficient synchronization, batch submission, data submission and offset refresh for a single To node every 50 pieces of data or with a maximum interval of 100 milliseconds
 
-2、From端优先选从节点连接，无从选主
+2.Priority is given to connecting From nodes on the From end, and there is no way to select the master
 
-3、Redis服务异常时中断同步，Redis服务正常时自动开始同步
+3.Interrupt synchronization when Redis service is abnormal, and automatically start synchronization when Redis service is normal
 
-4、支持存量RDB数据同步，支持中断续传
+4.Support synchronization of existing RDB data and support interruption and continuation of transmission
 
-数据差异描述（仅异常情况下才可能产生）
+Data discrepancy description (may only occur in abnormal situations)
 
-1、From端任意节点故障或Redisx正常关闭(kill)，无数据差异
+1.Any node on the From end fails or Redis is shut down normally (kill), with no data difference
 
-2、单次To端主节点故障，可能出现不大于To数量与redisx.to.flushSize之积的数据差异
+2.A single To end master node failure may result in a data difference of no more than the product of the To quantity and redisx.to.flushSize
 
-3、Redisx通过强制中断(kill -9)，可能出现不大于To端主节点个数与redisx.to.flushSize之积的数据差异
+3.Redisx may experience a data difference of no more than the product of the number of To end master nodes and redisx.to.flushSize by forcing an interrupt (kill -9)
 
-##### 数据量较小，但对一致性要求较高
+##### The data volume is small, but there is a high requirement for consistency
 
 ```yaml
 redisx:
@@ -312,51 +309,29 @@ redisx:
     enable: true
 ```
 
-功能描述
+Function Description
 
-1、效率较低，单条提交，单个To节点每1条数据进行一次数据提交及I/O操作结果确认，偏移量刷新及结果确认
+1.Low efficiency, single submission, single To node performs data submission and I/O operation result confirmation for every 1 data, offset refresh and result confirmation
 
-2、From端优先选从节点连接，无从选主
+2.Priority is given to connecting From nodes on the From end, and there is no way to select the master
 
-3、Redis服务异常时中断同步，Redis服务正常时自动开始同步
+3.Interrupt synchronization when Redis service is abnormal, and automatically start synchronization when Redis service is normal
 
-4、支持存量RDB数据同步，支持中断续传
+4.Support synchronization of existing RDB data and support interruption and continuation of transmission
 
-数据差异描述（仅异常情况下才可能产生）
+Data discrepancy description (may only occur in abnormal situations)
 
-1、From端任意节点故障或Redisx正常关闭(kill)，无数据差异
+1.Any node on the From end fails or Redis is shut down normally (kill), with no data difference
 
-2、单次To端主节点故障，可能出现不大于To端Redis主节点个数的数据量差异
+2.A single To end master node failure may result in a difference in data volume not exceeding the number of To end Redis master nodes
 
-3、Redisx通过强制中断(kill -9)，可能出现不大于To端Redis主节点个数的数据量差异
+3.Redis may experience a data volume difference of no more than the number of Redis master nodes on the To side through forced interrupts (kill -9)
 
-##### 集群模式，数据量极大，对同步效率要求极高
+##### Cluster mode, with a huge amount of data, requires extremely high synchronization efficiency
 
-组：指redisx.switchFlag配置相同的节点集合
+Group: Refers to a collection of nodes with the same redisx.switchFlag configuration
 
-Redisx组1：
-
-```yaml
-redisx:
-  from:
-    redis:
-      version: x.x.x
-    mode: cluster
-    password: 1a.2b*
-    address:
-      - From节点1
-      ...
-    verticalScaling: true
-  to:
-    mode: cluster
-    password: 1a.2b*
-    address:
-      - xxx.xxx.xxx.xxx:port
-      ...
-  switchFlag: REDISX-...每组Redisx服务必须不一致，同组主备Redisx服务须一致
-```
-
-Redisx组2:
+Redisx Group1：
 
 ```yaml
 redisx:
@@ -366,7 +341,7 @@ redisx:
     mode: cluster
     password: 1a.2b*
     address:
-      - From节点2
+      - From node1
       ...
     verticalScaling: true
   to:
@@ -375,28 +350,50 @@ redisx:
     address:
       - xxx.xxx.xxx.xxx:port
       ...
-  switchFlag: REDISX-...每组Redisx服务必须不一致，同组主备Redisx服务须一致
+  switchFlag: REDISX-...Each group of Redisx services must be inconsistent, and the primary and backup Redisx services within the same group must be consistent
 ```
 
-功能描述
+Redisx Group2:
 
-1、仅对配置中的From节点数据进行同步，不扩展至整个From集群数据
+```yaml
+redisx:
+  from:
+    redis:
+      version: x.x.x
+    mode: cluster
+    password: 1a.2b*
+    address:
+      - From node2
+      ...
+    verticalScaling: true
+  to:
+    mode: cluster
+    password: 1a.2b*
+    address:
+      - xxx.xxx.xxx.xxx:port
+      ...
+  switchFlag: REDISX-...Each group of Redisx services must be inconsistent, and the primary and backup Redisx services within the same group must be consistent
+```
 
-2、From端仅选择配置节点
+Function Description
 
-3、Redis服务异常时中断同步，Redis服务正常时自动开始同步
+1.Only synchronize the From node data in the configuration, without extending to the entire From cluster data
 
-4、支持存量RDB数据同步，支持中断续传
+2.Select only configuration nodes From the end
 
-数据差异描述（仅异常情况下才可能产生）
+3.Interrupt synchronization when Redis service is abnormal, and automatically start synchronization when Redis service is normal
 
-1、From端任意节点故障或Redisx正常关闭(kill)，无数据差异
+4.Support synchronization of existing RDB data and support interruption and continuation of transmission
 
-2、单次To端主节点故障，可能出现不大于To端Redis主节点个数的数据量差异
+Data discrepancy description (may only occur in abnormal situations)
 
-3、Redisx通过强制中断(kill -9)，可能出现不大于To端Redis主节点个数的数据量差异
+1.Any node on the From end fails or Redis is shut down normally (kill), with no data difference
 
-##### 一次性同步/定时同步
+2.A single To end master node failure may result in a difference in data volume not exceeding the number of To end Redis master nodes
+
+3.Redis may experience a data volume difference of no more than the number of Redis master nodes on the To side through forced interrupts (kill -9)
+
+##### One time synchronization/Timed synchronization
 
 ```yaml
 redisx:
@@ -416,31 +413,31 @@ redisx:
       ...
   timedExit:
     enable: true
-    force: true  #是否开启中断补偿，及中断时队列中的堆积数据是否完全同步；默认false
-    duration: 1000   #多久关闭，单位秒
+    force: true  #Whether to enable interrupt compensation and whether the accumulated data in the queue is fully synchronized during the interrupt;Default false
+    duration: 1000   #How long does it close, in seconds
 ```
 
-功能描述
+Function Description
 
-1、同步效率同常规模式或强一致模式，运行设定时长后，自动关闭
+1.The synchronization efficiency is the same as the regular mode or strong consistency mode, and it will automatically shut down after the set running time
 
-2、From端优先选从节点连接，无从选主
+2.Priority is given to connecting From nodes on the From end, and there is no way to select the master
 
-3、Redis服务异常时中断同步，Redis服务正常时自动开始同步
+3.Interrupt synchronization when Redis service is abnormal, and automatically start synchronization when Redis service is normal
 
-4、支持存量RDB数据同步
+4.Support synchronization of existing RDB data
 
-无数据差异
+No data difference
 
-#### 其它配置
+#### Other configurations
 
-##### 配置加密
+##### Configure encryption
 
-功能描述
+Function Description
 
-密码加密，支持jasypt密码加解密操作，加密配置放入ENC(...)括号中
+Password encryption, supports jasypt password encryption and decryption operations, encryption configuration is placed in ENC (...) parentheses
 
-配置信息
+configuration information
 
 ```yaml
 redisx:
@@ -453,44 +450,44 @@ jasypt:
     ivGeneratorClassName: org.jasypt.iv.NoIvGenerator
 ```
 
-##### To端数据清理
+##### To end data cleaning
 
-功能描述
+Function Description
 
-全局首次启动时清理To端数据，适用于To端脏数据清理
+Clean up To data during global initial startup, suitable for cleaning dirty data on the To side
 
-配置信息
+configuration information
 
 ```yaml
 redisx:
   to:
-    flushDb: true #默认false
+    flushDb: true #Default false
 ```
 
-##### 每次全量同步
+##### Every full synchronization
 
-功能描述
+Function Description
 
-不再中断续传，每次均进行全量同步。数据完整性强，适用要求数据完整的场景
+No longer interrupt the continuation, perform full synchronization every time. Strong data integrity, suitable for scenarios that require complete data
 
-配置信息
+configuration information
 
 ```yaml
 redisx:
-  alwaysFullSync: true #默认false
+  alwaysFullSync: true #Default false
 ```
 
-##### 仅增量同步
+##### Incremental synchronization only
 
-功能描述
+Function Description
 
-不再同步存量RDB数据，仅同步Redisx服务启动后产生的增量数据；若开启仅全量同步，该配置失效。
+No longer synchronizing existing RDB data, only synchronizing incremental data generated after the launch of the Redisx service; If only full synchronization is enabled, this configuration becomes invalid.
 
-配置信息
+configuration information
 
 ```yaml
 redisx:
-  syncRdb: false #默认true
+  syncRdb: false #Default true
 ```
 
 [![LICENSE](https://img.shields.io/badge/license-Anti%20996-blue.svg)](https://github.com/996icu/996.ICU/blob/master/LICENSE)
