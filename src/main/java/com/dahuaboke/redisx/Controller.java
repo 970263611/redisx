@@ -174,7 +174,7 @@ public class Controller {
     private void checkTimedExit() {
         if (timedExitEnable && timedExitDuration > 0 && System.currentTimeMillis() > programCloseTime) {
             logger.info("Timed exit for application : {}", new Date(programCloseTime));
-            System.exit(0);
+            SystemExit(0);
         }
         if (onlyRdb) {
             if (cacheManager.fromIsStarted()) {
@@ -186,9 +186,15 @@ public class Controller {
                 }
             }
             if (onlyRdbComeIntoEffect) {
-                System.exit(0);
+                SystemExit(0);
             }
         }
+    }
+
+    private void SystemExit(int status){
+        new Thread(() -> {
+            System.exit(status);
+        }).start();
     }
 
     private void closeLog4jShutdownHook() {
@@ -334,6 +340,11 @@ public class Controller {
             }
             controllerPool.shutdownNow();
             cacheManager.setShutdownState(ShutdownState.WAIT_WRITE_OFFSET);
+            try {
+                Thread.sleep(1000);
+            } catch (InterruptedException e) {
+                logger.error(e.getMessage());
+            }
             long startTime = System.currentTimeMillis();
             //最后核算一次偏移量
             for (FromContext fromContext : fromContextList) {
