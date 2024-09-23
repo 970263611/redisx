@@ -5,10 +5,7 @@ import com.dahuaboke.redisx.common.command.console.ReplyCommand;
 import io.netty.buffer.Unpooled;
 import io.netty.channel.ChannelHandlerContext;
 import io.netty.channel.SimpleChannelInboundHandler;
-import io.netty.handler.codec.http.DefaultFullHttpResponse;
-import io.netty.handler.codec.http.FullHttpResponse;
-import io.netty.handler.codec.http.HttpResponseStatus;
-import io.netty.handler.codec.http.HttpVersion;
+import io.netty.handler.codec.http.*;
 
 /**
  * author: dahua
@@ -26,6 +23,10 @@ public class ReplyHandler extends SimpleChannelInboundHandler<ReplyCommand> {
         response.headers()
                 .set("Content-Type", "application/json")
                 .setInt("Content-Length", response.content().readableBytes());
+        //允许跨域访问
+        response.headers().set( HttpHeaders.Names.ACCESS_CONTROL_ALLOW_ORIGIN, "*");
+        response.headers().set( HttpHeaders.Names.ACCESS_CONTROL_ALLOW_HEADERS, "Origin, X-Requested-With, Content-Type, Accept");
+        response.headers().set( HttpHeaders.Names.ACCESS_CONTROL_ALLOW_METHODS, "GET, POST, PUT,DELETE");
         ctx.writeAndFlush(response);
         ctx.close();
     }
