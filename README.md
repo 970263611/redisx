@@ -203,6 +203,17 @@ redisx:
     #When this configuration takes effect, the [timedExit. force] configuration is forced to false
     #Effective at [timedExit. enable=true], default value is false
     onlyRdb: false
+  #Data filtering, can choose to match synchronization or match asynchronous
+  filter:
+    #Whether to enable data filtering, default false
+    enable: false
+    #Data encoding format, default utf-8
+    charset: utf-8
+    #needful:Synchronize data matched by rules; needless:The data matched by the rules is not synchronized
+    type: needful
+    #Match rule regular expression, configurable multiple, default [\s\S]*
+    rules:
+      - '[\s\S]*'
 #The configuration file supports enc encryption, and the encrypted configuration requires the use of 'ENC (configuration content)' package
 jasypt:
   encryptor:
