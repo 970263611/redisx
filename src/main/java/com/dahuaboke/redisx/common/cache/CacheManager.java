@@ -65,10 +65,12 @@ public final class CacheManager {
         this.toMode = toMode;
         this.toPassword = toPassword;
         this.alwaysFullSync = alwaysFullSync;
-        patterns = new ArrayList<>();
-        filterRules.forEach(f -> {
-            patterns.add(Pattern.compile(f));
-        });
+        if(filterRules != null) {
+            patterns = new ArrayList<>();
+            filterRules.forEach(f -> {
+                patterns.add(Pattern.compile(f));
+            });
+        }
     }
 
     /**
