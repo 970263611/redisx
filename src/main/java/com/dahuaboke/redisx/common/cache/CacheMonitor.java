@@ -18,6 +18,9 @@ import java.util.*;
 public class CacheMonitor {
 
     private CacheManager cacheManager;
+    private Redisx.Config redisxConfig;
+    private List<Map<String, Object>> fromSingleNodesMap = new ArrayList<>();
+    private List<Map<String, Object>> toSingleNodesMap = new ArrayList<>();
     private List<Map<String, Object>> fromSentinelNodesMap = new ArrayList<>();
     private List<Map<String, Object>> toSentinelNodesMap = new ArrayList<>();
     private List<Map<String, Object>> fromClusterNodesMap = new ArrayList<>();
@@ -33,11 +36,13 @@ public class CacheMonitor {
     }
 
     public void setConfig(Redisx.Config config) {
+        this.redisxConfig = config;
         buildConfig(config);
     }
 
     public Map buildMonitor() {
         clear();
+        addSingleMessage();
         addSentinelMessage();
         addClusterMessage();
         addRedisxNodesMessage();
@@ -45,6 +50,8 @@ public class CacheMonitor {
             put("headConfig", headConfig);
             put("fromConfig", fromConfig);
             put("toConfig", toConfig);
+            put("fromSingleNodes", fromSingleNodesMap);
+            put("toSingleNodes", toSingleNodesMap);
             put("fromSentinelNodes", fromSentinelNodesMap);
             put("toSentinelNodes", toSentinelNodesMap);
             put("fromClusterNodes", fromClusterNodesMap);
@@ -59,8 +66,31 @@ public class CacheMonitor {
         toClusterNodesMap.clear();
         fromSentinelNodesMap.clear();
         toSentinelNodesMap.clear();
+        fromSingleNodesMap.clear();
+        toSingleNodesMap.clear();
         fromRedisxNodesMap.clear();
         toRedisxNodesMap.clear();
+    }
+
+    private void addSingleMessage() {
+        if (Mode.SINGLE == cacheManager.getFromMode()) {
+            List<InetSocketAddress> fromAddresses = redisxConfig.getFromAddresses();
+            fromAddresses.forEach(f -> {
+                fromSingleNodesMap.add(new HashMap<String, Object>() {{
+                    put("host", f.getHostString());
+                    put("port", f.getPort());
+                }});
+            });
+        }
+        if (Mode.SINGLE == cacheManager.getToMode()) {
+            List<InetSocketAddress> toAddresses = redisxConfig.getToAddresses();
+            toAddresses.forEach(t -> {
+                toSingleNodesMap.add(new HashMap<String, Object>() {{
+                    put("host", t.getHostString());
+                    put("port", t.getPort());
+                }});
+            });
+        }
     }
 
     public void addSentinelMessage() {

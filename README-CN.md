@@ -202,6 +202,17 @@ redisx:
     #此配置生效时[timedExit.force]配置强制为false
     #在[timedExit.enable=true]时生效，默认值false
     onlyRdb: false
+  #数据过滤，可以选择匹配同步或者匹配不同步
+  filter:
+    #是否开启数据过滤，默认false
+    enable: false
+    #数据编码格式，默认utf-8
+    charset: utf-8
+    #needful:规则匹配的数据进行同步; needless:规则匹配的数据不进行同步
+    type: needful
+    #匹配规则正则表达式，可配置多个，默认 [\s\S]*
+    rules:
+      - '[\s\S]*'
 #配置文件支持enc加密，加密的配置需要使用'ENC(配置内容)'包裹
 jasypt:
   encryptor:

@@ -5,6 +5,7 @@ import com.dahuaboke.redisx.common.ConcurrentLinkedMap;
 import com.dahuaboke.redisx.common.Constants;
 import com.dahuaboke.redisx.common.cache.CacheManager;
 import com.dahuaboke.redisx.common.command.from.SyncCommand;
+import com.dahuaboke.redisx.common.enums.FilterType;
 import com.dahuaboke.redisx.common.enums.Mode;
 import com.dahuaboke.redisx.handler.ClusterInfoHandler;
 import com.dahuaboke.redisx.handler.SentinelInfoHandler;
@@ -16,6 +17,8 @@ import java.net.InetSocketAddress;
 import java.util.concurrent.CountDownLatch;
 import java.util.concurrent.LinkedBlockingDeque;
 import java.util.concurrent.TimeUnit;
+import java.util.regex.Matcher;
+import java.util.regex.Pattern;
 
 /**
  * 2024/5/6 16:18
@@ -40,8 +43,11 @@ public class FromContext extends Context {
     private boolean connectFromMaster;
     private ConcurrentLinkedMap<SyncCommand, Integer> offsetCache = new ConcurrentLinkedMap<>();
     private boolean onlyRdb;
+    private boolean filterEnable;
+    private String filterCharset;
+    private FilterType filterType;
 
-    public FromContext(CacheManager cacheManager, String host, int port, boolean startConsole, boolean startByConsole, Mode fromMode, Mode toMode, boolean alwaysFullSync, boolean syncRdb, boolean isNodesInfoContext, String fromMasterName, boolean connectFromMaster, boolean isGetMasterNodeInfo, boolean onlyRdb) {
+    public FromContext(CacheManager cacheManager, String host, int port, boolean startConsole, boolean startByConsole, Mode fromMode, Mode toMode, boolean alwaysFullSync, boolean syncRdb, boolean isNodesInfoContext, String fromMasterName, boolean connectFromMaster, boolean isGetMasterNodeInfo, boolean onlyRdb, boolean filterEnable, String filterCharset, FilterType filterType) {
         super(cacheManager, host, port, fromMode, toMode, startConsole, startByConsole);
         if (startByConsole) {
             replyQueue = new LinkedBlockingDeque();
@@ -64,6 +70,9 @@ public class FromContext extends Context {
         }
         this.isGetMasterNodeInfo = isGetMasterNodeInfo;
         this.onlyRdb = onlyRdb;
+        this.filterEnable = filterEnable;
+        this.filterCharset = filterCharset;
+        this.filterType = filterType;
     }
 
     public String getId() {
@@ -72,7 +81,6 @@ public class FromContext extends Context {
 
     public boolean publish(SyncCommand command) {
         if (!startByConsole) {
-            command.buildCommand();
             if (command.isNeedAddLengthToOffset()) {
                 offsetCache.putIndex(command);
             }
@@ -285,5 +293,27 @@ public class FromContext extends Context {
 
     public boolean isOnlyRdb() {
         return onlyRdb;
+    }
+
+    public boolean isFilterEnable() {
+        return filterEnable;
+    }
+
+    public String getFilterCharset() {
+        return filterCharset;
+    }
+
+    public FilterType getFilterType() {
+        return filterType;
+    }
+
+    public boolean checkMatchFilterRules(String key) {
+        for (Pattern pattern : cacheManager.getPatterns()) {
+            Matcher matcher = pattern.matcher(key);
+            if (matcher.matches()) {
+                return true;
+            }
+        }
+        return false;
     }
 }

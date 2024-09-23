@@ -35,6 +35,12 @@ redisx:
 #    force: false
 #    onlyRdb: false
 #    duration: -1
+#  filter:
+#    enable: false
+#    charset: utf-8
+#    type: needful
+#    rules:
+#      - '[\s\S]*'
 
 #jasypt:
 #  encryptor:

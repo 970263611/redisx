@@ -3,7 +3,9 @@ package com.dahuaboke.redisx.common.command.from;
 import com.dahuaboke.redisx.Context;
 import com.dahuaboke.redisx.common.Constants;
 import com.dahuaboke.redisx.common.command.Command;
+import com.dahuaboke.redisx.common.enums.FilterType;
 import com.dahuaboke.redisx.common.enums.Mode;
+import com.dahuaboke.redisx.from.FromContext;
 import io.netty.buffer.ByteBuf;
 import io.netty.buffer.Unpooled;
 import io.netty.handler.codec.redis.ArrayRedisMessage;
@@ -12,6 +14,7 @@ import io.netty.handler.codec.redis.RedisMessage;
 import org.slf4j.Logger;
 import org.slf4j.LoggerFactory;
 
+import java.io.UnsupportedEncodingException;
 import java.nio.charset.Charset;
 import java.util.ArrayList;
 import java.util.LinkedList;
@@ -33,6 +36,7 @@ public class SyncCommand extends Command {
     private ArrayRedisMessage redisMessage;
     private String stringCommand;
     private byte[] key;
+    private boolean keyFlag = false;
 
     private static List<String> specialCommandPrefix = new ArrayList<String>() {{
         add("BITOP");
@@ -72,39 +76,6 @@ public class SyncCommand extends Command {
         return redisMessage;
     }
 
-    public void buildCommand() {
-        getStringCommand();
-        command = null;
-        boolean keyFlag = false;
-        if (redisMessage != null && redisMessage.children().size() > 1 && redisMessage.children().get(0) instanceof FullBulkStringRedisMessage) {
-            List<RedisMessage> children = redisMessage.children();
-            FullBulkStringRedisMessage rm0 = (FullBulkStringRedisMessage) children.get(0);
-            String redisCommand = rm0.content().toString(Charset.defaultCharset());
-            if (specialCommandPrefix.contains(redisCommand)) {
-                if (children.size() > 2 && children.get(2) instanceof FullBulkStringRedisMessage) {
-                    FullBulkStringRedisMessage rm2 = (FullBulkStringRedisMessage) children.get(2);
-                    key = new byte[rm2.content().readableBytes()];
-                    rm2.content().getBytes(0, key);
-                    keyFlag = true;
-                }
-            } else {
-                if (children.get(1) instanceof FullBulkStringRedisMessage) {
-                    FullBulkStringRedisMessage rm1 = (FullBulkStringRedisMessage) children.get(1);
-                    key = new byte[rm1.content().readableBytes()];
-                    rm1.content().getBytes(0, key);
-                    keyFlag = true;
-                }
-            }
-            if (!keyFlag) {
-                key = new byte[rm0.content().readableBytes()];
-                rm0.content().getBytes(0, key);
-            }
-        }
-        if (!keyFlag) {
-            logger.warn("Command not has key [{}]", command);
-        }
-    }
-
     public int getSyncLength() {
         return syncLength;
     }
@@ -140,7 +111,7 @@ public class SyncCommand extends Command {
     }
 
     public boolean isIgnore() {
-        String stringCommand = getStringCommand();
+        buildKey();
         if (stringCommand.toUpperCase().startsWith(Constants.SELECT)) {
             return Mode.CLUSTER == context.getFromMode() || Mode.CLUSTER == context.getToMode();
         }
@@ -150,11 +121,68 @@ public class SyncCommand extends Command {
         if (stringCommand.toUpperCase().startsWith(Constants.PUBLISH)) {
             return Mode.SENTINEL == context.getFromMode();
         }
-        return Constants.PING_COMMAND.equalsIgnoreCase(stringCommand) || Constants.MULTI.equalsIgnoreCase(stringCommand) || Constants.EXEC.equalsIgnoreCase(stringCommand);
+        boolean b = Constants.PING_COMMAND.equalsIgnoreCase(stringCommand) || Constants.MULTI.equalsIgnoreCase(stringCommand) || Constants.EXEC.equalsIgnoreCase(stringCommand);
+        if (!b) {
+            if (context instanceof FromContext) {
+                FromContext fromContext = (FromContext) context;
+                if (fromContext.isFilterEnable()) {
+                    try {
+                        if(this.key == null){
+                            return true;
+                        }
+                        String k = new String(this.key, fromContext.getFilterCharset());
+                        if (FilterType.NEEDFUL == fromContext.getFilterType()) {
+                            if (fromContext.checkMatchFilterRules(k)) {
+                                return false;
+                            } else {
+                                return true;
+                            }
+                        } else if (FilterType.NEEDLESS == fromContext.getFilterType()) {
+                            if (fromContext.checkMatchFilterRules(k)) {
+                                return true;
+                            } else {
+                                return false;
+                            }
+                        }
+                    } catch (UnsupportedEncodingException e) {
+                        logger.error(e.getMessage());
+                    }
+                }
+            }
+        }
+        return b;
     }
 
     public byte[] getKey() {
         return key;
+    }
+
+    public void buildKey() {
+        getStringCommand();
+        if (redisMessage != null && redisMessage.children().size() > 1 && redisMessage.children().get(0) instanceof FullBulkStringRedisMessage) {
+            List<RedisMessage> children = redisMessage.children();
+            FullBulkStringRedisMessage rm0 = (FullBulkStringRedisMessage) children.get(0);
+            String redisCommand = rm0.content().toString(Charset.defaultCharset());
+            if (specialCommandPrefix.contains(redisCommand)) {
+                if (children.size() > 2 && children.get(2) instanceof FullBulkStringRedisMessage) {
+                    FullBulkStringRedisMessage rm2 = (FullBulkStringRedisMessage) children.get(2);
+                    key = new byte[rm2.content().readableBytes()];
+                    rm2.content().getBytes(0, key);
+                    keyFlag = true;
+                }
+            } else {
+                if (children.get(1) instanceof FullBulkStringRedisMessage) {
+                    FullBulkStringRedisMessage rm1 = (FullBulkStringRedisMessage) children.get(1);
+                    key = new byte[rm1.content().readableBytes()];
+                    rm1.content().getBytes(0, key);
+                    keyFlag = true;
+                }
+            }
+            if (!keyFlag) {
+                key = new byte[rm0.content().readableBytes()];
+                rm0.content().getBytes(0, key);
+            }
+        }
     }
 
     public boolean isNeedAddLengthToOffset() {

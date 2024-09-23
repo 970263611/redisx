@@ -4,6 +4,7 @@ package com.dahuaboke.redisx;
 import com.dahuaboke.redisx.common.Constants;
 import com.dahuaboke.redisx.common.annotation.FieldOrm;
 import com.dahuaboke.redisx.common.annotation.FieldOrmCheck;
+import com.dahuaboke.redisx.common.enums.FilterType;
 import com.dahuaboke.redisx.common.enums.Mode;
 import com.dahuaboke.redisx.common.utils.FieldOrmUtil;
 import com.dahuaboke.redisx.common.utils.StringUtils;
@@ -118,6 +119,18 @@ public class Redisx {
         @FieldOrm(value = "redisx.timedExit.onlyRdb", defaultValue = "false")
         private boolean onlyRdb;
 
+        @FieldOrm(value = "redisx.filter.enable", defaultValue = "false")
+        private boolean filterEnable;
+
+        @FieldOrm(value = "redisx.filter.charset", defaultValue = "utf-8")
+        private String filterCharset;
+
+        @FieldOrm(value = "redisx.filter.type", setType = String.class)
+        private FilterType filterType;
+
+        @FieldOrm(value = "redisx.filter.rules")
+        private List<String> filterRules;
+
         @Override
         public void check() {
             if (Mode.SENTINEL == this.fromMode && StringUtils.isEmpty(this.fromMasterName)) {
@@ -153,6 +166,11 @@ public class Redisx {
             //垂直扩展不支持清空to-rdb
             if (this.verticalScaling) {
                 this.flushDb = false;
+            }
+            if (this.filterEnable && (this.filterRules == null || this.filterRules.isEmpty())) {
+                this.filterRules = new ArrayList<String>() {{
+                    add("[\\s\\S]*");
+                }};
             }
         }
 
@@ -382,6 +400,38 @@ public class Redisx {
 
         public void setOnlyRdb(boolean onlyRdb) {
             this.onlyRdb = onlyRdb;
+        }
+
+        public List<String> getFilterRules() {
+            return filterRules;
+        }
+
+        public void setFilterRules(List<String> filterRules) {
+            this.filterRules = filterRules;
+        }
+
+        public FilterType getFilterType() {
+            return filterType;
+        }
+
+        public void setFilterType(String filterType) {
+            this.filterType = FilterType.getFilterTypeByString(filterType);
+        }
+
+        public String getFilterCharset() {
+            return filterCharset;
+        }
+
+        public void setFilterCharset(String filterCharset) {
+            this.filterCharset = filterCharset;
+        }
+
+        public boolean isFilterEnable() {
+            return filterEnable;
+        }
+
+        public void setFilterEnable(boolean filterEnable) {
+            this.filterEnable = filterEnable;
         }
     }
 }
