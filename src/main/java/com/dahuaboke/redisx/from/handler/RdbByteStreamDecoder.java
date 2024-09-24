@@ -40,10 +40,7 @@ public class RdbByteStreamDecoder extends ChannelInboundHandlerAdapter {
     private FromContext fromContext;
 
     private enum RdbType {
-        START,
-        TYPE_EOF,
-        TYPE_LENGTH,
-        END;
+        START, TYPE_EOF, TYPE_LENGTH, END;
     }
 
     public RdbByteStreamDecoder(FromContext fromContext) {
@@ -145,7 +142,13 @@ public class RdbByteStreamDecoder extends ChannelInboundHandlerAdapter {
                 rdb.release();
             }
         } else {
-            ctx.fireChannelRead(msg);
+            if (fromContext.isOnlyRdb() && rdbType == RdbType.END) {
+                if (msg instanceof ByteBuf) {
+                    ((ByteBuf) msg).release();
+                }
+            } else {
+                ctx.fireChannelRead(msg);
+            }
         }
     }
 
@@ -165,24 +168,31 @@ public class RdbByteStreamDecoder extends ChannelInboundHandlerAdapter {
                         add(Constants.SELECT.getBytes());
                         add(String.valueOf(selectDB).getBytes());
                     }}, false);
-                    boolean success2 = fromContext.publish(syncCommand2);
-                    if (success2) {
-                        logger.debug("Select db success [{}]", selectDB);
-                    } else {
-                        logger.error("Select db failed [{}]", selectDB);
+                    if(!syncCommand2.isIgnore()) {
+                        boolean success2 = fromContext.publish(syncCommand2);
+                        if (success2) {
+                            logger.debug("Select db success [{}]", selectDB);
+                        } else {
+                            logger.error("Select db failed [{}]", selectDB);
+                        }
                     }
                 }
                 List<List<byte[]>> commands = commandParser.parser(data);
                 for (List<byte[]> command : commands) {
                     SyncCommand syncCommand1 = new SyncCommand(fromContext, command, false);
-                    boolean success1 = fromContext.publish(syncCommand1);
-                    if (success1) {
-                        logger.trace("Success rdb data [{}]", syncCommand1.getStringCommand());
-                    } else {
-                        logger.error("Sync rdb data [{}] failed", syncCommand1.getStringCommand());
+                    if(!syncCommand1.isIgnore()) {
+                        boolean success1 = fromContext.publish(syncCommand1);
+                        if (success1) {
+                            logger.trace("Success rdb data [{}]", syncCommand1.getStringCommand());
+                        } else {
+                            logger.error("Sync rdb data [{}] failed", syncCommand1.getStringCommand());
+                        }
                     }
                 }
             }
+        }
+        if (fromContext.isOnlyRdb()) {
+            fromContext.close();
         }
     }
 }

@@ -38,7 +38,7 @@ public class StressTestingUtilTest {
     private int threadCount = 5;
 
     //测试时间，秒
-    private int second = 310;
+    private int second = 88888;
 
     //是否定时清理
     private boolean flushFlag = false;

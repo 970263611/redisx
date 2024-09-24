@@ -21,6 +21,7 @@ import java.util.concurrent.ConcurrentHashMap;
 import java.util.concurrent.LinkedBlockingQueue;
 import java.util.concurrent.TimeUnit;
 import java.util.concurrent.atomic.AtomicBoolean;
+import java.util.regex.Pattern;
 
 /**
  * 2024/5/13 10:45
@@ -55,14 +56,21 @@ public final class CacheManager {
     private Map<String, Long> errorCount = new HashMap<>();
     private boolean alwaysFullSync;
     private ShutdownState shutdownState;
+    private List<Pattern> patterns;
 
-    public CacheManager(String redisVersion, Mode fromMode, String fromPassword, Mode toMode, String toPassword, boolean alwaysFullSync) {
+    public CacheManager(String redisVersion, Mode fromMode, String fromPassword, Mode toMode, String toPassword, boolean alwaysFullSync, List<String> filterRules) {
         this.redisVersion = redisVersion;
         this.fromMode = fromMode;
         this.fromPassword = fromPassword;
         this.toMode = toMode;
         this.toPassword = toPassword;
         this.alwaysFullSync = alwaysFullSync;
+        if(filterRules != null) {
+            patterns = new ArrayList<>();
+            filterRules.forEach(f -> {
+                patterns.add(Pattern.compile(f));
+            });
+        }
     }
 
     /**
@@ -237,7 +245,24 @@ public final class CacheManager {
     public ClusterInfoHandler.SlotInfo getFromClusterNodeInfoByIpAndPort(String ip, int port) {
         for (ClusterInfoHandler.SlotInfo slotInfo : fromClusterNodesInfo) {
             if (ip.equals(slotInfo.getIp()) && port == slotInfo.getPort()) {
-                return slotInfo;
+                if (slotInfo.isActiveMaster()) {
+                    return slotInfo;
+                } else {
+                    return getFromClusterMasterNodeInfoById(slotInfo.getMasterId());
+                }
+            }
+        }
+        return null;
+    }
+
+    public ClusterInfoHandler.SlotInfo getFromClusterMasterNodeInfoById(String id) {
+        for (ClusterInfoHandler.SlotInfo slotInfo : fromClusterNodesInfo) {
+            if (slotInfo.getId().endsWith(id)) {
+                if (slotInfo.isActiveMaster()) {
+                    return slotInfo;
+                } else {
+                    return null;
+                }
             }
         }
         return null;
@@ -385,6 +410,10 @@ public final class CacheManager {
 
     public void setShutdownState(ShutdownState shutdownState) {
         this.shutdownState = shutdownState;
+    }
+
+    public List<Pattern> getPatterns() {
+        return patterns;
     }
 
     public static class NodeMessage {

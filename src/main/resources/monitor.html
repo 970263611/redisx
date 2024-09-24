@@ -1,0 +1,656 @@
+<!DOCTYPE html>
+<html lang="en">
+<head>
+  <meta charset="UTF-8">
+  <title>redisx</title>
+</head>
+<body>
+  <div class="container">
+    <div class="header">
+      <div class="header-item">
+<!--        <div>切换标志</div>-->
+        <div>Switching flags</div>
+        <div class="text-left" id="headerValue1"></div>
+      </div>
+      <div class="header-item">
+<!--        <div>日志级别</div>-->
+        <div>log level</div>
+        <div id="headerValue2"></div>
+      </div>
+      <div class="header-item">
+<!--        <div>节点标识</div>-->
+        <div>Node identification</div>
+        <div id="headerValue3"></div>
+      </div>
+      <div class="header-item">
+<!--        <div>是否主节点</div>-->
+        <div>Is it the primary node</div>
+        <img id="headerValue4" src="" alt=""/>
+      </div>
+      <div class="header-item">
+<!--        <div>[From]是否启动</div>-->
+        <div>[From]Start or not</div>
+        <img id="headerValue5" src="" alt=""/>
+      </div>
+      <div class="header-item">
+<!--        <div>[To]是否启动</div>-->
+        <div>[To]Start or not</div>
+        <img id="headerValue6" src="" alt=""/>
+      </div>
+    </div>
+    <div class="content">
+      <div class="side">
+        <div class="side-Imgs" id="fromImg"></div>
+        <span id="fromType"></span>
+      </div>
+      <img class="arrow" src="images/arrow.png" alt=""/>
+      <div class="from">
+        <div class="title">From</div>
+        <div class="table-box" id="fromTableBox">
+          <table id="fromTable">
+            <thead>
+              <tr>
+                <th width="170px">Address</th>
+                <th width="130px">Slot</th>
+                <th width="80px">Offset</th>
+                <th width="60px">Tps</th>
+                <th width="60px">Count</th>
+                <th width="60px">Error</th>
+              </tr>
+            </thead>
+            <tbody>
+<!--              <tr>-->
+<!--                <td>192.168.20.11</td>-->
+<!--              </tr>-->
+            </tbody>
+          </table>
+        </div>
+        <div class="footer" id="fromFooter">
+          <div class="footer-left">
+            <div class="footer-item">
+<!--              <div>模式</div>-->
+              <div>Mode</div>
+              <div id="fromValue1"></div>
+            </div>
+            <div class="footer-item">
+<!--              <div>哨兵名称</div>-->
+              <div class="tooltip" data-tooltip="Primary name">Primary name</div>
+              <div id="fromValue2"></div>
+            </div>
+            <div class="footer-item">
+<!--              <div>地址列表</div>-->
+              <div class="tooltip" data-tooltip="Address list">Address list</div>
+              <div id="fromValue3">
+              </div>
+            </div>
+            <div class="footer-item">
+<!--              <div>密码</div>-->
+              <div>Password</div>
+              <div id="fromValue4"></div>
+            </div>
+          </div>
+          <div class="vertical-line"></div>
+          <div class="footer-right">
+            <div class="footer-item">
+<!--              <div>Redis版本</div>-->
+              <div>Redis Version</div>
+              <div id="fromValue5"></div>
+            </div>
+            <div class="footer-item">
+<!--              <div>垂直扩展</div>-->
+              <div>Vertical Scaling</div>
+              <div id="fromValue6"></div>
+            </div>
+            <div class="footer-item">
+<!--              <div>强制连接主节点</div>-->
+              <div class="tooltip" data-tooltip="Force connection to the main node">Force connection to the main node</div>
+              <div id="fromValue7"></div>
+            </div>
+            <div class="footer-item">
+<!--              <div>是否每次全量同步</div>-->
+              <div class="tooltip" data-tooltip="Is it synchronized in full every time">Is it synchronized in full every time</div>
+              <div id="fromValue8"></div>
+            </div>
+            <div class="footer-item">
+<!--              <div>是否同步Rdb</div>-->
+              <div class="tooltip" data-tooltip="Whether to synchronize Rdb">Whether to synchronize Rdb</div>
+              <div id="fromValue9"></div>
+            </div>
+          </div>
+        </div>
+      </div>
+      <img class="arrow" src="images/arrow.png" alt=""/>
+      <div class="to">
+        <div class="title">To</div>
+        <div class="table-box" id="toTableBox">
+          <table id="toTable">
+            <thead>
+              <tr>
+                <th width="170px">Address</th>
+                <th width="130px">Slot</th>
+                <th width="80px">Overstock</th>
+                <th width="60px">Tps</th>
+                <th width="60px">Count</th>
+                <th width="60px">Error</th>
+              </tr>
+            </thead>
+            <tbody>
+            </tbody>
+          </table>
+        </div>
+        <div class="footer" id="toFooter">
+          <div class="footer-left">
+            <div class="footer-item">
+<!--              <div>模式</div>-->
+              <div>Mode</div>
+              <div id="toValue1"></div>
+            </div>
+            <div class="footer-item">
+<!--              <div>哨兵名称</div>-->
+              <div class="tooltip" data-tooltip="Primary name">Primary name</div>
+              <div id="toValue22"></div>
+            </div>
+            <div class="footer-item">
+<!--              <div>地址列表</div>-->
+              <div class="tooltip" data-tooltip="Address list">Address list</div>
+              <div id="toValue2"></div>
+            </div>
+            <div class="footer-item">
+<!--              <div>密码</div>-->
+              <div>Password</div>
+              <div id="toValue3"></div>
+            </div>
+          </div>
+          <div class="vertical-line"></div>
+          <div class="footer-right">
+            <div class="footer-item">
+<!--              <div>写入阈值</div>-->
+              <div>Write threshold</div>
+              <div id="toValue4"></div>
+            </div>
+            <div class="footer-item">
+<!--              <div>是否强一致模式</div>-->
+              <div class="tooltip" data-tooltip="Is there a strong consistency mode">Is there a strong consistency mode</div>
+              <div id="toValue5"></div>
+            </div>
+            <div class="footer-item">
+<!--              <div>强一致模式失败重试次数</div>-->
+              <div class="tooltip" data-tooltip="Strong consistency mode failed retry attempts">Strong consistency mode failed retry attempts</div>
+              <div id="toValue6"></div>
+            </div>
+            <div class="footer-item">
+<!--              <div>是否清空Redis数据</div>-->
+              <div class="tooltip" data-tooltip="Do you want to clear Redis data">Do you want to clear Redis data</div>
+              <div id="toValue7"></div>
+            </div>
+          </div>
+        </div>
+      </div>
+      <img class="arrow" src="images/arrow.png" alt=""/>
+      <div class="side">
+        <div class="side-Imgs" id="toImg"></div>
+        <span id="toType"></span>
+      </div>
+    </div>
+  </div>
+
+  <script>
+    //const target = 'http://564hq7bf8832.vicp.fun:80';
+    const target = '';
+    // console.log('hostname', window.location.hostname === 'localhost')
+    // setInterval(() => getData(), 5000);
+    getData();
+    function getData() {
+      fetch(target + '/console/monitor')
+      .then(response => response.json()) // 将响应解析为 JSON 格式
+      .then(res => {
+        // header
+        document.getElementById('headerValue1').innerHTML = res.headConfig['切换标志'];
+        document.getElementById('headerValue2').innerHTML = res.headConfig['日志级别'];
+        document.getElementById('headerValue3').innerHTML = res.headConfig['节点标识'];
+        document.getElementById('headerValue4').src = res.headConfig['是否主节点'] ? 'images/success.png' : 'images/error.png';
+        document.getElementById('headerValue5').src = res.headConfig['[From]是否启动'] ? 'images/success.png' : 'images/error.png';
+        document.getElementById('headerValue6').src = res.headConfig['[To]是否启动'] ? 'images/success.png' : 'images/error.png';
+
+        let fromImgSrc = ''; // 左侧图地址
+        let fromNodes = []; // from-table数据
+        switch (res.fromConfig['模式']) {
+          case 'SINGLE': {
+            // document.getElementById('fromType').innerHTML = '单机';
+            document.getElementById('fromType').innerHTML = 'SINGLE';
+            fromImgSrc = 'images/danji.png';
+            fromNodes = res.fromSingleNodes;
+            break;
+          }
+          case 'CLUSTER': {
+            // document.getElementById('fromType').innerHTML = '集群';
+            document.getElementById('fromType').innerHTML = 'CLUSTER';
+            fromImgSrc = 'images/jiqun.png';
+            fromNodes = res.fromClusterNodes;
+            break;
+          }
+          case 'SENTINEL': {
+            // document.getElementById('fromType').innerHTML = '哨兵';
+            document.getElementById('fromType').innerHTML = 'SENTINEL';
+            fromImgSrc = 'images/shaobing.png';
+            fromNodes = res.fromSentinelNodes;
+            break;
+          }
+        }
+        // 左侧图
+        fromNodes.map(item => {
+          let img = document.createElement('img');
+          img.setAttribute('src', fromImgSrc);
+          document.getElementById('fromImg').appendChild(img);
+        })
+        document.getElementById('fromImg').style.gridTemplateColumns = fromNodes.length > 1 ? '50% 50%' : '100%';
+
+        let toImgSrc = '' // 右侧图地址
+        let toNodes = []; // to-table数据
+        switch (res.toConfig['模式']) {
+          case 'SINGLE': {
+            // document.getElementById('toType').innerHTML = '单机';
+            document.getElementById('toType').innerHTML = 'SINGLE';
+            toImgSrc = 'images/danji.png';
+            toNodes = res.toSingleNodes;
+            break;
+          }
+          case 'CLUSTER': {
+            // document.getElementById('toType').innerHTML = '集群';
+            document.getElementById('toType').innerHTML = 'CLUSTER';
+            toImgSrc = 'images/jiqun.png';
+            toNodes = res.toClusterNodes;
+            break;
+          }
+          case 'SENTINEL': {
+            // document.getElementById('toType').innerHTML = '哨兵';
+            document.getElementById('toType').innerHTML = 'SENTINEL';
+            toImgSrc = 'images/shaobing.png';
+            toNodes = res.toSentinelNodes;
+            break;
+          }
+        }
+        // 右侧图
+        toNodes.map(item => {
+          let img = document.createElement('img');
+          img.setAttribute('src', toImgSrc);
+          document.getElementById('toImg').appendChild(img);
+        })
+        document.getElementById('toImg').style.gridTemplateColumns = toNodes.length > 1 ? '50% 50%' : '100%';
+        // from-table
+        const fromTable = document.getElementById('fromTable');
+        const fromTbody = fromTable.getElementsByTagName('tbody')[0];
+        fromNodes.map(i => {
+          res.fromRedisxNodes.map(o => {
+            if (i.host === o.host && i.port === o.port) {
+              i['offset'] = o['offset'];
+              i['槽信息'] = o['槽信息'];
+              i['tps'] = o['tps'];
+              i['接收总量'] = o['接收总量'];
+              i['失败次数'] = o['失败次数'];
+            }
+          })
+        })
+        fromNodes.map((item) => {
+          const row = fromTbody.insertRow();
+          let cell0 = row.insertCell(0);
+          let cell1 = row.insertCell(1);
+          let cell2 = row.insertCell(2);
+          let cell3 = row.insertCell(3);
+          let cell4 = row.insertCell(4);
+          let cell5 = row.insertCell(5);
+          cell0.innerHTML = `${item['host']}:${item['port']}`;
+          cell1.innerHTML = item['槽信息'] || '-';
+          cell2.innerHTML = item['offset'] || '-';
+          cell3.innerHTML = item['tps'] || 0;
+          cell4.innerHTML = item['接收总量'] || 0;
+          cell5.innerHTML = item['失败次数'] || 0;
+        })
+    
+        // to-table
+        const toTable = document.getElementById('toTable');
+        const toTbody = toTable.getElementsByTagName('tbody')[0];
+        toNodes.map(i => {
+          res.toRedisxNodes.map(o => {
+            if (i.host === o.host && i.port === o.port) {
+              i['槽信息'] = o['槽信息'];
+              i['积压数据'] = o['积压数据'];
+              i['tps'] = o['tps'];
+              i['写入总量'] = o['写入总量'];
+              i['失败次数'] = o['失败次数'];
+            }
+          })
+        })
+        toNodes.map((item) => {
+          const row = toTbody.insertRow();
+          let cell0 = row.insertCell(0);
+          let cell1 = row.insertCell(1);
+          let cell2 = row.insertCell(2);
+          let cell3 = row.insertCell(3);
+          let cell4 = row.insertCell(4);
+          let cell5 = row.insertCell(5);
+          cell0.innerHTML = `${item['host']}:${item['port']}`;
+          cell1.innerHTML = item['槽信息'] || '-';
+          cell2.innerHTML = item['积压数据'] || 0;
+          cell3.innerHTML = item['tps'] || 0;
+          cell4.innerHTML = item['写入总量'] || 0;
+          cell5.innerHTML = item['失败次数'] || 0;
+        })
+    
+        // from-footer
+        document.getElementById('fromValue1').innerHTML = res.fromConfig['模式'] || '-';
+        document.getElementById('fromValue2').innerHTML = res.fromConfig['主名称'] || '-';
+
+        if (!res.fromConfig['地址列表'].length) {
+          document.getElementById('fromValue3').innerHTML = '-';
+        } else {
+          res.fromConfig['地址列表'].map((item) => {
+            const itemDiv = document.createElement('div');
+            itemDiv.innerHTML = item
+            document.getElementById('fromValue3').appendChild(itemDiv)
+          })
+        }
+
+        document.getElementById('fromValue4').innerHTML = res.fromConfig['密码'] || '-';
+        document.getElementById('fromValue5').innerHTML = res.fromConfig['Redis版本'] || '-';
+        const fromValue6 = document.getElementById('fromValue6');
+        fromValue6.innerHTML = res.fromConfig['垂直扩展'];
+        fromValue6.setAttribute('class', res.fromConfig['垂直扩展'] ? 'text-success' : 'text-danger')
+    
+        const fromValue7 = document.getElementById('fromValue7');
+        fromValue7.innerHTML = res.fromConfig['强制连接主节点'];
+        fromValue7.setAttribute('class', res.fromConfig['强制连接主节点'] ? 'text-success' : 'text-danger')
+    
+        const fromValue8 = document.getElementById('fromValue8');
+        fromValue8.innerHTML = res.fromConfig['是否每次全量同步'];
+        fromValue8.setAttribute('class', res.fromConfig['是否每次全量同步'] ? 'text-success' : 'text-danger')
+    
+        const fromValue9 = document.getElementById('fromValue9');
+        fromValue9.innerHTML = res.fromConfig['是否同步Rdb'];
+        fromValue9.setAttribute('class', res.fromConfig['是否同步Rdb']? 'text-success' : 'text-danger')
+        // to-footer
+        document.getElementById('toValue1').innerHTML = res.toConfig['模式'] || '-';
+        document.getElementById('toValue22').innerHTML = res.toConfig['主名称'] || '-';
+  
+        if (!res.toConfig['地址列表'].length) {
+          document.getElementById('toValue2').innerHTML = '-'
+        } else {
+          res.toConfig['地址列表'].map((item, index) => {
+            const itemDiv = document.createElement('div');
+            itemDiv.innerHTML = item
+            document.getElementById('toValue2').appendChild(itemDiv)
+          })
+        }
+    
+        document.getElementById('toValue3').innerHTML = res.toConfig['密码'] || '-';
+        document.getElementById('toValue4').innerHTML = res.toConfig['写入阈值'] || 0;
+        document.getElementById('toValue6').innerHTML = res.toConfig['强一致模式失败重试次数'] || 0;
+    
+        const toValue5 = document.getElementById('toValue5');
+        toValue5.innerHTML = res.toConfig['是否强一致模式'];
+        toValue5.setAttribute('class', res.toConfig['是否强一致模式'] ? 'text-success' : 'text-danger')
+    
+        const toValue7 = document.getElementById('toValue7');
+        toValue7.innerHTML = res.toConfig['是否清空Redis数据'];
+        toValue7.setAttribute('class', res.toConfig['是否清空Redis数据'] ? 'text-success' : 'text-danger')
+  
+        // table-悬浮提示
+        const allCell = document.getElementsByTagName('td')
+        for (let i = 0; i < allCell.length; i++) {
+          if (allCell[i].scrollWidth > allCell[i].offsetWidth) {
+            allCell[i].setAttribute('class','tooltip');
+            allCell[i].setAttribute('data-tooltip', allCell[i].innerHTML);
+          }
+        }
+        setHeight();
+      })
+      .catch(error => {
+        console.error(error);
+      });
+    }
+    window.addEventListener('resize', function(event) {
+      setHeight();
+    });
+
+    // from、to等高
+    function setHeight () {
+      // table
+      const fromTableBox = document.getElementById('fromTableBox')
+      const toTableBox = document.getElementById('toTableBox')
+      if (fromTableBox.offsetHeight > toTableBox.offsetHeight) {
+        toTableBox.style.height = fromTableBox.offsetHeight + 'px'
+      } else if (toTableBox.offsetHeight > fromTableBox.offsetHeight) {
+        fromTableBox.style.height = toTableBox.offsetHeight + 'px'
+      }
+      // footer
+      const fromFooter = document.getElementById('fromFooter')
+      const toFooter = document.getElementById('toFooter')
+      if (fromFooter.offsetHeight > toFooter.offsetHeight) {
+        toFooter.style.height = fromFooter.offsetHeight + 'px'
+      } else if (toFooter.offsetHeight > fromFooter.offsetHeight) {
+        fromFooter.style.height = toFooter.offsetHeight + 'px'
+      }
+    }
+  </script>
+
+  <style>
+    * {
+      margin: 0;
+      padding: 0;
+      box-sizing: border-box;
+    }
+    body {
+      /*background: #dbe7f4;*/
+    }
+    .container {
+      min-width: 1280px;
+      min-height: 100vh;
+      padding: 30px;
+      background-image: url('images/bg.png');
+      background-size: 100% 100%;
+    }
+    .header {
+      display: grid;
+      grid-template-columns: repeat(auto-fill, minmax(15%, auto));
+      text-align: center;
+      overflow-wrap: break-word;
+      padding: 20px 0 20px 20px;
+      border-radius: 24px;
+      background: rgba(255, 234, 230, 0.3);
+      border: 1px solid rgba(255, 255, 255, 1);
+    }
+    .header-item >div:first-child {
+      font-size: 18px;
+      font-weight: 700;
+      color: rgba(230, 46, 83, 1);
+    }
+    .header-item >div:last-child {
+      margin-top: 10px;
+      font-size: 14px;
+      font-weight: 400;
+      color: rgba(77, 38, 46, 1);
+      word-break: break-all;
+    }
+    .header-item > img {
+      margin-top: 10px;
+    }
+    .text-left {
+      text-align: left !important;
+    }
+    .text-danger {
+      font-weight: 700 !important;
+      color: rgba(179, 90, 110, 1) !important;
+    }
+    .text-success {
+      font-weight: 700 !important;
+      color: rgba(0, 153, 51, 1) !important;
+    }
+    .content {
+      min-height: 78vh;
+      margin-top: 24px;
+      padding: 20px;
+      padding-top: 30px;
+      display: grid;
+      grid-template-columns: 8% 3% 36% 3% 36% 3% 8%;
+      justify-content: space-between;
+      border-radius: 24px;
+      border: 1px solid rgba(255, 255, 255, 1);
+      background: rgba(255, 234, 230, 0.3);
+    }
+    .side {
+      align-self: center;
+      text-align: center;
+      font-weight: 700;
+      font-size: 24px;
+      color: rgba(77, 38, 46, 1);
+    }
+    .side img {
+      width: 100%;
+    }
+    .side-Imgs {
+      margin-bottom: 20px;
+      display: grid;
+      grid-template-columns: 50% 50%;
+    }
+    .arrow {
+      align-self: center;
+      width: 100%;
+    }
+    .title {
+      font-size: 24px;
+      font-weight: 500;
+      color: rgba(77, 38, 46, 1);
+      text-align: center;
+      margin-bottom: 20px;
+    }
+    .table-box {
+      padding: 24px;
+      border-radius: 20px 20px 0 0;
+      background: rgba(255, 204, 207, 0.5);
+      border: 1px solid rgba(255, 255, 255, 1);
+      overflow: auto;
+    }
+    table {
+      table-layout: fixed;
+      border-collapse: collapse;
+      border-radius: 16px;
+      background: rgba(255, 255, 255, 0.5);
+      width: 100%;
+    }
+    thead {
+      font-size: 16px;
+      font-weight: 900;
+      color: rgba(255, 255, 255, 1);
+      border-radius: 16px;
+      background: linear-gradient(180deg, rgba(247, 111, 123, 1) 0%, rgba(229, 127, 245, 1) 100%);
+    }
+    tr + tr {
+      border-top: 1px solid rgba(230, 184, 184, 1);
+    }
+    th {
+      padding: 0 10px;
+      height: 60px;
+      text-align: center;
+    }
+    th:first-child {
+      border-radius: 16px 0 0 16px;
+    }
+    th:last-child {
+      border-radius: 0 16px 16px 0;
+    }
+    td {
+      padding: 0 10px;
+      height: 60px;
+      text-align: center;
+      color: rgba(0, 0, 0, 1);
+      text-overflow: ellipsis;
+      white-space: nowrap;
+      overflow: hidden;
+    }
+  
+    .footer {
+      display: flex;
+      padding: 20px;
+      border: 1px solid rgba(255, 255, 255, 1);
+      border-top: 0;
+      border-radius: 0 0 20px 20px;
+      background: rgba(247, 193, 202, 1);
+    }
+    .footer-left {
+      width: 50%;
+    }
+    .footer-right {
+      width: 50%;
+      /*margin-left: 30px;*/
+    }
+    .footer-item {
+      display: flex;
+      font-size: 0;/*消除标签之间空格*/
+    }
+    .footer-item + .footer-item {
+      margin-top: 5px;
+    }
+    .footer-item >div:first-child {
+      display: inline-block;
+      text-align: right;
+      font-size: 14px;
+      font-weight: 700;
+      color: rgba(230, 46, 83, 1);
+      margin-right: 8px;
+      text-overflow: ellipsis;
+      white-space: nowrap;
+      overflow: hidden;
+    }
+    .footer-item >div {
+      display: inline-block;
+      vertical-align: top;
+      font-size: 14px;
+      font-weight: 400;
+      color: rgba(77, 38, 46, 1);
+    }
+    .from .footer .footer-left .footer-item >div:first-child {
+      /*width: 56px;*/
+      width: 6vw;
+    }
+    .from .footer .footer-right .footer-item >div:first-child {
+      /*width: 112px;*/
+      width: 11vw;
+    }
+    .to .footer .footer-left .footer-item >div:first-child {
+      /*width: 56px;*/
+      width: 6vw;
+    }
+    .to .footer .footer-right .footer-item >div:first-child {
+      /*width: 155px;*/
+      width: 11vw;
+    }
+    .vertical-line {
+      margin: 0 10px;
+      border-left: 1px solid rgba(255, 224, 224, 1);
+    }
+    .tooltip {
+      /*position: relative;*/
+    }
+    /*悬浮提示*/
+    .tooltip:hover:before {
+      content: attr(data-tooltip);
+      position: absolute;
+      margin-top: 30px;
+      margin-left: 20px;
+      background: #fff;
+      color: #606266;
+      padding: 8px;
+      border-radius: 4px;
+      border: 1px solid #ebeef5;
+      font-size: 14px;
+      box-shadow: 0 2px 12px 0 rgba(0, 0, 0, .1);
+      word-break: break-all;
+      text-align: justify;
+      white-space: nowrap;
+      z-index: 999;
+    }
+    /*@media screen and (max-width: 1450px) {}*/
+    /*@media screen and (min-width: 1700px) {}*/
+  </style>
+</body>
+</html>
