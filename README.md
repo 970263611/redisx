@@ -93,7 +93,7 @@ When there is a large amount of data in Redis cluster mode on the From side duri
 #### Self-healing
 
 
-The status of Redis nodes will not affect the operation of Redisx services. When Redis nodes experience abnormal phenomena such as service downtime or master node drift, Redis can automatically select normal nodes and start/stop data synchronization work without worrying about the status of Redis nodes on the From/To side, which may affect Redis.
+The status of Redis nodes will not affect the operation of Redisx services. When Redis nodes experience abnormal phenomena such as service downtime or master node drift, Redisx can automatically select normal nodes and start/stop data synchronization work without worrying about the status of Redis nodes on the From/To side, which may affect Redis.
 
 ### Data writing mode
 
